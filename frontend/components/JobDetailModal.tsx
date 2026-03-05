@@ -68,6 +68,10 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const [showTipForm, setShowTipForm] = useState(false);
   const [tipAmount, setTipAmount] = useState("");
 
+  // On-chain configurable params
+  const [autoReleasePeriod, setAutoReleasePeriod] = useState<number | null>(null);
+  const [responsePeriodDays, setResponsePeriodDays] = useState<number | null>(null);
+
   const isClient = currentAddress?.toLowerCase() === job.client.toLowerCase();
   const isFreelancer = currentAddress?.toLowerCase() === job.selectedFreelancer.toLowerCase();
   const hasAlreadyBid = bids.some(b => b.freelancer.toLowerCase() === currentAddress?.toLowerCase());
@@ -81,11 +85,23 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   }, [showReview, onClose]);
 
   const [liveStatus, setLiveStatus] = useState(job.status);
+  const [blockTimestamp, setBlockTimestamp] = useState(Math.floor(Date.now() / 1000));
   useEffect(() => { setLiveStatus(job.status); }, [job.status]);
   useEffect(() => {
     if (!signer) return;
     getJobMarket(signer).getJob(job.id)
       .then((j: any) => setLiveStatus(Number(j.status)))
+      .catch(() => {});
+    // Load configurable params
+    getJobMarket(signer).AUTO_RELEASE_PERIOD()
+      .then((v: bigint) => setAutoReleasePeriod(Number(v)))
+      .catch(() => {});
+    getDisputeResolution(signer).RESPONSE_PERIOD()
+      .then((v: bigint) => setResponsePeriodDays(Number(v) / 86400))
+      .catch(() => {});
+    // Fetch on-chain block timestamp for L6
+    signer.provider?.getBlock("latest")
+      .then((b) => { if (b) setBlockTimestamp(b.timestamp); })
       .catch(() => {});
   }, [job.id, signer]);
 
@@ -503,24 +519,33 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     <div>
                       <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>% Complete</label>
                       <input type="number" min="0" max="100" value={settlePct}
-                        onChange={e => setSettlePct(e.target.value)}
+                        onChange={e => setSettlePct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
                         className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
                     </div>
                     <div>
                       <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>Freelancer gets %</label>
                       <input type="number" min="0" max="100" value={settleFreelancerPct}
-                        onChange={e => setSettleFreelancerPct(e.target.value)}
+                        onChange={e => setSettleFreelancerPct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
                         className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
                     </div>
                   </div>
                   {(() => {
                     const ab = bids.find(b => b.id === job.acceptedBidId);
                     const amt = ab ? ab.amount : job.budget;
-                    return (
-                      <p className="text-xs" style={{ color: colors.infoText }}>
-                        Freelancer would receive ≈ {formatEth(amt * BigInt(settleFreelancerPct || "0") / 100n)} ETH of {formatEth(amt)} escrowed
-                      </p>
-                    );
+                    try {
+                      const pct = BigInt(parseInt(settleFreelancerPct) || 0);
+                      return (
+                        <p className="text-xs" style={{ color: colors.infoText }}>
+                          Freelancer would receive ≈ {formatEth(amt * pct / 100n)} ETH of {formatEth(amt)} escrowed
+                        </p>
+                      );
+                    } catch {
+                      return (
+                        <p className="text-xs" style={{ color: colors.infoText }}>
+                          Freelancer would receive ≈ 0 ETH of {formatEth(amt)} escrowed
+                        </p>
+                      );
+                    }
                   })()}
                   <div className="flex gap-2">
                     <button onClick={() => setShowSettlementForm(false)}
@@ -567,7 +592,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {showDisputeForm && (
                 <div className="rounded-xl p-4 space-y-3 border" style={{ background: colors.warningBg, borderColor: colors.warningText + "33" }}>
                   <h4 className="font-semibold" style={{ color: colors.pageFg }}>Raise a Dispute</h4>
-                  <p className="text-xs" style={{ color: colors.muted }}>The other party will have 3 days to submit their side.</p>
+                  <p className="text-xs" style={{ color: colors.muted }}>The other party will have {responsePeriodDays != null ? (Number.isInteger(responsePeriodDays) ? responsePeriodDays : responsePeriodDays.toFixed(1)) : "…"} day{responsePeriodDays !== 1 ? "s" : ""} to submit their side.</p>
                   <textarea rows={3} placeholder="Describe your reason…"
                     className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                     value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
@@ -591,7 +616,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               <div className="rounded-xl p-4 border" style={{ background: "#ede9fe", borderColor: "#7c3aed33" }}>
                 <p className="font-semibold text-sm" style={{ color: "#7c3aed" }}>📦 Work has been delivered</p>
                 <p className="text-xs mt-1" style={{ color: "#6d28d9" }}>
-                  Delivered {formatDate(job.deliveredAt)}. Auto-release in {timeRemaining(Number(job.deliveredAt) + 14 * 86400)}.
+                  Delivered {formatDate(job.deliveredAt)}. Auto-release in {autoReleasePeriod != null ? timeRemaining(Number(job.deliveredAt) + autoReleasePeriod) : "…"}.
                 </p>
               </div>
 
@@ -667,24 +692,33 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     <div>
                       <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>% Complete</label>
                       <input type="number" min="0" max="100" value={settlePct}
-                        onChange={e => setSettlePct(e.target.value)}
+                        onChange={e => setSettlePct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
                         className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
                     </div>
                     <div>
                       <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>Freelancer gets %</label>
                       <input type="number" min="0" max="100" value={settleFreelancerPct}
-                        onChange={e => setSettleFreelancerPct(e.target.value)}
+                        onChange={e => setSettleFreelancerPct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
                         className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
                     </div>
                   </div>
                   {(() => {
                     const ab = bids.find(b => b.id === job.acceptedBidId);
                     const amt = ab ? ab.amount : job.budget;
-                    return (
-                      <p className="text-xs" style={{ color: colors.infoText }}>
-                        Freelancer would receive ≈ {formatEth(amt * BigInt(settleFreelancerPct || "0") / 100n)} ETH of {formatEth(amt)} escrowed
-                      </p>
-                    );
+                    try {
+                      const pct = BigInt(parseInt(settleFreelancerPct) || 0);
+                      return (
+                        <p className="text-xs" style={{ color: colors.infoText }}>
+                          Freelancer would receive ≈ {formatEth(amt * pct / 100n)} ETH of {formatEth(amt)} escrowed
+                        </p>
+                      );
+                    } catch {
+                      return (
+                        <p className="text-xs" style={{ color: colors.infoText }}>
+                          Freelancer would receive ≈ 0 ETH of {formatEth(amt)} escrowed
+                        </p>
+                      );
+                    }
                   })()}
                   <div className="flex gap-2">
                     <button onClick={() => setShowSettlementForm(false)}
@@ -709,7 +743,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {showDisputeForm && (
                 <div className="rounded-xl p-4 space-y-3 border" style={{ background: colors.warningBg, borderColor: colors.warningText + "33" }}>
                   <h4 className="font-semibold" style={{ color: colors.pageFg }}>Raise a Dispute</h4>
-                  <p className="text-xs" style={{ color: colors.muted }}>The other party will have 3 days to submit their side.</p>
+                  <p className="text-xs" style={{ color: colors.muted }}>The other party will have {responsePeriodDays != null ? (Number.isInteger(responsePeriodDays) ? responsePeriodDays : responsePeriodDays.toFixed(1)) : "…"} day{responsePeriodDays !== 1 ? "s" : ""} to submit their side.</p>
                   <textarea rows={3} placeholder="Describe the issue…"
                     className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                     value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
@@ -772,8 +806,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {/* Cancel dispute (initiator only) */}
               {activeDisputeId && disputeInitiator &&
                currentAddress?.toLowerCase() === disputeInitiator.toLowerCase() && (() => {
-                const nowSec = Math.floor(Date.now() / 1000);
-                const within12h = disputeCreatedAt != null && nowSec < Number(disputeCreatedAt) + 12 * 3600;
+                const within12h = disputeCreatedAt != null && blockTimestamp < Number(disputeCreatedAt) + 12 * 3600;
                 const canWithdraw = !disputeResponseSubmitted || within12h;
                 return canWithdraw ? (
                   <button onClick={withdrawDisputeAction} disabled={!!txLoading}
@@ -898,7 +931,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       <div>
                         <p className="text-sm font-semibold" style={{ color: colors.primaryFg }}>
                           {formatEth(bid.amount)} ETH
-                          {Number(bid.amount) > Number(job.budget) && (
+                          {bid.amount > job.budget && (
                             <span className="text-xs ml-1" style={{ color: colors.warningText }}>above budget</span>
                           )}
                         </p>

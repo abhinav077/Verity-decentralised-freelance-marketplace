@@ -42,9 +42,9 @@ contract ReputationLoans is AccessControl, ReentrancyGuard {
     }
 
     uint256 public loanCounter;
-    uint256 public constant MAX_LOAN_AMOUNT = 50 * 1e18;
-    uint256 public constant LOAN_DURATION = 30 days;
-    uint256 public constant COLLATERAL_PER_10_VRT = 0.005 ether;
+    uint256 public MAX_LOAN_AMOUNT = 50 * 1e18;
+    uint256 public LOAN_DURATION = 30 days;
+    uint256 public COLLATERAL_PER_10_VRT = 0.005 ether;
 
     mapping(uint256 => Loan)     public loans;
     mapping(address => uint256)  public activeLoan;      // user -> loanId (0 = none)
@@ -65,6 +65,9 @@ contract ReputationLoans is AccessControl, ReentrancyGuard {
     }
 
     function setVRTToken(address _v) external onlyRole(ADMIN_ROLE) { vrtToken = _v; }
+    function setMaxLoanAmount(uint256 _m)       external onlyRole(ADMIN_ROLE) { MAX_LOAN_AMOUNT = _m; }
+    function setLoanDuration(uint256 _d)        external onlyRole(ADMIN_ROLE) { LOAN_DURATION = _d; }
+    function setCollateralPer10Vrt(uint256 _c)  external onlyRole(ADMIN_ROLE) { COLLATERAL_PER_10_VRT = _c; }
 
     // ── Take a loan ──────────────────────────────────────────────────────
 

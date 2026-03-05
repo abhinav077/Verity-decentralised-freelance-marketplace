@@ -154,7 +154,8 @@ cd contracts
 npx hardhat run scripts/deploy.ts --network localhost
 ```
 
-Note the printed contract addresses and update `frontend/lib/contracts.ts` accordingly.
+The deploy script automatically writes these addresses to `frontend/.env.local`.
+If that write fails, copy the printed addresses into `frontend/.env.local` manually.
 
 ### 5. Run the frontend
 
@@ -167,7 +168,20 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-> Make sure MetaMask is connected to the local Hardhat network (`http://127.0.0.1:8545`, Chain ID `31337`).
+### 6. Configure MetaMask for local testing
+
+1. Open MetaMask and add a custom network:
+   - **Network Name**: `Hardhat Local`
+   - **RPC URL**: `http://127.0.0.1:8545`
+   - **Chain ID**: `31337`
+   - **Currency Symbol**: `ETH`
+2. Import one funded Hardhat account:
+   - In the terminal running `npx hardhat node`, copy any `Private Key` shown under `Accounts`.
+   - In MetaMask, use **Import Account** and paste that private key.
+3. Select the `Hardhat Local` network in MetaMask before connecting on the frontend.
+4. If transactions fail because of nonce/network mismatch, reset MetaMask activity for this network and re-import the account while the Hardhat node is running.
+
+> You must keep `npx hardhat node` running while testing, since account balances and contract state live in that local chain.
 
 
 ## License

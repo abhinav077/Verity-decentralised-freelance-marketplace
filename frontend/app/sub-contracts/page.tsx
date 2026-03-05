@@ -124,7 +124,13 @@ function SubContractsInner() {
 
   const handleAction = (scId: bigint, action: string) => run(`${action}-${scId}`, async () => {
     const sc = getSubContracting(signer!);
-    const tx = await (sc as any)[action](scId);
+    let tx;
+    switch (action) {
+      case "submitWork": tx = await sc.submitWork(scId); break;
+      case "approveWork": tx = await sc.approveWork(scId); break;
+      case "cancelSubContract": tx = await sc.cancelSubContract(scId); break;
+      default: throw new Error(`Unknown action: ${action}`);
+    }
     await tx.wait();
   });
 

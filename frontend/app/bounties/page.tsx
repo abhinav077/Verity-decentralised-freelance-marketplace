@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
-  getBountyBoard, getProvider, formatEth, formatDate, timeRemaining,
+  getBountyBoard, formatEth, formatDate, timeRemaining,
   shortenAddress, BOUNTY_STATUS, SUBMISSION_STATUS, CONTRACT_ADDRESSES,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
@@ -12,7 +12,7 @@ import Link from "next/link";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default function BountiesPage() {
-  const { address, provider } = useWallet();
+  const { address, signer, provider } = useWallet();
   const { colors } = useTheme();
   const [bounties, setBounties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +22,9 @@ export default function BountiesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [busy, setBusy] = useState(false);
   const configured = CONTRACT_ADDRESSES.BountyBoard !== "";
+
+  // ── Dynamic contract params
+  const [bountyVrtReward, setBountyVrtReward] = useState("5");
 
   // ── Form state
   const [title, setTitle] = useState("");
@@ -45,6 +48,7 @@ export default function BountiesPage() {
         try { arr.push(await bb.getBounty(i)); } catch {}
       }
       setBounties(arr);
+      try { setBountyVrtReward(ethers.formatEther(await bb.BOUNTY_VRT_REWARD())); } catch {}
     } catch {} finally { setLoading(false); }
   }, [provider, configured]);
 
@@ -64,13 +68,12 @@ export default function BountiesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!provider) return;
+    if (!signer) return;
     setBusy(true);
     try {
-      const signer = await (await getProvider()).getSigner();
       const bb = getBountyBoard(signer);
       const deadlineTs = Math.floor(new Date(deadline).getTime() / 1000);
-      const tx = await bb.createBounty(title, description, category, deadlineTs, Number(maxWinners), {
+      const tx = await bb.createBounty(title, description, category, deadlineTs, parseInt(maxWinners) || 1, {
         value: ethers.parseEther(reward),
       });
       await tx.wait();
@@ -84,10 +87,9 @@ export default function BountiesPage() {
   }
 
   async function handleSubmitWork(bountyId: number) {
-    if (!provider) return;
+    if (!signer) return;
     setBusy(true);
     try {
-      const signer = await (await getProvider()).getSigner();
       const bb = getBountyBoard(signer);
       const tx = await bb.submitWork(bountyId, subDesc, subProof);
       await tx.wait();
@@ -100,10 +102,9 @@ export default function BountiesPage() {
   }
 
   async function handleApprove(submissionId: number, bountyId: number) {
-    if (!provider) return;
+    if (!signer) return;
     setBusy(true);
     try {
-      const signer = await (await getProvider()).getSigner();
       const tx = await getBountyBoard(signer).approveSubmission(submissionId);
       await tx.wait();
       window.dispatchEvent(new Event("dfm:tx"));
@@ -115,10 +116,9 @@ export default function BountiesPage() {
   }
 
   async function handleReject(submissionId: number, bountyId: number) {
-    if (!provider) return;
+    if (!signer) return;
     setBusy(true);
     try {
-      const signer = await (await getProvider()).getSigner();
       const tx = await getBountyBoard(signer).rejectSubmission(submissionId);
       await tx.wait();
       window.dispatchEvent(new Event("dfm:tx"));
@@ -129,10 +129,9 @@ export default function BountiesPage() {
   }
 
   async function handleCancel(bountyId: number) {
-    if (!provider) return;
+    if (!signer) return;
     setBusy(true);
     try {
-      const signer = await (await getProvider()).getSigner();
       const tx = await getBountyBoard(signer).cancelBounty(bountyId);
       await tx.wait();
       window.dispatchEvent(new Event("dfm:tx"));
@@ -160,7 +159,7 @@ export default function BountiesPage() {
           <div>
             <h1 className="text-3xl font-black" style={{ color: colors.pageFg }}>Bounty Board</h1>
             <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>
-              Open bounties with ETH + VRT rewards — submit work, get paid
+              Open bounties with ETH + {bountyVrtReward} VRT rewards — submit work, get paid
             </p>
           </div>
           {address && (

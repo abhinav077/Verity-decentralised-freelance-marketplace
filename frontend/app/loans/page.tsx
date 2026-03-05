@@ -148,12 +148,12 @@ export default function LoansPage() {
           <div className="rounded-2xl border p-5 mb-8" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <h2 className="text-lg font-bold mb-3" style={{ color: colors.pageFg }}>Take a Loan</h2>
             <p className="text-sm mb-4" style={{ color: colors.mutedFg }}>
-              Borrow up to 50 VRT for 30 days. Collateral: 0.005 ETH per 10 VRT. Repay in full to get collateral back.
+              Borrow up to {maxLoanDisplay} VRT for {durationDays} days. Collateral: {collateralPer10 > 0n ? parseFloat(ethers.formatEther(collateralPer10)).toFixed(4) : "0.005"} ETH per 10 VRT. Repay in full to get collateral back.
             </p>
             <form onSubmit={handleTakeLoan} className="flex gap-3 items-end flex-wrap">
               <div className="flex-1 min-w-[140px]">
                 <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Amount (VRT)</label>
-                <input type="number" step="1" min="1" max="50" value={loanAmount} onChange={e => setLoanAmount(e.target.value)} required
+                <input type="number" step="1" min="1" max={maxLoanDisplay} value={loanAmount} onChange={e => setLoanAmount(e.target.value)} required
                   className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
                   style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
                   placeholder="10" />

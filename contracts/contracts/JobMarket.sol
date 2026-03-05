@@ -101,11 +101,11 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         bool    exists;
     }
 
-    // ── Constants ────────────────────────────────────────────────────────────
+    // ── Configurable parameters (admin-tunable) ──────────────────────────────
 
-    uint256 public constant REPUTATION_REWARD   = 10 * 1e18;
-    uint256 public constant AUTO_RELEASE_PERIOD = 14 days;
-    uint256 public constant CANCEL_PENALTY_BPS  = 500;        // 5 %
+    uint256 public REPUTATION_REWARD   = 10 * 1e18;
+    uint256 public AUTO_RELEASE_PERIOD = 14 days;
+    uint256 public CANCEL_PENALTY_BPS  = 500;        // 5 %
 
     // ── State ────────────────────────────────────────────────────────────────
 
@@ -160,6 +160,9 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     function setGovernanceContract(address _g)        external onlyRole(ADMIN_ROLE) { governanceContract = _g; }
     function setMinVrtToBid(uint256 _min)             external onlyRole(ADMIN_ROLE) { minVrtToBid = _min; }
     function setDFMToken(address _t)                  external onlyRole(ADMIN_ROLE) { vrtToken = _t; }
+    function setReputationReward(uint256 _r)           external onlyRole(ADMIN_ROLE) { REPUTATION_REWARD = _r; }
+    function setAutoReleasePeriod(uint256 _p)          external onlyRole(ADMIN_ROLE) { AUTO_RELEASE_PERIOD = _p; }
+    function setCancelPenaltyBps(uint256 _bps)         external onlyRole(ADMIN_ROLE) { require(_bps <= 5000, "Max 50%"); CANCEL_PENALTY_BPS = _bps; }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  JOB CREATION

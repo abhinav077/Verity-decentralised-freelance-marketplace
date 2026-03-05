@@ -37,14 +37,16 @@ export interface GlassSurfaceProps {
     | 'luminosity'
     | 'plus-darker'
     | 'plus-lighter';
+  isDark?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
 
-const useDarkMode = () => {
+const useDarkMode = (override?: boolean) => {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
+    if (override !== undefined) { setIsDark(override); return; }
     if (typeof window === 'undefined') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -53,7 +55,7 @@ const useDarkMode = () => {
     const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
+  }, [override]);
 
   return isDark;
 };
@@ -77,6 +79,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   xChannel = 'R',
   yChannel = 'G',
   mixBlendMode = 'difference',
+  isDark: isDarkOverride,
   className = '',
   style = {}
 }) => {
@@ -95,7 +98,7 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   const blueChannelRef = useRef<SVGFEDisplacementMapElement>(null);
   const gaussianBlurRef = useRef<SVGFEGaussianBlurElement>(null);
 
-  const isDarkMode = useDarkMode();
+  const isDarkMode = useDarkMode(isDarkOverride);
 
   const generateDisplacementMap = () => {
     const rect = containerRef.current?.getBoundingClientRect();

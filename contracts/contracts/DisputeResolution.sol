@@ -49,16 +49,16 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
     address public escrowContract;
     address public vrtToken;
 
-    // ── Timing constants ─────────────────────────────────────────────────
+    // ── Configurable parameters (admin-tunable) ─────────────────────────
 
-    uint256 public constant RESPONSE_PERIOD      = 3 days;
-    uint256 public constant VOTING_PERIOD         = 5 days;
-    uint256 public constant AUTO_RESOLVE_DEADLINE = 14 days;
+    uint256 public RESPONSE_PERIOD      = 3 days;
+    uint256 public VOTING_PERIOD         = 5 days;
+    uint256 public AUTO_RESOLVE_DEADLINE = 14 days;
 
     // ── Rewards ──────────────────────────────────────────────────────────
 
-    uint256 public constant VOTER_REWARD    = 2 * 1e18;   // 2 VRT per correct vote
-    uint256 public constant MIN_VRT_TO_VOTE = 0;           // temporarily 0
+    uint256 public VOTER_REWARD    = 2 * 1e18;   // 2 VRT per correct vote
+    uint256 public MIN_VRT_TO_VOTE = 0;           // temporarily 0
 
     // ── Enums ────────────────────────────────────────────────────────────
 
@@ -155,6 +155,11 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
     function setEscrowContract(address _e)    external onlyRole(ADMIN_ROLE) { escrowContract = _e; }
     function setVRTToken(address _v)          external onlyRole(ADMIN_ROLE) { vrtToken = _v; }
     function setDFMToken(address _v)          external onlyRole(ADMIN_ROLE) { vrtToken = _v; }
+    function setResponsePeriod(uint256 _p)    external onlyRole(ADMIN_ROLE) { RESPONSE_PERIOD = _p; }
+    function setVotingPeriod(uint256 _p)      external onlyRole(ADMIN_ROLE) { VOTING_PERIOD = _p; }
+    function setAutoResolveDeadline(uint256 _d) external onlyRole(ADMIN_ROLE) { AUTO_RESOLVE_DEADLINE = _d; }
+    function setVoterReward(uint256 _r)       external onlyRole(ADMIN_ROLE) { VOTER_REWARD = _r; }
+    function setMinVrtToVote(uint256 _m)      external onlyRole(ADMIN_ROLE) { MIN_VRT_TO_VOTE = _m; }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  1) RAISE DISPUTE

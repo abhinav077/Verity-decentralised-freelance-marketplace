@@ -28,9 +28,9 @@ contract InsurancePool is AccessControl, ReentrancyGuard {
     }
 
     uint256 public policyCounter;
-    uint256 public constant COVERAGE_MULTIPLIER = 3;   // 3x coverage
-    uint256 public constant POLICY_DURATION = 90 days;
-    uint256 public constant MIN_PREMIUM = 0.01 ether;
+    uint256 public COVERAGE_MULTIPLIER = 3;   // 3x coverage
+    uint256 public POLICY_DURATION = 90 days;
+    uint256 public MIN_PREMIUM = 0.01 ether;
 
     mapping(uint256 => Policy) public policies;
     mapping(address => uint256[]) public userPolicies;
@@ -50,11 +50,14 @@ contract InsurancePool is AccessControl, ReentrancyGuard {
     function setDisputeResolutionContract(address _d) external onlyRole(ADMIN_ROLE) {
         disputeResolutionContract = _d;
     }
+    function setCoverageMultiplier(uint256 _m) external onlyRole(ADMIN_ROLE) { COVERAGE_MULTIPLIER = _m; }
+    function setPolicyDuration(uint256 _d)     external onlyRole(ADMIN_ROLE) { POLICY_DURATION = _d; }
+    function setMinPremium(uint256 _p)         external onlyRole(ADMIN_ROLE) { MIN_PREMIUM = _p; }
 
     // ── Buy insurance ────────────────────────────────────────────────────
 
     function buyInsurance() external payable returns (uint256) {
-        require(msg.value >= MIN_PREMIUM, "Min premium 0.01 ETH");
+        require(msg.value >= MIN_PREMIUM, "Below minimum premium");
 
         policyCounter++;
         uint256 coverage = msg.value * COVERAGE_MULTIPLIER;

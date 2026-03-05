@@ -91,21 +91,15 @@ export default function ChatPage() {
           status: newStatus, budget: j.budget,
         });
         setJobLoaded(true);
-        if (newStatus === 2 || newStatus === 3) {
-          try {
-            localStorage.removeItem(chatKey(jobId));
-            if (j.client) localStorage.removeItem(chatReadKey(jobId, j.client));
-            if (j.selectedFreelancer) localStorage.removeItem(chatReadKey(jobId, j.selectedFreelancer));
-          } catch {}
-          setMessages([]);
-        }
       }).catch(() => setJobLoaded(true));
     };
 
     fetchJob();
     if (provider) {
-      provider.on("block", fetchJob);
-      return () => { provider.off("block", fetchJob); };
+      let timer: ReturnType<typeof setTimeout>;
+      const debouncedFetch = () => { clearTimeout(timer); timer = setTimeout(fetchJob, 2000); };
+      provider.on("block", debouncedFetch);
+      return () => { clearTimeout(timer); provider.off("block", debouncedFetch); };
     }
   }, [provider, signer, jobId]);
 
@@ -135,7 +129,7 @@ export default function ChatPage() {
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Max file size is 5 MB"); return; }
+    if (file.size > 1 * 1024 * 1024) { alert("Max file size is 1 MB"); return; }
     const reader = new FileReader();
     reader.onload = () => {
       setAttachment({ name: file.name, type: file.type, data: reader.result as string });
@@ -154,7 +148,8 @@ export default function ChatPage() {
       timestamp: Date.now(),
       attachment: attachment ?? undefined,
     };
-    const updated = [...messages, msg];
+    const current = loadMessages(jobId);
+    const updated = [...current, msg];
     setMessages(updated);
     saveMessages(jobId, updated);
     setText("");
@@ -310,6 +305,14 @@ export default function ChatPage() {
       )}
 
       {/* Input bar */}
+      {job.status >= 2 ? (
+        <div className="rounded-2xl shadow-sm p-4 text-center border"
+          style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+          <p className="text-sm" style={{ color: colors.muted }}>
+            This chat is read-only — the job is {statusLabel.toLowerCase()}.
+          </p>
+        </div>
+      ) : (
       <div className="rounded-2xl shadow-sm flex items-end gap-2 p-2 border"
         style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
         <button
@@ -345,6 +348,7 @@ export default function ChatPage() {
           </svg>
         </button>
       </div>
+      )}
     </div>
   );
 }

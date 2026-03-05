@@ -24,6 +24,9 @@ export default function GovernancePage() {
   const [busy, setBusy] = useState(false);
   const [treasuryBal, setTreasuryBal] = useState<bigint>(0n);
   const [vrtBalance, setVrtBalance] = useState<bigint>(0n);
+  const [minVrtToPropose, setMinVrtToPropose] = useState("100");
+  const [govVotingDays, setGovVotingDays] = useState(5);
+  const [quorumBps, setQuorumBps] = useState(1000);
   const configured = CONTRACT_ADDRESSES.Governance !== "";
 
   // Form
@@ -41,6 +44,9 @@ export default function GovernancePage() {
       }
       setProposals(arr);
       try { setTreasuryBal(await gov.treasuryBalance()); } catch {}
+      try { setMinVrtToPropose(parseFloat(ethers.formatEther(await gov.MIN_VRT_TO_PROPOSE())).toString()); } catch {}
+      try { setGovVotingDays(Number(await gov.VOTING_PERIOD()) / 86400); } catch {}
+      try { setQuorumBps(Number(await gov.MIN_QUORUM_BPS())); } catch {}
       if (address) {
         try { setVrtBalance(await getVRTToken(provider).balanceOf(address)); } catch {}
       }
@@ -91,6 +97,19 @@ export default function GovernancePage() {
     } finally { setBusy(false); }
   }
 
+  async function handleExecute(pid: number) {
+    setBusy(true);
+    try {
+      const signer = await (await getProvider()).getSigner();
+      const tx = await getGovernance(signer).executeProposal(pid);
+      await tx.wait();
+      window.dispatchEvent(new Event("dfm:tx"));
+      load();
+    } catch (err: any) {
+      alert(err?.reason || err?.message || "Transaction failed");
+    } finally { setBusy(false); }
+  }
+
   if (!configured) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.muted }}>
@@ -121,7 +140,7 @@ export default function GovernancePage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <p className="text-xs" style={{ color: colors.muted }}>Treasury</p>
             <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatEth(treasuryBal)} ETH</p>
@@ -133,6 +152,18 @@ export default function GovernancePage() {
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <p className="text-xs" style={{ color: colors.muted }}>Total Proposals</p>
             <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{proposals.length}</p>
+          </div>
+          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <p className="text-xs" style={{ color: colors.muted }}>Min VRT to Propose</p>
+            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{minVrtToPropose}</p>
+          </div>
+          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <p className="text-xs" style={{ color: colors.muted }}>Voting Period</p>
+            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{Number.isInteger(govVotingDays) ? govVotingDays : govVotingDays.toFixed(1)}d</p>
+          </div>
+          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <p className="text-xs" style={{ color: colors.muted }}>Quorum</p>
+            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{(quorumBps / 100).toFixed(0)}%</p>
           </div>
         </div>
 
@@ -209,6 +240,13 @@ export default function GovernancePage() {
                       className="text-xs px-3 py-1.5 rounded-lg font-medium mt-3 disabled:opacity-50 btn-hover"
                       style={{ background: colors.warningBg, color: colors.warningText }}>
                       Finalize
+                    </button>
+                  )}
+                  {status === 1 && address && (
+                    <button onClick={() => handleExecute(Number(p.id))} disabled={busy}
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium mt-3 disabled:opacity-50 btn-hover"
+                      style={{ background: colors.successBg, color: colors.successText }}>
+                      Execute Proposal
                     </button>
                   )}
                   <p className="text-xs mt-2" style={{ color: colors.muted }}>

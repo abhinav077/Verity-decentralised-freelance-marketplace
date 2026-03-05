@@ -24,9 +24,9 @@ contract VRTToken is ERC20, AccessControl {
 
     enum Tier { Bronze, Silver, Gold, Platinum }
 
-    uint256 public constant SILVER_THRESHOLD   =  50 * 1e18;
-    uint256 public constant GOLD_THRESHOLD     = 200 * 1e18;
-    uint256 public constant PLATINUM_THRESHOLD = 500 * 1e18;
+    uint256 public SILVER_THRESHOLD   =  50 * 1e18;
+    uint256 public GOLD_THRESHOLD     = 200 * 1e18;
+    uint256 public PLATINUM_THRESHOLD = 500 * 1e18;
 
     /// @notice Fee discount per tier in basis-points (0 – 10 000)
     mapping(Tier => uint256) public tierFeeDiscount;
@@ -50,6 +50,20 @@ contract VRTToken is ERC20, AccessControl {
         tierFeeDiscount[Tier.Silver]   =  2500; // 25 %
         tierFeeDiscount[Tier.Gold]     =  5000; // 50 %
         tierFeeDiscount[Tier.Platinum] =  7500; // 75 %
+    }
+
+    // ── Admin setters ────────────────────────────────────────────────────────
+
+    function setTierThresholds(uint256 silver, uint256 gold, uint256 platinum) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(silver < gold && gold < platinum, "Thresholds must be ascending");
+        SILVER_THRESHOLD = silver;
+        GOLD_THRESHOLD = gold;
+        PLATINUM_THRESHOLD = platinum;
+    }
+
+    function setTierFeeDiscount(uint8 tier, uint256 bps) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(bps <= 10000, "Max 100%");
+        tierFeeDiscount[Tier(tier)] = bps;
     }
 
     // ── Mint / Burn ──────────────────────────────────────────────────────────

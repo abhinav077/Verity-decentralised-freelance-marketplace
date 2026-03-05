@@ -166,6 +166,7 @@ export default function Home() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <GlassSurface
+              isDark={colors.colorScheme === "dark"}
               width="auto"
               height="auto"
               borderRadius={24}
@@ -348,6 +349,7 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <GlassSurface
+                isDark={colors.colorScheme === "dark"}
                 width="auto"
                 height="auto"
                 borderRadius={24}

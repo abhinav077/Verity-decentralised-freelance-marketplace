@@ -1,3 +1,4 @@
+import type React from "react";
 import { ethers, BrowserProvider, Contract } from "ethers";
 import {
   JOB_MARKET_ABI,
@@ -41,6 +42,21 @@ export const JOB_STATUS: Record<number, string> = {
   5: "Delivered",
 };
 
+type ThemeColors = { successBg: string; successText: string; infoBg: string; infoText: string; mutedFg: string; muted: string; dangerBg: string; dangerText: string; warningBg: string; warningText: string; badgeBg: string; badgeText: string; primaryLight: string; primaryFg: string; [k: string]: string };
+
+export function jobStatusStyle(status: number, c: ThemeColors): React.CSSProperties {
+  const map: Record<number, React.CSSProperties> = {
+    0: { background: c.successBg, color: c.successText },
+    1: { background: c.infoBg, color: c.infoText },
+    2: { background: c.muted + "22", color: c.mutedFg },
+    3: { background: c.dangerBg, color: c.dangerText },
+    4: { background: c.warningBg, color: c.warningText },
+    5: { background: c.badgeBg, color: c.badgeText },
+  };
+  return map[status] ?? {};
+}
+
+/** @deprecated — use jobStatusStyle() with theme colors instead */
 export const JOB_STATUS_COLOR: Record<number, string> = {
   0: "bg-green-100 text-green-800",
   1: "bg-blue-100 text-blue-800",
@@ -60,6 +76,20 @@ export const DISPUTE_STATUS: Record<number, string> = {
   6: "Escalated to Admin",
 };
 
+export function disputeStatusStyle(status: number, c: ThemeColors): React.CSSProperties {
+  const map: Record<number, React.CSSProperties> = {
+    0: { background: c.warningBg, color: c.warningText },
+    1: { background: c.warningBg, color: c.warningText },
+    2: { background: c.infoBg, color: c.infoText },
+    3: { background: c.successBg, color: c.successText },
+    4: { background: c.muted + "22", color: c.mutedFg },
+    5: { background: c.muted + "22", color: c.mutedFg },
+    6: { background: c.dangerBg, color: c.dangerText },
+  };
+  return map[status] ?? {};
+}
+
+/** @deprecated — use disputeStatusStyle() with theme colors instead */
 export const DISPUTE_STATUS_COLOR: Record<number, string> = {
   0: "bg-orange-100 text-orange-800",
   1: "bg-yellow-100 text-yellow-800",

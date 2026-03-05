@@ -36,6 +36,7 @@ contract BountyBoard is AccessControl, ReentrancyGuard {
         uint256 deadline;
         uint256 maxWinners;
         uint256 approvedCount;
+        uint256 totalPaidOut;       // Track total ETH paid out to avoid division truncation loss
         BountyStatus status;
         uint256 createdAt;
     }
@@ -58,7 +59,7 @@ contract BountyBoard is AccessControl, ReentrancyGuard {
     mapping(uint256 => uint256[])    public bountySubmissions;  // bountyId -> submissionIds
     mapping(uint256 => mapping(address => bool)) public hasSubmitted;
 
-    uint256 public constant BOUNTY_VRT_REWARD = 5 * 1e18;
+    uint256 public BOUNTY_VRT_REWARD = 5 * 1e18;
 
     event BountyCreated(uint256 indexed id, address indexed poster, string title, uint256 reward);
     event BountySubmission(uint256 indexed bountyId, uint256 indexed submissionId, address indexed submitter);
@@ -72,6 +73,7 @@ contract BountyBoard is AccessControl, ReentrancyGuard {
     }
 
     function setVRTToken(address _v) external onlyRole(ADMIN_ROLE) { vrtToken = _v; }
+    function setBountyVrtReward(uint256 _r) external onlyRole(ADMIN_ROLE) { BOUNTY_VRT_REWARD = _r; }
 
     // ── Create bounty (must send ETH reward) ─────────────────────────────
 

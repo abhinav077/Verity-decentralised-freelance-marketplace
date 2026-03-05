@@ -33,6 +33,9 @@ export default function CrowdfundingPage() {
   const [txLoading, setTxLoading] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
 
+  // On-chain configurable params
+  const [minVrtToCrowdfund, setMinVrtToCrowdfund] = useState("5");
+
   // Create form
   const [form, setForm] = useState({ title: "", description: "", category: "Product", proofLink: "", goalAmount: "", durationDays: "30" });
   // Update form
@@ -49,6 +52,8 @@ export default function CrowdfundingPage() {
     if (!reader) { setLoading(false); return; }
     try {
       const gov = getGovernance(reader);
+      // Load min VRT to crowdfund
+      try { setMinVrtToCrowdfund(parseFloat(ethers.formatEther(await gov.MIN_VRT_TO_CROWDFUND())).toString()); } catch {}
       const count = Number(await gov.crowdfundCounter());
       const list: CrowdfundProject[] = [];
       for (let i = 1; i <= count; i++) {
@@ -158,6 +163,14 @@ export default function CrowdfundingPage() {
     });
   };
 
+  const markFailed = async (pid: bigint) => {
+    if (!signer) return;
+    await runTx(`fail-${pid}`, async () => {
+      const tx = await getGovernance(signer).markProjectFailed(pid);
+      await tx.wait();
+    });
+  };
+
   const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
 
   return (
@@ -182,7 +195,7 @@ export default function CrowdfundingPage() {
       {showCreate && signer && (
         <form onSubmit={createProject} className="border rounded-xl p-5 mb-6 space-y-4" style={{ borderColor: colors.cardBorder, background: colors.cardBg }}>
           <h3 className="font-semibold" style={{ color: colors.pageFg }}>Create a Crowdfund Project</h3>
-          <p className="text-xs" style={{ color: colors.muted }}>You need ≥5 VRT to create a project.</p>
+          <p className="text-xs" style={{ color: colors.muted }}>You need ≥{minVrtToCrowdfund} VRT to create a project.</p>
           <input placeholder="Project title" required
             className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
             value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
@@ -321,6 +334,14 @@ export default function CrowdfundingPage() {
                       className="px-3 py-1.5 rounded-lg text-sm border disabled:opacity-60 btn-outline-hover"
                       style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
                       Cancel Project
+                    </button>
+                  )}
+                  {isActive && deadlineReached && (
+                    <button onClick={() => markFailed(p.id)}
+                      disabled={!!txLoading}
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-60 btn-hover"
+                      style={{ background: colors.dangerBg, color: colors.dangerText }}>
+                      {txLoading === `fail-${pid}` ? "…" : "Mark as Failed"}
                     </button>
                   )}
                   {canRefund && (

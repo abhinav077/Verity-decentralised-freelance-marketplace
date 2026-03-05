@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 interface IVRT_Gov {
     function balanceOf(address) external view returns (uint256);
     function getTier(address) external view returns (uint8);
+    function totalSupply() external view returns (uint256);
 }
 
 /**
@@ -48,9 +49,9 @@ contract Governance is AccessControl, ReentrancyGuard {
     mapping(uint256 => Proposal) public proposals;
     mapping(uint256 => mapping(address => bool)) public hasVotedOnProposal;
 
-    uint256 public constant MIN_VRT_TO_PROPOSE = 100 * 1e18;
-    uint256 public constant VOTING_PERIOD      = 5 days;
-    uint256 public constant MIN_QUORUM_BPS     = 1000;   // 10 % of total committed votes
+    uint256 public MIN_VRT_TO_PROPOSE = 100 * 1e18;
+    uint256 public VOTING_PERIOD      = 5 days;
+    uint256 public MIN_QUORUM_BPS     = 1000;   // 10 % of total committed votes
 
     // ═══════════════════════════════════════════════════════════════════════
     //  CROWDFUNDING (replaces quadratic funding)
@@ -81,7 +82,7 @@ contract Governance is AccessControl, ReentrancyGuard {
     }
 
     uint256 public crowdfundCounter;
-    uint256 public constant MIN_VRT_TO_CROWDFUND = 5 * 1e18; // 5 VRT to propose a project
+    uint256 public MIN_VRT_TO_CROWDFUND = 5 * 1e18; // 5 VRT to propose a project
 
     mapping(uint256 => CrowdfundProject) public crowdfundProjects;
     mapping(uint256 => mapping(address => uint256)) public crowdfundContributions; // projectId → user → amount
@@ -111,6 +112,10 @@ contract Governance is AccessControl, ReentrancyGuard {
 
     function setVRTToken(address _v) external onlyRole(ADMIN_ROLE) { vrtToken = _v; }
     function setDFMToken(address _v) external onlyRole(ADMIN_ROLE) { vrtToken = _v; }
+    function setMinVrtToPropose(uint256 _m) external onlyRole(ADMIN_ROLE) { MIN_VRT_TO_PROPOSE = _m; }
+    function setGovVotingPeriod(uint256 _p) external onlyRole(ADMIN_ROLE) { VOTING_PERIOD = _p; }
+    function setMinQuorumBps(uint256 _q)    external onlyRole(ADMIN_ROLE) { require(_q <= 10000, "Max 100%"); MIN_QUORUM_BPS = _q; }
+    function setMinVrtToCrowdfund(uint256 _m) external onlyRole(ADMIN_ROLE) { MIN_VRT_TO_CROWDFUND = _m; }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  TREASURY  (G2)
@@ -185,7 +190,11 @@ contract Governance is AccessControl, ReentrancyGuard {
         Proposal storage p = proposals[pid];
         require(p.status == ProposalStatus.Active && block.timestamp >= p.deadline, "Not ended");
 
-        if (p.forVotes > p.againstVotes && (p.forVotes + p.againstVotes) > 0) {
+        uint256 totalVotes = p.forVotes + p.againstVotes;
+        uint256 supply = IVRT_Gov(vrtToken).totalSupply();
+        bool quorumMet = supply == 0 || (totalVotes * 10000 >= supply * MIN_QUORUM_BPS);
+
+        if (p.forVotes > p.againstVotes && totalVotes > 0 && quorumMet) {
             p.status = ProposalStatus.Passed;
         } else {
             p.status = ProposalStatus.Rejected;

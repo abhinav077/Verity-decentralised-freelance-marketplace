@@ -2,7 +2,7 @@
 import { useWallet } from "@/context/WalletContext";
 import { useNotifications, NotifType } from "@/context/NotificationsContext";
 import { useTheme, THEME_NAMES, THEME_META } from "@/context/ThemeContext";
-import { shortenAddress, getVRTToken, chatKey, chatReadKey } from "@/lib/contracts";
+import { shortenAddress, getVRTToken, getEscrow, chatKey, chatReadKey } from "@/lib/contracts";
 import { useEffect, useCallback, useState, useRef } from "react";
 import { ethers } from "ethers";
 import Link from "next/link";
@@ -35,6 +35,7 @@ export default function Navbar() {
   const { address, provider, chainId, connect, disconnect, connecting } = useWallet();
   const { notifications, totalCount, dismiss, refresh } = useNotifications();
   const { theme, colors, setTheme } = useTheme();
+  const dk = colors.colorScheme === "dark";
   const router = useRouter();
   const [ethBalance, setEthBalance] = useState<string | null>(null);
   const [dfmBalance, setDfmBalance] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export default function Navbar() {
   const [bellOpen, setBellOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const findWorkRef = useRef<HTMLDivElement>(null);
   const otherRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -69,13 +71,32 @@ export default function Navbar() {
   useEffect(() => { fetchBalances(); }, [fetchBalances]);
   useEffect(() => {
     if (!provider) return;
-    provider.on("block", fetchBalances);
-    return () => { provider.off("block", fetchBalances); };
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedFetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(fetchBalances, 10_000);
+    };
+    provider.on("block", debouncedFetch);
+    return () => { provider.off("block", debouncedFetch); if (timer) clearTimeout(timer); };
   }, [provider, fetchBalances]);
   useEffect(() => {
     window.addEventListener("dfm:tx", fetchBalances);
     return () => window.removeEventListener("dfm:tx", fetchBalances);
   }, [fetchBalances]);
+
+  // Check admin status
+  useEffect(() => {
+    if (!provider || !address) { setIsAdmin(false); return; }
+    (async () => {
+      try {
+        const escrow = getEscrow(provider);
+        const adminRole = await escrow.ADMIN_ROLE();
+        setIsAdmin(await escrow.hasRole(adminRole, address));
+      } catch {
+        setIsAdmin(address.toLowerCase() === "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266");
+      }
+    })();
+  }, [provider, address]);
 
   // Close all dropdowns on route change
   useEffect(() => { closeAll(); }, [pathname, closeAll]);
@@ -97,7 +118,6 @@ export default function Navbar() {
   }, [findWorkOpen, otherOpen, profileOpen, bellOpen, themeOpen, mobileOpen]);
 
   const wrongNetwork = chainId !== null && chainId !== 31337 && chainId !== 11155111;
-  const dk = colors.colorScheme === "dark";
 
   /* Shared island height for visual consistency */
   const islandStyle: React.CSSProperties = { overflow: 'visible', minHeight: 44 };
@@ -136,6 +156,7 @@ export default function Navbar() {
 
         {/* Logo island */}
         <GlassSurface
+          isDark={dk}
           width="auto"
           height="auto"
           borderRadius={18}
@@ -151,6 +172,7 @@ export default function Navbar() {
         {/* Center nav island */}
         <div className="hidden md:flex items-center pointer-events-auto">
         <GlassSurface
+          isDark={dk}
           width="auto"
           height="auto"
           borderRadius={18}
@@ -200,7 +222,7 @@ export default function Navbar() {
             </button>
             {otherOpen && (
               <div className="absolute left-0 top-full mt-2 w-52 py-1.5 z-50" style={dropdown}>
-                {[{ href: "/governance", label: "Governance", icon: "🏛️" }, { href: "/crowdfunding", label: "Crowdfunding", icon: "🚀" }, { href: "/insurance", label: "Insurance", icon: "🛡️" }, { href: "/loans", label: "VRT Loans", icon: "🏦" }].map(item => (
+                {[{ href: "/governance", label: "Governance", icon: "🏛️" }, { href: "/crowdfunding", label: "Crowdfunding", icon: "🚀" }, { href: "/insurance", label: "Insurance", icon: "🛡️" }, { href: "/loans", label: "VRT Loans", icon: "🏦" }, ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: "🔐" }] : [])].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setOtherOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>
@@ -220,6 +242,7 @@ export default function Navbar() {
           {/* Post a Job island */}
           {address && (
             <GlassSurface
+              isDark={dk}
               width="auto"
               height="auto"
               borderRadius={18}
@@ -245,6 +268,7 @@ export default function Navbar() {
 
           {/* Theme + Bell island */}
           <GlassSurface
+            isDark={dk}
             width="auto"
             height="auto"
             borderRadius={18}
@@ -374,6 +398,7 @@ export default function Navbar() {
           {address ? (
             <div className="relative" ref={profileRef}>
             <GlassSurface
+              isDark={dk}
               width="auto"
               height="auto"
               borderRadius={18}
@@ -436,6 +461,7 @@ export default function Navbar() {
           {/* Mobile hamburger (md:hidden) */}
           <div className="relative md:hidden" ref={mobileRef}>
             <GlassSurface
+              isDark={dk}
               width="auto"
               height="auto"
               borderRadius={18}
@@ -464,7 +490,8 @@ export default function Navbar() {
                 ))}
                 <div className="my-1 mx-2 border-t" style={{ borderColor: colors.divider }} />
                 {[{ href: "/governance", label: "Governance", icon: "🏛️" }, { href: "/crowdfunding", label: "Crowdfunding", icon: "🚀" },
-                  { href: "/insurance", label: "Insurance", icon: "🛡️" }, { href: "/loans", label: "VRT Loans", icon: "🏦" }].map(item => (
+                  { href: "/insurance", label: "Insurance", icon: "🛡️" }, { href: "/loans", label: "VRT Loans", icon: "🏦" },
+                  ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: "🔐" }] : [])].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>

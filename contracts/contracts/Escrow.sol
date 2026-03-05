@@ -36,7 +36,7 @@ contract Escrow is AccessControl, ReentrancyGuard {
     // ── Config ───────────────────────────────────────────────────────────
 
     uint256 public platformFeeBps = 200;   // 2 %  (user asked 1-2 %)
-    uint256 public constant MAX_FEE_BPS = 500;
+    uint256 public MAX_FEE_BPS = 500;
 
     // ── State ────────────────────────────────────────────────────────────
 
@@ -103,6 +103,10 @@ contract Escrow is AccessControl, ReentrancyGuard {
         require(newBps <= MAX_FEE_BPS, "Too high");
         emit PlatformFeeUpdated(platformFeeBps, newBps);
         platformFeeBps = newBps;
+    }
+    function setMaxFeeBps(uint256 _max) external onlyRole(ADMIN_ROLE) {
+        require(_max <= 10000, "Max 100%");
+        MAX_FEE_BPS = _max;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

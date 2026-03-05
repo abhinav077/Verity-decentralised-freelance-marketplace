@@ -71,6 +71,8 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
   };
 
   const msTotal = milestones.reduce((s, m) => s + (parseFloat(m.amount) || 0), 0);
+  const budgetNum = parseFloat(form.budget) || 0;
+  const msMismatch = milestones.length > 0 && budgetNum > 0 && Math.abs(msTotal - budgetNum) > 0.0001;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -183,10 +185,10 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
             <button type="button" onClick={onClose}
               className="flex-1 border rounded-lg py-2 text-sm btn-outline-hover"
               style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || msMismatch}
               className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
               style={{ background: colors.primary, color: colors.primaryText }}>
-              {loading ? "Posting…" : "Post Job"}
+              {loading ? "Posting…" : msMismatch ? "Milestone total ≠ budget" : "Post Job"}
             </button>
           </div>
         </form>

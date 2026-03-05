@@ -30,6 +30,11 @@ export default function InsurancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // On-chain configurable params
+  const [coverageMult, setCoverageMult] = useState(3);
+  const [policyDuration, setPolicyDuration] = useState(90);
+  const [minPremium, setMinPremium] = useState(0.01);
+
   // Form
   const [premiumAmount, setPremiumAmount] = useState("0.01");
   const [buying, setBuying] = useState(false);
@@ -54,6 +59,11 @@ export default function InsurancePage() {
       setPoolBalance(pb as bigint);
       setTotalBalance(tb as bigint);
       setPolicyCount(Number(pc));
+
+      // Load configurable params
+      try { setCoverageMult(Number(await ip.COVERAGE_MULTIPLIER())); } catch {}
+      try { setPolicyDuration(Math.round(Number(await ip.POLICY_DURATION()) / 86400)); } catch {}
+      try { setMinPremium(parseFloat(ethers.formatEther(await ip.MIN_PREMIUM()))); } catch {}
 
       if (address) {
         const pols: Policy[] = await ip.getUserPolicies(address);
@@ -137,7 +147,7 @@ export default function InsurancePage() {
           <Link href="/" className="text-sm hover:underline" style={{ color: colors.primaryFg }}>← Back to Home</Link>
           <h1 className="text-2xl font-bold mt-1">🛡️ Insurance Pool</h1>
           <p className="text-sm" style={{ color: colors.muted }}>
-            Stake ETH for 3× coverage protection. If a dispute resolves in your favor, get compensated from the pool.
+            Stake ETH for {coverageMult}× coverage protection. If a dispute resolves in your favor, get compensated from the pool.
           </p>
         </div>
       </div>
@@ -163,7 +173,7 @@ export default function InsurancePage() {
           <p className="text-xs mt-0.5" style={{ color: colors.muted }}>Total Policies</p>
         </div>
         <div className="flex-1 min-w-[120px] rounded-xl p-4 text-center stat-hover" style={{ background: colors.warningBg }}>
-          <p className="text-2xl font-bold" style={{ color: colors.warningText }}>3×</p>
+          <p className="text-2xl font-bold" style={{ color: colors.warningText }}>{coverageMult}×</p>
           <p className="text-xs mt-0.5" style={{ color: colors.warningText }}>Coverage Multiplier</p>
         </div>
       </div>
@@ -195,23 +205,23 @@ export default function InsurancePage() {
           <div className="rounded-xl border p-5 space-y-4" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <h3 className="font-semibold" style={{ color: colors.pageFg }}>Buy Insurance</h3>
             <p className="text-sm" style={{ color: colors.muted }}>
-              Stake ETH as a premium. You get 3× coverage (if you stake 0.1 ETH, your coverage is 0.3 ETH).
-              Policies last 90 days. If no claim is filed, you can withdraw your premium after expiry.
+              Stake ETH as a premium. You get {coverageMult}× coverage (if you stake 0.1 ETH, your coverage is {(0.1 * coverageMult).toFixed(1)} ETH).
+              Policies last {policyDuration} days. If no claim is filed, you can withdraw your premium after expiry.
             </p>
             <div>
               <label className="text-xs font-medium" style={{ color: colors.mutedFg }}>Premium Amount (ETH)</label>
               <input value={premiumAmount} onChange={e => setPremiumAmount(e.target.value)}
-                type="number" step="0.01" min="0.01"
-                placeholder="Min 0.01 ETH"
+                type="number" step="0.01" min={minPremium.toString()}
+                placeholder={`Min ${minPremium} ETH`}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-              {premiumAmount && parseFloat(premiumAmount) >= 0.01 && (
+              {premiumAmount && parseFloat(premiumAmount) >= minPremium && (
                 <p className="text-xs mt-1" style={{ color: colors.successText }}>
-                  Coverage: {(parseFloat(premiumAmount) * 3).toFixed(4)} ETH
+                  Coverage: {(parseFloat(premiumAmount) * coverageMult).toFixed(4)} ETH
                 </p>
               )}
             </div>
             <button onClick={handleBuyInsurance}
-              disabled={buying || !premiumAmount || parseFloat(premiumAmount) < 0.01 || !signer}
+              disabled={buying || !premiumAmount || parseFloat(premiumAmount) < minPremium || !signer}
               className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
               style={{ background: colors.primary, color: colors.primaryText }}>
               {buying ? "Processing…" : "Buy Insurance"}

@@ -143,8 +143,13 @@ function JobsInner() {
   useEffect(() => { setLoading(true); loadJobs(); }, [loadJobs]);
   useEffect(() => {
     if (!provider) return;
-    provider.on("block", loadJobs);
-    return () => { provider.off("block", loadJobs); };
+    let timer: ReturnType<typeof setTimeout>;
+    const debouncedLoad = () => {
+      clearTimeout(timer);
+      timer = setTimeout(loadJobs, 2000);
+    };
+    provider.on("block", debouncedLoad);
+    return () => { clearTimeout(timer); provider.off("block", debouncedLoad); };
   }, [provider, loadJobs]);
 
   const displayJobs = jobs.filter((j) => {

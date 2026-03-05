@@ -82,7 +82,7 @@ function DisputeCard({
   dispute, currentAddress,
   onCastVote, onAdvancePhase, onResolve, onAutoResolve, onResponse,
   onSetProportionDemand, onEscalateToAdmin, onSubmitEvidence, evidence,
-  txLoading, colors,
+  txLoading, colors, responseDays,
 }: {
   dispute: Dispute; currentAddress: string | null;
   onCastVote: (disputeId: bigint, voteType: number) => Promise<void>;
@@ -94,7 +94,7 @@ function DisputeCard({
   onEscalateToAdmin: (disputeId: bigint) => Promise<void>;
   onSubmitEvidence: (disputeId: bigint, ipfsHash: string) => Promise<void>;
   evidence: { party: string; ipfsHash: string; timestamp: bigint }[];
-  txLoading: string | null; colors: any;
+  txLoading: string | null; colors: any; responseDays: number;
 }) {
   const [voteType, setVoteType] = useState<number>(0); // 0=Client 1=Freelancer 2=ReProportion
   const [showVoteForm, setShowVoteForm] = useState(false);
@@ -324,7 +324,7 @@ function DisputeCard({
               {isParty && !dispute.responseSubmitted && (
                 <button
                   onClick={() => {
-                    if (!confirm("Escalate to admin? The other party did not respond within 3 days.")) return;
+                    if (!confirm(`Escalate to admin? The other party did not respond within ${responseDays} day${responseDays !== 1 ? "s" : ""}.`)) return;
                     onEscalateToAdmin(dispute.id);
                   }}
                   disabled={!!txLoading}
@@ -533,6 +533,12 @@ export default function DisputesPage() {
   const [txError, setTxError] = useState<string | null>(null);
   const [filter, setFilter] = useState<"active" | "resolved" | "mine" | "all">("active");
 
+  // On-chain configurable params
+  const [responseDays, setResponseDays] = useState(3);
+  const [votingDays, setVotingDays] = useState(5);
+  const [voterRewardVrt, setVoterRewardVrt] = useState("2");
+  const [minVrtToVote, setMinVrtToVote] = useState("0");
+
   const contractsConfigured = CONTRACT_ADDRESSES.DisputeResolution !== "";
 
   // ── Load disputes ─────────────────────────────────────────────────────
@@ -583,6 +589,22 @@ export default function DisputesPage() {
       setDisputes(list.reverse());
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
+  }, [provider, signer, contractsConfigured]);
+
+  // Load configurable params
+  useEffect(() => {
+    if (!contractsConfigured) return;
+    const reader = provider || signer;
+    if (!reader) return;
+    (async () => {
+      try {
+        const dr = getDisputeResolution(reader);
+        try { setResponseDays(Math.round(Number(await dr.RESPONSE_PERIOD()) / 86400)); } catch {}
+        try { setVotingDays(Math.round(Number(await dr.VOTING_PERIOD()) / 86400)); } catch {}
+        try { setVoterRewardVrt(parseFloat(ethers.formatEther(await dr.VOTER_REWARD())).toString()); } catch {}
+        try { setMinVrtToVote(parseFloat(ethers.formatEther(await dr.MIN_VRT_TO_VOTE())).toString()); } catch {}
+      } catch {}
+    })();
   }, [provider, signer, contractsConfigured]);
 
   useEffect(() => { setLoading(true); loadDisputes(); }, [loadDisputes]);
@@ -718,8 +740,8 @@ export default function DisputesPage() {
       <div className="border rounded-xl p-4 mb-6 text-sm" style={{ background: colors.primaryLight, borderColor: colors.primaryFg + "22" }}>
         <p className="font-semibold mb-2" style={{ color: colors.primaryFg }}>How dispute resolution works:</p>
         <ul className="space-y-1 list-disc list-inside" style={{ color: colors.mutedFg }}>
-          <li>When a dispute is raised, the other party has <strong style={{ color: colors.pageFg }}>3 days</strong> to submit their side</li>
-          <li>After both sides are submitted (or 3 days pass), <strong style={{ color: colors.pageFg }}>Voting Phase</strong> opens</li>
+          <li>When a dispute is raised, the other party has <strong style={{ color: colors.pageFg }}>{responseDays} day{responseDays !== 1 ? "s" : ""}</strong> to submit their side</li>
+          <li>After both sides are submitted (or {responseDays} day{responseDays !== 1 ? "s" : ""} pass), <strong style={{ color: colors.pageFg }}>Voting Phase</strong> opens (lasts {votingDays} day{votingDays !== 1 ? "s" : ""})</li>
           <li>Voters choose: <strong style={{ color: colors.warningText }}>Client wins</strong> · <strong style={{ color: colors.primaryFg }}>Freelancer wins</strong> · <strong style={{ color: colors.badgeText }}>Re-proportion</strong> (split by demand %)</li>
           <li>Both parties can set their <strong style={{ color: colors.pageFg }}>proportion demand (%)</strong> before the vote</li>
           <li>If voting stalls, either party can <strong style={{ color: colors.pageFg }}>escalate to admin</strong> for manual resolution</li>
@@ -776,6 +798,7 @@ export default function DisputesPage() {
                   evidence={evidenceMap[d.id.toString()] || []}
                   txLoading={txLoading}
                   colors={colors}
+                  responseDays={responseDays}
                 />
               ))}
             </div>

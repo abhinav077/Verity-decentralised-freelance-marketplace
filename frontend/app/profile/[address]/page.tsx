@@ -88,11 +88,13 @@ export default function ProfilePage() {
 
   const targetAddress = paramAddress as string;
   const isOwnProfile = currentAddress?.toLowerCase() === targetAddress?.toLowerCase();
+  const isValidAddress = ethers.isAddress(targetAddress);
 
   const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
 
   const loadProfile = useCallback(async () => {
     if (!targetAddress || !CONTRACT_ADDRESSES.UserProfile) { setLoading(false); return; }
+    if (!ethers.isAddress(targetAddress)) { setLoading(false); setLoadError("Invalid Ethereum address"); return; }
     const reader = provider || signer;
     if (!reader) { setLoading(false); return; }
     setLoading(true); setLoadError(null);

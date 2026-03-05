@@ -15,12 +15,13 @@ export default function LinkifyText({
 }) {
   // Split text on URLs while capturing the matched URLs
   const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+  const URL_TEST = /^https?:\/\/[^\s<>"']+$/;
   const parts = text.split(URL_RE);
 
   return (
     <span className={className} style={style}>
       {parts.map((part, i) =>
-        URL_RE.test(part) ? (
+        URL_TEST.test(part) ? (
           <a
             key={i}
             href={part}
