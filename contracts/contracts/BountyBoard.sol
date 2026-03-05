@@ -101,6 +101,7 @@ contract BountyBoard is AccessControl, ReentrancyGuard {
             deadline: deadline,
             maxWinners: maxWinners,
             approvedCount: 0,
+            totalPaidOut: 0,
             status: BountyStatus.Open,
             createdAt: block.timestamp
         });
