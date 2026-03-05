@@ -127,11 +127,11 @@ export default function Home() {
           <Galaxy
             mouseRepulsion
             mouseInteraction
-            density={1.2}
+            density={0.4}
             glowIntensity={colors.colorScheme === "dark" ? 0.4 : 0.2}
             saturation={colors.colorScheme === "dark" ? 0.6 : 0.3}
             hueShift={galaxyHue}
-            twinkleIntensity={0.4}
+            twinkleIntensity={0.3}
             rotationSpeed={0.05}
             repulsionStrength={2.5}
             autoCenterRepulsion={0}

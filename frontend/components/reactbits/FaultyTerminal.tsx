@@ -212,6 +212,8 @@ export default function Galaxy({
   const smoothMousePos = useRef({ x: 0.5, y: 0.5 });
   const targetMouseActive = useRef(0.0);
   const smoothMouseActive = useRef(0.0);
+  const isInViewport = useRef(true);
+  const isPageVisible = useRef(true);
 
   useEffect(() => {
     if (!ctnDom.current) return;
@@ -230,7 +232,7 @@ export default function Galaxy({
       gl.clearColor(0, 0, 0, 1);
     }
 
-    let program: Program;
+    let program: Program | null = null;
 
     function resize() {
       const scale = 1;
@@ -247,7 +249,7 @@ export default function Galaxy({
     resize();
 
     const geometry = new Triangle(gl);
-    program = new Program(gl, {
+    const shaderProgram = new Program(gl, {
       vertex: vertexShader,
       fragment: fragmentShader,
       uniforms: {
@@ -275,12 +277,39 @@ export default function Galaxy({
         uTransparent: { value: transparent }
       }
     });
+    program = shaderProgram;
 
-    const mesh = new Mesh(gl, { geometry, program });
+    const mesh = new Mesh(gl, { geometry, program: shaderProgram });
     let animateId: number;
+    let lastFrameTime = 0;
+
+    const viewportObserver = new IntersectionObserver(
+      ([entry]) => {
+        isInViewport.current = entry.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+    viewportObserver.observe(ctn);
+
+    function handleVisibilityChange() {
+      isPageVisible.current = document.visibilityState === 'visible';
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     function update(t: number) {
       animateId = requestAnimationFrame(update);
+      if (!program) return;
+
+      if (!isInViewport.current || !isPageVisible.current) {
+        return;
+      }
+
+      const targetFrameMs = 1000 / 45;
+      if (t - lastFrameTime < targetFrameMs) {
+        return;
+      }
+      lastFrameTime = t;
+
       if (!disableAnimation) {
         program.uniforms.uTime.value = t * 0.001;
         program.uniforms.uStarSpeed.value = (t * 0.001 * starSpeed) / 10.0;
@@ -321,6 +350,8 @@ export default function Galaxy({
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      viewportObserver.disconnect();
       if (mouseInteraction) {
         ctn.removeEventListener('mousemove', handleMouseMove);
         ctn.removeEventListener('mouseleave', handleMouseLeave);
