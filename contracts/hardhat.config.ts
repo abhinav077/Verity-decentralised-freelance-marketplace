@@ -20,21 +20,35 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
+    // ── Local development ─────────────────────────────────────────────────
     hardhat: {
       chainId: 31337,
     },
     localhost: {
       url: "http://127.0.0.1:8545",
     },
+
+    // ── Testnets (persistent — data survives restarts) ────────────────────
+    // Polygon Amoy (recommended — fast & cheap)
+    amoy: {
+      url: process.env.POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
+      accounts: validAccounts,
+      chainId: 80002,
+    },
+    // Base Sepolia (L2 — very low gas)
+    baseSepolia: {
+      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
+      accounts: validAccounts,
+      chainId: 84532,
+    },
+    // Ethereum Sepolia (most popular testnet)
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || "",
       accounts: validAccounts,
       chainId: 11155111,
     },
-    mumbai: {
-      url: process.env.POLYGON_MUMBAI_RPC_URL || "https://rpc-mumbai.maticvigil.com",
-      accounts: validAccounts,
-    },
+
+    // ── Mainnets ──────────────────────────────────────────────────────────
     polygon: {
       url: process.env.POLYGON_MAINNET_RPC_URL || "https://polygon-rpc.com",
       accounts: validAccounts,

@@ -51,7 +51,7 @@
 | **Where** | Click "Connect Wallet" button in the top-right navbar |
 | **Input** | MetaMask popup → approve connection |
 | **Output** | Your wallet address appears in navbar, shows your ETH and VRT balances |
-| **Network** | Must be on Hardhat Local (Chain ID 31337) or Sepolia Testnet (11155111) |
+| **Network** | Polygon Amoy (80002), Base Sepolia (84532), Ethereum Sepolia (11155111), or Hardhat Local (31337) |
 | **Note** | A wrong-network warning badge appears if you're on the wrong chain |
 
 ### Creating Your Profile
@@ -62,7 +62,7 @@
 | **Where** | Click your address in navbar → "My Profile" → "Set Up Profile" |
 | **Inputs** | **Name** (text), **Bio** (text), **Skills** (comma-separated, e.g., "Solidity, React, Design") |
 | **Output** | Profile page shows your name, bio, skills, and stats (all zeroes initially) |
-| **Optional** | Set avatar via IPFS URL |
+| **Optional** | Set avatar via IPFS — upload directly from the profile page (auto-pinned via Pinata) or paste an IPFS hash/URL |
 | **Costs** | Gas fee only (no ETH payment) |
 | **Note** | One profile per wallet address. Can be updated anytime. |
 
@@ -844,7 +844,7 @@ Click the bell to see all notifications. Click a notification to go to the relev
 | **Escrow** | Smart contract vault that holds payment until work is verified |
 | **Soulbound** | Token that is permanently attached to your wallet and cannot be sent to anyone |
 | **Gas Fee** | Small ETH cost for every blockchain transaction (paid to network validators) |
-| **IPFS** | Decentralized file storage — used for evidence and portfolio links |
+| **IPFS** | Decentralized file storage — integrated via Pinata; files are uploaded directly from the website and pinned automatically |
 | **BPS** | Basis Points — 100 BPS = 1%, 500 BPS = 5%, 10000 BPS = 100% |
 | **Quorum** | Minimum voting participation required for a result to be valid |
 | **DAO** | Decentralized Autonomous Organization — community-governed entity |
@@ -855,3 +855,59 @@ Click the bell to see all notifications. Click a notification to go to the relev
 ---
 
 *Last updated: March 2026 — Generated from the Verity smart contracts and frontend source code.*
+
+---
+
+## Appendix: Architecture & IPFS Integration
+
+### Storage Architecture
+
+The project follows the standard Web3 storage pattern:
+
+| What | Where | Why |
+|---|---|---|
+| Job data, bids, escrow, wallet addresses | **Blockchain** (smart contracts) | Immutable, trustless, verifiable |
+| Profile images, resumes, portfolio files, evidence | **IPFS** (via Pinata) | Large files, decentralized, content-addressed |
+| CID references (pointers to IPFS files) | **Blockchain** (stored in smart contracts) | Links on-chain data to off-chain files |
+| Chat messages | **Browser localStorage** | Ephemeral, per-device |
+
+### IPFS Upload Flow
+
+```
+User selects file → Frontend component → POST /api/upload → Pinata API → IPFS pin → CID returned
+                                                                                        ↓
+                                                           CID stored on-chain via smart contract
+                                                                                        ↓
+                                                           File displayed via gateway: gateway.pinata.cloud/ipfs/<CID>
+```
+
+### Smart Contracts That Store IPFS CIDs
+
+| Contract | Function | What It Stores |
+|---|---|---|
+| `UserProfile.sol` | `setAvatar(ipfsHash)` | Profile picture CID |
+| `UserProfile.sol` | `addPortfolioItem(title, ipfsHash, jobId)` | Portfolio file CID |
+| `DisputeResolution.sol` | `submitEvidence(disputeId, ipfsHash)` | Dispute evidence CID |
+| `BountyBoard.sol` | `submitWork(bountyId, desc, ipfsProof)` | Bounty proof CID |
+
+### Supported Networks
+
+| Network | Chain ID | Type | Faucet |
+|---|---|---|---|
+| Polygon Amoy | 80002 | Testnet (recommended) | https://faucet.polygon.technology/ |
+| Base Sepolia | 84532 | L2 Testnet | https://www.alchemy.com/faucets/base-sepolia |
+| Ethereum Sepolia | 11155111 | Testnet | https://sepoliafaucet.com |
+| Hardhat Local | 31337 | Local (dev only) | Pre-funded test accounts |
+
+### Key Files Added/Modified
+
+| File | Purpose |
+|---|---|
+| `frontend/app/api/upload/route.ts` | Server-side file upload proxy to Pinata |
+| `frontend/app/api/upload-json/route.ts` | Server-side JSON metadata upload to Pinata |
+| `frontend/lib/ipfs.ts` | IPFS utility functions (gateway resolution, CID extraction) |
+| `frontend/hooks/useIpfsUpload.ts` | React hook for uploading files/JSON to IPFS |
+| `frontend/components/IpfsFileUpload.tsx` | Drag-and-drop file upload component |
+| `frontend/.env.example` | Template for all environment variables |
+| `contracts/.env.example` | Updated with Amoy + Base Sepolia RPC URLs |
+| `contracts/hardhat.config.ts` | Added Polygon Amoy + Base Sepolia networks |

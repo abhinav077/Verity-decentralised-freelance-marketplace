@@ -189,15 +189,15 @@ const THEMES: Record<ThemeName, ThemeColors> = {
     colorScheme: "light",
   },
 };
-export const THEME_META: Record<ThemeName, { label: string; emoji: string }> = {
-  light:    { label: "Light",    emoji: "☀️" },
-  dark:     { label: "Dark",     emoji: "🌙" },
-  midnight: { label: "Midnight", emoji: "🌌" },
-  ocean:    { label: "Ocean",    emoji: "🌊" },
-  sunset:   { label: "Sunset",   emoji: "🌅" },
-  forest:   { label: "Forest",   emoji: "🌲" },
-  rose:     { label: "Rose",     emoji: "🌹" },
-  pastel:   { label: "Pastel",   emoji: "🎨" },
+export const THEME_META: Record<ThemeName, { label: string; icon: string }> = {
+  light:    { label: "Light",    icon: "sun" },
+  dark:     { label: "Dark",     icon: "moon" },
+  midnight: { label: "Midnight", icon: "stars" },
+  ocean:    { label: "Ocean",    icon: "waves" },
+  sunset:   { label: "Sunset",   icon: "sunset" },
+  forest:   { label: "Forest",   icon: "trees" },
+  rose:     { label: "Rose",     icon: "flower" },
+  pastel:   { label: "Pastel",   icon: "palette" },
 };
 
 export const THEME_NAMES = Object.keys(THEMES) as ThemeName[];

@@ -9,10 +9,21 @@ import { getJobMarket, CONTRACT_ADDRESSES } from "@/lib/contracts";
 import CountUp from "@/components/reactbits/CountUp";
 import ButtonCreativeRight from "@/components/reactbits/Button";
 import GlassSurface from "@/components/reactbits/GlassSurface";
+import { EncryptedText } from "@/components/reactbits/Encrypted-text";
 import type { BentoCardData } from "@/components/reactbits/MagicBento";
+import {
+  BadgeCheck,
+  Gavel,
+  Lock,
+  ScrollText,
+  ShieldCheck,
+  Trophy,
+  Vote,
+  Wallet,
+} from "lucide-react";
 
 /* Heavy canvas / GSAP components – lazy loaded */
-const Galaxy = dynamic(() => import("@/components/reactbits/FaultyTerminal"), { ssr: false });
+const Grainient = dynamic(() => import("@/components/reactbits/FaultyTerminal"), { ssr: false });
 const MagicBento = dynamic(() => import("@/components/reactbits/MagicBento"), { ssr: false });
 const Shuffle = dynamic(() => import("@/components/reactbits/Shuffle"), { ssr: false });
 const PixelCard = dynamic(() => import("@/components/reactbits/Pixelcard"), { ssr: false });
@@ -20,14 +31,14 @@ const PixelCard = dynamic(() => import("@/components/reactbits/Pixelcard"), { ss
 interface Stats { total: number; open: number; inProgress: number; completed: number }
 
 const FEATURES: BentoCardData[] = [
-  { icon: <span className="text-2xl">🔒</span>, label: "Core", title: "No Middleman", description: "Smart contracts handle payments and escrow automatically. No platform fees, no delays." },
-  { icon: <span className="text-2xl">💰</span>, label: "Security", title: "Escrow Protection", description: "Funds are locked in escrow when a bid is accepted and released only on completion." },
-  { icon: <span className="text-2xl">⚖️</span>, label: "Disputes", title: "On-chain Disputes", description: "Community voting resolves disputes fairly with token-weighted votes and a 24-hour response window." },
-  { icon: <span className="text-2xl">⭐</span>, label: "Trust", title: "Verified Reviews", description: "On-chain reviews tied to real completed jobs — impossible to fake, permanent on the blockchain." },
-  { icon: <span className="text-2xl">🏆</span>, label: "Quick Tasks", title: "Bounty Board", description: "Post open bounties for quick tasks. Multiple submissions, approve the best one." },
-  { icon: <span className="text-2xl">🗳️</span>, label: "DAO", title: "Governance", description: "VRT holders propose and vote on platform changes. True decentralized decision-making." },
-  { icon: <span className="text-2xl">🛡️</span>, label: "Protection", title: "Insurance Pool", description: "Stake ETH premiums for 3x coverage. Protect yourself against dispute losses." },
-  { icon: <span className="text-2xl">📜</span>, label: "Delegation", title: "Sub-Contracting", description: "Freelancers can delegate parts of jobs to sub-contractors with on-chain accountability." },
+  { icon: <Lock className="w-7 h-7" />, label: "Core", title: "No Middleman", description: "Smart contracts handle payments and escrow automatically. No platform fees, no delays." },
+  { icon: <Wallet className="w-7 h-7" />, label: "Security", title: "Escrow Protection", description: "Funds are locked in escrow when a bid is accepted and released only on completion." },
+  { icon: <Gavel className="w-7 h-7" />, label: "Disputes", title: "On-chain Disputes", description: "Community voting resolves disputes fairly with token-weighted votes and a 24-hour response window." },
+  { icon: <BadgeCheck className="w-7 h-7" />, label: "Trust", title: "Verified Reviews", description: "On-chain reviews tied to real completed jobs — impossible to fake, permanent on the blockchain." },
+  { icon: <Trophy className="w-7 h-7" />, label: "Quick Tasks", title: "Bounty Board", description: "Post open bounties for quick tasks. Multiple submissions, approve the best one." },
+  { icon: <Vote className="w-7 h-7" />, label: "DAO", title: "Governance", description: "VRT holders propose and vote on platform changes. True decentralized decision-making." },
+  { icon: <ShieldCheck className="w-7 h-7" />, label: "Protection", title: "Insurance Pool", description: "Stake ETH premiums for 3x coverage. Protect yourself against dispute losses." },
+  { icon: <ScrollText className="w-7 h-7" />, label: "Delegation", title: "Sub-Contracting", description: "Freelancers can delegate parts of jobs to sub-contractors with on-chain accountability." },
 ];
 
 const HOW_IT_WORKS = [
@@ -35,23 +46,6 @@ const HOW_IT_WORKS = [
   { step: "02", title: "Accept a Bid", body: "Review freelancer bids and profiles, then accept. Payment is locked in escrow." },
   { step: "03", title: "Get Paid", body: "Client approves the work, escrow releases payment directly to the freelancer. No waiting." },
 ];
-
-/* ── hex → hue degrees for Galaxy tint ── */
-function hexToHue(hex: string): number {
-  const h = hex.replace("#", "");
-  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
-  const r = ((n >> 16) & 255) / 255;
-  const g = ((n >> 8) & 255) / 255;
-  const b = (n & 255) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  if (max === min) return 0;
-  const d = max - min;
-  let hue = 0;
-  if (max === r) hue = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) hue = ((b - r) / d + 2) / 6;
-  else hue = ((r - g) / d + 4) / 6;
-  return Math.round(hue * 360);
-}
 
 /* ── hex → "R, G, B" for MagicBento glowColor ── */
 function hexToRgb(hex: string): string {
@@ -86,11 +80,41 @@ function AnimatedSection({ children, className, style }: { children: React.React
 
 export default function Home() {
   const { address, connect, provider } = useWallet();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const [stats, setStats] = useState<Stats>({ total: 0, open: 0, inProgress: 0, completed: 0 });
   const contractsConfigured = CONTRACT_ADDRESSES.JobMarket !== "";
   const glowRgb = useMemo(() => hexToRgb(colors.primaryFg), [colors.primaryFg]);
-  const galaxyHue = useMemo(() => hexToHue(colors.primaryFg), [colors.primaryFg]);
+  const heroPalette = useMemo(() => {
+    switch (theme) {
+      case "light":
+        return { color1: "#FFFFFF", color2: "#DDE7F2", color3: "#7A8FA6" };
+      case "dark":
+        return { color1: "#060606", color2: "#27272A", color3: "#6B7280" };
+      case "midnight":
+        return { color1: "#020617", color2: "#1E293B", color3: "#334155" };
+      case "ocean":
+        return { color1: "#0A2540", color2: "#164E78", color3: "#00B4D8" };
+      case "sunset":
+        return { color1: "#FFF1E5", color2: "#F4A261", color3: "#E76F51" };
+      case "forest":
+        return { color1: "#F1F8F2", color2: "#A5D6A7", color3: "#2E7D32" };
+      case "rose":
+        return { color1: "#FFF7FA", color2: "#F8BBD0", color3: "#E91E63" };
+      case "pastel":
+        return { color1: "#FEFCFF", color2: "#DDD6FE", color3: "#A5B4FC" };
+      default:
+        return { color1: colors.primaryLight, color2: colors.primary, color3: colors.surfaceBg };
+    }
+  }, [theme, colors.primaryLight, colors.primary, colors.surfaceBg]);
+  const grainFx = useMemo(() => {
+    if (theme === "light") {
+      return { colorBalance: -0.08, blendAngle: 18, blendSoftness: 0.16, contrast: 1.35, saturation: 0.9 };
+    }
+    if (theme === "dark") {
+      return { colorBalance: 0.12, blendAngle: -16, blendSoftness: 0.18, contrast: 1.8, saturation: 0.85 };
+    }
+    return { colorBalance: 0, blendAngle: 0, blendSoftness: 0.05, contrast: 1.5, saturation: 1 };
+  }, [theme]);
 
   const loadStats = useCallback(async () => {
     if (!contractsConfigured || !provider) return;
@@ -112,7 +136,10 @@ export default function Home() {
     } catch {}
   }, [provider, contractsConfigured]);
 
-  useEffect(() => { loadStats(); }, [loadStats]);
+  useEffect(() => {
+    const timer = setTimeout(() => { void loadStats(); }, 0);
+    return () => clearTimeout(timer);
+  }, [loadStats]);
 
   return (
     <div className="min-h-screen -mt-16">
@@ -122,28 +149,38 @@ export default function Home() {
         className="relative overflow-hidden"
         style={{ background: `linear-gradient(160deg, ${colors.pageBg} 0%, ${colors.cardBg} 100%)`, borderBottom: `1px solid ${colors.cardBorder}` }}
       >
-        {/* Galaxy background */}
+        {/* Grainient background */}
         <div className="absolute inset-0 z-0">
-          <Galaxy
-            mouseRepulsion
-            mouseInteraction
-            density={0.4}
-            glowIntensity={colors.colorScheme === "dark" ? 0.4 : 0.2}
-            saturation={colors.colorScheme === "dark" ? 0.6 : 0.3}
-            hueShift={galaxyHue}
-            twinkleIntensity={0.3}
-            rotationSpeed={0.05}
-            repulsionStrength={2.5}
-            autoCenterRepulsion={0}
-            starSpeed={0.4}
-            speed={0.8}
+          <Grainient
+            color1={heroPalette.color1}
+            color2={heroPalette.color2}
+            color3={heroPalette.color3}
+            timeSpeed={0.25}
+            colorBalance={grainFx.colorBalance}
+            warpStrength={1}
+            warpFrequency={5}
+            warpSpeed={2}
+            warpAmplitude={50}
+            blendAngle={grainFx.blendAngle}
+            blendSoftness={grainFx.blendSoftness}
+            rotationAmount={500}
+            noiseScale={2}
+            grainAmount={0.1}
+            grainScale={2}
+            grainAnimated={false}
+            contrast={grainFx.contrast}
+            gamma={1}
+            saturation={grainFx.saturation}
+            centerX={0}
+            centerY={0}
+            zoom={0.9}
           />
         </div>
 
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full blur-[160px] pointer-events-none"
           style={{ background: colors.primaryFg, opacity: colors.colorScheme === "dark" ? 0.07 : 0.05 }} />
 
-        {/* pointer-events-none so mouse events pass through to FaultyTerminal; interactive children restore pointer-events */}
+        {/* pointer-events-none so mouse events pass through to Grainient; interactive children restore pointer-events */}
         <div className="relative z-10 max-w-6xl mx-auto px-4 pt-36 md:pt-44 pb-28 md:pb-36 text-center pointer-events-none">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm mb-6 border"
@@ -155,7 +192,23 @@ export default function Home() {
           <motion.h1 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight tracking-tight"
             style={{ color: colors.pageFg, fontFamily: "var(--font-heading)" }}>
-            The Future of Freelancing<br />is <span style={{ color: colors.primaryFg }}>Verity</span>
+            The Future of Freelancing
+            <br />
+            is{" "}
+            <span className="inline-grid align-top" style={{ color: colors.primaryFg }}>
+              <span className="invisible col-start-1 row-start-1">Verity</span>
+              <span className="col-start-1 row-start-1">
+                <EncryptedText
+                  text="Verity"
+                  className="inline-block"
+                  holdDelayMs={2200}
+                  revealDelayMs={70}
+                  flipDelayMs={70}
+                  encryptedClassName="opacity-70"
+                  revealedClassName=""
+                />
+              </span>
+            </span>
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}

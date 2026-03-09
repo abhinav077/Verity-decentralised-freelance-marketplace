@@ -6,7 +6,10 @@ import {
   getDisputeResolution, getJobMarket, CONTRACT_ADDRESSES,
   shortenAddress, DISPUTE_STATUS,
 } from "@/lib/contracts";
+import { resolveIpfsUrl } from "@/lib/ipfs";
+import { useIpfsUpload } from "@/hooks/useIpfsUpload";
 import { ethers } from "ethers";
+import { Input } from "@/components/reactbits/Input";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -72,6 +75,44 @@ function VoteBar3({ clientVotes, freelancerVotes, reProportionVotes, colors }: {
         <span>{Number(clientVotes)} votes</span>
         <span>{Number(freelancerVotes)} votes</span>
         <span>{Number(reProportionVotes)} votes</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Inline evidence file uploader ────────────────────────────────────────────
+function EvidenceUploader({ onUpload }: { onUpload: (cid: string) => void }) {
+  const { uploadFile, uploading, error } = useIpfsUpload();
+  const fileInputRef = useState<HTMLInputElement | null>(null);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <label
+          style={{
+            padding: "6px 12px", borderRadius: 6,
+            border: "1px solid var(--border, #333)",
+            background: "var(--muted, #1a1a2e)",
+            color: "var(--foreground, #e0e0e0)",
+            cursor: uploading ? "not-allowed" : "pointer",
+            fontSize: 13,
+          }}
+        >
+          {uploading ? "Uploading…" : "📎 Upload File to IPFS"}
+          <input
+            type="file"
+            style={{ display: "none" }}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              try {
+                const { cid } = await uploadFile(f);
+                onUpload(cid);
+              } catch { /* error shown via hook */ }
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {error && <span style={{ fontSize: 12, color: "var(--danger, #ef4444)" }}>{error}</span>}
       </div>
     </div>
   );
@@ -220,7 +261,7 @@ function DisputeCard({
                 {e.party.toLowerCase() === dispute.client.toLowerCase() && <span className="ml-1" style={{ color: colors.warningText }}>(Client)</span>}
                 {e.party.toLowerCase() === dispute.freelancer.toLowerCase() && <span className="ml-1" style={{ color: colors.infoText }}>(Freelancer)</span>}
               </div>
-              <a href={e.ipfsHash.startsWith("http") ? e.ipfsHash : `https://ipfs.io/ipfs/${e.ipfsHash}`}
+              <a href={resolveIpfsUrl(e.ipfsHash)}
                 target="_blank" rel="noopener noreferrer"
                 className="font-mono hover:underline" style={{ color: colors.primaryFg }}>
                 {e.ipfsHash.length > 20 ? e.ipfsHash.slice(0, 10) + "…" + e.ipfsHash.slice(-6) : e.ipfsHash}
@@ -235,8 +276,9 @@ function DisputeCard({
         showEvidenceForm ? (
           <div className="rounded-lg border p-3 mb-3 space-y-2" style={{ borderColor: colors.cardBorder }}>
             <p className="text-xs font-semibold" style={{ color: colors.mutedFg }}>Submit Evidence</p>
-            <input placeholder="IPFS hash or link to evidence"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+            <EvidenceUploader onUpload={(cid) => setEvidenceHash(cid)} />
+            <p className="text-xs" style={{ color: colors.muted }}>Or paste an IPFS hash / URL:</p>
+            <Input placeholder="IPFS hash or link to evidence"
               value={evidenceHash} onChange={(e) => setEvidenceHash(e.target.value)} />
             <div className="flex gap-2">
               <button onClick={() => { setShowEvidenceForm(false); setEvidenceHash(""); }}
@@ -450,9 +492,8 @@ function DisputeCard({
                     <p className="text-sm font-medium" style={{ color: colors.pageFg }}>
                       Set your proportion demand (% of funds you believe you deserve)
                     </p>
-                    <input type="number" min="0" max="100" value={demandPct}
+                    <Input type="number" min="0" max="100" value={demandPct}
                       onChange={(e) => setDemandPct(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
                       placeholder="e.g. 60" />
                     <div className="flex gap-2">
                       <button onClick={() => setShowDemandForm(false)}

@@ -6,8 +6,12 @@ import {
   getBountyBoard, formatEth, formatDate, timeRemaining,
   shortenAddress, BOUNTY_STATUS, SUBMISSION_STATUS, CONTRACT_ADDRESSES,
 } from "@/lib/contracts";
+import { resolveIpfsUrl } from "@/lib/ipfs";
+import IpfsFileUpload from "@/components/IpfsFileUpload";
 import { ethers } from "ethers";
 import Link from "next/link";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -234,43 +238,35 @@ export default function BountiesPage() {
             <h2 className="text-xl font-bold mb-4" style={{ color: colors.pageFg }}>Post a Bounty</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Title</label>
-                <input value={title} onChange={e => setTitle(e.target.value)} required
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg, "--tw-ring-color": colors.inputFocus } as any} />
+                <Label className="mb-1 block text-xs font-medium">Title</Label>
+                <Input value={title} onChange={e => setTitle(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Description</label>
+                <Label className="mb-1 block text-xs font-medium">Description</Label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3}
                   className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none focus:ring-2"
                   style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg } as any} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Category</label>
-                  <input value={category} onChange={e => setCategory(e.target.value)} required
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none"
-                    style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                  <Label className="mb-1 block text-xs font-medium">Category</Label>
+                  <Input value={category} onChange={e => setCategory(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Reward (ETH)</label>
-                  <input type="number" step="0.001" min="0.001" value={reward} onChange={e => setReward(e.target.value)} required
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                    style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                  <Label className="mb-1 block text-xs font-medium">Reward (ETH)</Label>
+                  <Input type="number" step="0.001" min="0.001" value={reward} onChange={e => setReward(e.target.value)} required
+                    className="font-mono" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Deadline</label>
-                  <input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none"
-                    style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                  <Label className="mb-1 block text-xs font-medium">Deadline</Label>
+                  <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Max Winners</label>
-                  <input type="number" min="1" max="100" value={maxWinners} onChange={e => setMaxWinners(e.target.value)} required
-                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                    style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                  <Label className="mb-1 block text-xs font-medium">Max Winners</Label>
+                  <Input type="number" min="1" max="100" value={maxWinners} onChange={e => setMaxWinners(e.target.value)} required
+                    className="font-mono" />
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
@@ -338,9 +334,14 @@ export default function BountiesPage() {
                 <textarea value={subDesc} onChange={e => setSubDesc(e.target.value)} rows={2} placeholder="Describe your submission…"
                   className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none mb-2"
                   style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
-                <input value={subProof} onChange={e => setSubProof(e.target.value)} placeholder="IPFS proof hash (optional)"
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none mb-3 font-mono"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                <Input value={subProof} onChange={e => setSubProof(e.target.value)} placeholder="IPFS proof hash (optional)"
+                  className="mb-2 font-mono" />
+                <IpfsFileUpload
+                  label="Upload Proof File"
+                  compact
+                  existingCid={subProof || undefined}
+                  onUpload={(cid) => setSubProof(cid)}
+                />
                 <button onClick={() => handleSubmitWork(Number(selectedBounty.id))} disabled={busy || !subDesc}
                   className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 btn-hover"
                   style={{ background: colors.primary, color: colors.primaryText }}>
@@ -376,7 +377,10 @@ export default function BountiesPage() {
                       </div>
                       <p className="text-sm mb-1" style={{ color: colors.pageFg }}>{s.description}</p>
                       {s.ipfsProof && (
-                        <p className="text-xs font-mono" style={{ color: colors.muted }}>Proof: {s.ipfsProof}</p>
+                        <a href={resolveIpfsUrl(s.ipfsProof)} target="_blank" rel="noopener noreferrer"
+                          className="text-xs font-mono hover:underline" style={{ color: colors.primaryFg }}>
+                          Proof: {s.ipfsProof.length > 20 ? s.ipfsProof.slice(0, 10) + "…" + s.ipfsProof.slice(-6) : s.ipfsProof} ↗
+                        </a>
                       )}
                       {isPoster && subStatus === 0 && (
                         <div className="flex gap-2 mt-2">

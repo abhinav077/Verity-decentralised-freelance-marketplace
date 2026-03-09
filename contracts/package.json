@@ -8,8 +8,9 @@
     "test": "hardhat test",
     "node": "bash scripts/start-node.sh",
     "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
-    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
-    "deploy:mumbai": "hardhat run scripts/deploy.ts --network mumbai"
+    "deploy:amoy": "hardhat run scripts/deploy.ts --network amoy",
+    "deploy:baseSepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
   },
   "keywords": [],
   "author": "",

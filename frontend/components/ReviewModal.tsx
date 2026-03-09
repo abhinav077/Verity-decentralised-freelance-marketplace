@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { JsonRpcSigner } from "ethers";
 import { getUserProfile } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
+import { Label } from "@/components/reactbits/Label";
 
 interface Props {
   jobId: bigint;
@@ -68,7 +69,7 @@ export default function ReviewModal({ jobId, revieweeAddress, revieweeLabel, job
         </div>
 
         <div>
-          <label className="text-sm font-medium" style={{ color: colors.mutedFg }}>Your review</label>
+          <Label className="text-sm font-medium">Your review</Label>
           <textarea rows={3} placeholder={`Share your experience working with this ${revieweeLabel.toLowerCase()}…`}
             value={comment} onChange={(e) => setComment(e.target.value)}
             className="mt-1.5 w-full border rounded-xl px-3 py-2 text-sm outline-none resize-none"

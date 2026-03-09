@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getGovernance, CONTRACT_ADDRESSES, formatEth, formatDate, shortenAddress } from "@/lib/contracts";
+import { Input } from "@/components/reactbits/Input";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -196,8 +197,7 @@ export default function CrowdfundingPage() {
         <form onSubmit={createProject} className="border rounded-xl p-5 mb-6 space-y-4" style={{ borderColor: colors.cardBorder, background: colors.cardBg }}>
           <h3 className="font-semibold" style={{ color: colors.pageFg }}>Create a Crowdfund Project</h3>
           <p className="text-xs" style={{ color: colors.muted }}>You need ≥{minVrtToCrowdfund} VRT to create a project.</p>
-          <input placeholder="Project title" required
-            className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+          <Input placeholder="Project title" required
             value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           <textarea rows={3} placeholder="Describe the project…" required
             className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
@@ -207,16 +207,13 @@ export default function CrowdfundingPage() {
               value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
               {["Product", "Tool", "Research", "Community", "Education", "Other"].map(c => <option key={c}>{c}</option>)}
             </select>
-            <input placeholder="Proof/docs link (optional)"
-              className="border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+            <Input placeholder="Proof/docs link (optional)"
               value={form.proofLink} onChange={e => setForm(f => ({ ...f, proofLink: e.target.value }))} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <input type="number" step="0.01" min="0.01" placeholder="Goal (ETH)" required
-              className="border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+            <Input type="number" step="0.01" min="0.01" placeholder="Goal (ETH)" required
               value={form.goalAmount} onChange={e => setForm(f => ({ ...f, goalAmount: e.target.value }))} />
-            <input type="number" min="1" max="365" placeholder="Duration (days)"
-              className="border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+            <Input type="number" min="1" max="365" placeholder="Duration (days)"
               value={form.durationDays} onChange={e => setForm(f => ({ ...f, durationDays: e.target.value }))} />
           </div>
           <button type="submit" disabled={!!txLoading}
@@ -308,8 +305,9 @@ export default function CrowdfundingPage() {
                 <div className="flex flex-wrap gap-2">
                   {isActive && !isCreator && (
                     <div className="flex gap-2 flex-1">
-                      <input type="number" step="0.01" min="0.01" placeholder="ETH"
-                        className="border rounded-lg px-2 py-1.5 text-sm outline-none w-24" style={inputStyle}
+                      <Input type="number" step="0.01" min="0.01" placeholder="ETH"
+                        className="h-9 px-2 py-1.5 text-sm"
+                        containerClassName="w-24"
                         value={expandedId === p.id ? contributeAmt : ""}
                         onChange={e => { setExpandedId(p.id); setContributeAmt(e.target.value); }} />
                       <button onClick={() => contribute(p.id)}
@@ -389,8 +387,8 @@ export default function CrowdfundingPage() {
                         <textarea rows={2} placeholder="Write an update…"
                           className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                           value={updateDesc} onChange={e => setUpdateDesc(e.target.value)} />
-                        <input placeholder="Proof link (optional)"
-                          className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle}
+                        <Input placeholder="Proof link (optional)"
+                          className="h-9 px-2 py-1.5 text-sm"
                           value={updateLink} onChange={e => setUpdateLink(e.target.value)} />
                         <button onClick={() => postUpdate(p.id)}
                           disabled={!!txLoading || !updateDesc}

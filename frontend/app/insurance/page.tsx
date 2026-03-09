@@ -5,6 +5,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { getInsurancePool, CONTRACT_ADDRESSES, formatEth, shortenAddress, formatDate } from "@/lib/contracts";
 import { ethers } from "ethers";
 import Link from "next/link";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -41,8 +43,6 @@ export default function InsurancePage() {
   const [fundAmount, setFundAmount] = useState("");
   const [funding, setFunding] = useState(false);
   const [txLoading, setTxLoading] = useState<Record<string, boolean>>({});
-
-  const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
 
   const loadData = useCallback(async () => {
     if (!CONTRACT_ADDRESSES.InsurancePool) { setError("InsurancePool not deployed."); setLoading(false); return; }
@@ -209,11 +209,11 @@ export default function InsurancePage() {
               Policies last {policyDuration} days. If no claim is filed, you can withdraw your premium after expiry.
             </p>
             <div>
-              <label className="text-xs font-medium" style={{ color: colors.mutedFg }}>Premium Amount (ETH)</label>
-              <input value={premiumAmount} onChange={e => setPremiumAmount(e.target.value)}
+              <Label className="text-xs font-medium">Premium Amount (ETH)</Label>
+              <Input value={premiumAmount} onChange={e => setPremiumAmount(e.target.value)}
                 type="number" step="0.01" min={minPremium.toString()}
                 placeholder={`Min ${minPremium} ETH`}
-                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
+                className="mt-1" />
               {premiumAmount && parseFloat(premiumAmount) >= minPremium && (
                 <p className="text-xs mt-1" style={{ color: colors.successText }}>
                   Coverage: {(parseFloat(premiumAmount) * coverageMult).toFixed(4)} ETH
@@ -235,9 +235,9 @@ export default function InsurancePage() {
               Anyone can contribute ETH to strengthen the insurance pool.
             </p>
             <div className="flex gap-2">
-              <input value={fundAmount} onChange={e => setFundAmount(e.target.value)}
+              <Input value={fundAmount} onChange={e => setFundAmount(e.target.value)}
                 type="number" step="0.01" min="0.01" placeholder="ETH amount"
-                className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
+                containerClassName="flex-1" />
               <button onClick={handleFundPool}
                 disabled={funding || !fundAmount || parseFloat(fundAmount) <= 0 || !signer}
                 className="px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-60 btn-hover"

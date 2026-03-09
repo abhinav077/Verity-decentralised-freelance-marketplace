@@ -4,9 +4,13 @@ import { useParams } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getUserProfile, getVRTToken, getJobMarket, shortenAddress, CONTRACT_ADDRESSES, formatDate } from "@/lib/contracts";
+import { resolveIpfsUrl } from "@/lib/ipfs";
 import { ethers } from "ethers";
 import Link from "next/link";
 import LinkifyText from "@/components/LinkifyText";
+import IpfsFileUpload from "@/components/IpfsFileUpload";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -89,8 +93,6 @@ export default function ProfilePage() {
   const targetAddress = paramAddress as string;
   const isOwnProfile = currentAddress?.toLowerCase() === targetAddress?.toLowerCase();
   const isValidAddress = ethers.isAddress(targetAddress);
-
-  const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
 
   const loadProfile = useCallback(async () => {
     if (!targetAddress || !CONTRACT_ADDRESSES.UserProfile) { setLoading(false); return; }
@@ -257,20 +259,21 @@ export default function ProfilePage() {
                 <h3 className="font-semibold" style={{ color: colors.pageFg }}>Edit Profile</h3>
                 {saveError && <p className="text-sm" style={{ color: colors.dangerText }}>{saveError}</p>}
                 <div>
-                  <label className="text-xs font-medium" style={{ color: colors.mutedFg }}>Name</label>
-                  <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="e.g. Alice Dev"
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
+                  <Label className="text-xs font-medium">Name</Label>
+                  <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="e.g. Alice Dev"
+                    className="mt-1" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium" style={{ color: colors.mutedFg }}>Bio</label>
+                  <Label className="text-xs font-medium">Bio</Label>
                   <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={2}
                     placeholder="Short introduction…"
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle} />
+                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                    style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium" style={{ color: colors.mutedFg }}>Skills (comma-separated)</label>
-                  <input value={editSkills} onChange={e => setEditSkills(e.target.value)} placeholder="e.g. Solidity, React"
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
+                  <Label className="text-xs font-medium">Skills (comma-separated)</Label>
+                  <Input value={editSkills} onChange={e => setEditSkills(e.target.value)} placeholder="e.g. Solidity, React"
+                    className="mt-1" />
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button onClick={() => setEditing(false)}
@@ -395,7 +398,8 @@ export default function ProfilePage() {
                 </div>
                 {profile?.ipfsAvatar ? (
                   <div className="flex items-center gap-3">
-                    <img src={profile.ipfsAvatar.startsWith("ipfs://") ? profile.ipfsAvatar.replace("ipfs://", "https://ipfs.io/ipfs/") : profile.ipfsAvatar}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={resolveIpfsUrl(profile.ipfsAvatar)}
                       alt="Avatar" className="w-16 h-16 rounded-full object-cover border" style={{ borderColor: colors.cardBorder }}
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     <span className="text-xs break-all" style={{ color: colors.muted }}>{profile.ipfsAvatar}</span>
@@ -404,15 +408,24 @@ export default function ProfilePage() {
                   <p className="text-sm" style={{ color: colors.muted }}>No custom avatar set.</p>
                 )}
                 {showAvatarForm && isOwnProfile && (
-                  <div className="mt-3 flex gap-2">
-                    <input value={avatarIpfs} onChange={e => setAvatarIpfs(e.target.value)}
-                      placeholder="IPFS hash or URL for avatar"
-                      className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-                    <button onClick={handleSetAvatar} disabled={settingAvatar || !avatarIpfs.trim()}
-                      className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60"
-                      style={{ background: colors.primary, color: colors.primaryText }}>
-                      {settingAvatar ? "Saving…" : "Save"}
-                    </button>
+                  <div className="mt-3 space-y-2">
+                    <IpfsFileUpload
+                      accept="image/*"
+                      label="Upload Avatar Image"
+                      existingCid={avatarIpfs || undefined}
+                      onUpload={(cid) => setAvatarIpfs(cid)}
+                    />
+                    <p className="text-xs" style={{ color: colors.muted }}>Or paste an IPFS hash / URL directly:</p>
+                    <div className="flex gap-2">
+                      <Input value={avatarIpfs} onChange={e => setAvatarIpfs(e.target.value)}
+                        placeholder="IPFS hash or URL for avatar"
+                        containerClassName="flex-1" />
+                      <button onClick={handleSetAvatar} disabled={settingAvatar || !avatarIpfs.trim()}
+                        className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60"
+                        style={{ background: colors.primary, color: colors.primaryText }}>
+                        {settingAvatar ? "Saving…" : "Save"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -450,12 +463,12 @@ export default function ProfilePage() {
               )}
               {!isOwnProfile && signer && profileExists && (
                 <div className="flex gap-2">
-                  <input value={endorseSkill} onChange={e => setEndorseSkill(e.target.value)}
+                  <Input value={endorseSkill} onChange={e => setEndorseSkill(e.target.value)}
                     placeholder="Skill to endorse (e.g. Solidity)"
-                    className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-                  <input value={endorseJobId} onChange={e => setEndorseJobId(e.target.value)}
+                    containerClassName="flex-1" />
+                  <Input value={endorseJobId} onChange={e => setEndorseJobId(e.target.value)}
                     placeholder="Job ID (opt)"
-                    className="w-24 border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
+                    containerClassName="w-24" />
                   <button onClick={handleEndorseSkill} disabled={endorsing || !endorseSkill.trim()}
                     className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60"
                     style={{ background: colors.primary, color: colors.primaryText }}>
@@ -480,15 +493,21 @@ export default function ProfilePage() {
               </div>
               {showPortfolioForm && isOwnProfile && (
                 <div className="border rounded-xl p-4 mb-3 space-y-2" style={{ borderColor: colors.primary + "33", background: colors.primaryLight }}>
-                  <input value={portfolioTitle} onChange={e => setPortfolioTitle(e.target.value)}
+                  <Input value={portfolioTitle} onChange={e => setPortfolioTitle(e.target.value)}
                     placeholder="Portfolio item title"
-                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-                  <input value={portfolioIpfs} onChange={e => setPortfolioIpfs(e.target.value)}
+                    className="w-full" />
+                  <IpfsFileUpload
+                    label="Upload Portfolio File"
+                    existingCid={portfolioIpfs || undefined}
+                    onUpload={(cid) => setPortfolioIpfs(cid)}
+                  />
+                  <p className="text-xs" style={{ color: colors.muted }}>Or paste an IPFS hash / URL:</p>
+                  <Input value={portfolioIpfs} onChange={e => setPortfolioIpfs(e.target.value)}
                     placeholder="IPFS hash or URL"
-                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
-                  <input value={portfolioJobId} onChange={e => setPortfolioJobId(e.target.value)}
+                    className="w-full" />
+                  <Input value={portfolioJobId} onChange={e => setPortfolioJobId(e.target.value)}
                     placeholder="Related Job ID (optional)"
-                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle} />
+                    className="w-full" />
                   <button onClick={handleAddPortfolio} disabled={addingPortfolio || !portfolioTitle.trim() || !portfolioIpfs.trim()}
                     className="w-full rounded-lg py-2 text-sm font-medium disabled:opacity-60"
                     style={{ background: colors.primary, color: colors.primaryText }}>
@@ -504,7 +523,7 @@ export default function ProfilePage() {
                     <div key={i} className="border rounded-xl p-3 flex items-center justify-between" style={{ borderColor: colors.cardBorder }}>
                       <div>
                         <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{item.title}</p>
-                        <a href={item.ipfsHash.startsWith("ipfs://") ? item.ipfsHash.replace("ipfs://", "https://ipfs.io/ipfs/") : item.ipfsHash}
+                        <a href={resolveIpfsUrl(item.ipfsHash)}
                           target="_blank" rel="noopener noreferrer"
                           className="text-xs hover:underline" style={{ color: colors.primaryFg }}>
                           View on IPFS ↗

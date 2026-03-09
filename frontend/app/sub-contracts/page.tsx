@@ -9,6 +9,8 @@ import {
 import { ethers } from "ethers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -345,31 +347,28 @@ function SubContractsInner() {
             </p>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Parent Job ID</label>
-                <input type="number" min="1" value={parentJob} onChange={e => setParentJob(e.target.value)} required
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                  style={inputStyle} />
+                <Label className="mb-1 block text-xs font-medium">Parent Job ID</Label>
+                <Input type="number" min="1" value={parentJob} onChange={e => setParentJob(e.target.value)} required
+                  className="font-mono" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>
+                <Label className="mb-1 block text-xs font-medium">
                   Sub-Contractor Address <span className="font-normal text-xs">(optional — leave empty for open listing)</span>
-                </label>
-                <input value={subAddr} onChange={e => setSubAddr(e.target.value)} placeholder="0x… or leave empty"
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                  style={inputStyle} />
+                </Label>
+                <Input value={subAddr} onChange={e => setSubAddr(e.target.value)} placeholder="0x… or leave empty"
+                  className="font-mono" />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Work Description</label>
+                <Label className="mb-1 block text-xs font-medium">Work Description</Label>
                 <textarea value={desc} onChange={e => setDesc(e.target.value)} required rows={3}
                   placeholder="Describe the work you want completed…"
                   className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none"
                   style={inputStyle} />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Payment (ETH)</label>
-                <input type="number" step="0.001" min="0.001" value={payment} onChange={e => setPayment(e.target.value)} required
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                  style={inputStyle} />
+                <Label className="mb-1 block text-xs font-medium">Payment (ETH)</Label>
+                <Input type="number" step="0.001" min="0.001" value={payment} onChange={e => setPayment(e.target.value)} required
+                  className="font-mono" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowCreate(false)}

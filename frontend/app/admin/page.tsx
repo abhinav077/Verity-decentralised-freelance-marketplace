@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -10,6 +10,27 @@ import {
   DISPUTE_STATUS, disputeStatusStyle,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
+import { Input } from "@/components/reactbits/Input";
+import {
+  Ban,
+  Briefcase,
+  Building2,
+  CircleCheck,
+  CircleX,
+  Coins,
+  Gavel,
+  Landmark,
+  LockKeyhole,
+  Shield,
+  Siren,
+  Target,
+  Vote,
+  Wallet,
+  Hourglass,
+  ClipboardList,
+  HandCoins,
+  RefreshCw,
+} from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -58,7 +79,7 @@ type ParamDef = {
 
 type SectionDef = {
   title: string;
-  icon: string;
+  icon: ReactNode;
   contractKey: string;
   params: ParamDef[];
 };
@@ -68,7 +89,7 @@ type SectionDef = {
 const SECTIONS: SectionDef[] = [
   {
     title: "Jobs & Payments",
-    icon: "💼",
+    icon: <Briefcase className="w-4 h-4" />,
     contractKey: "jobMarket",
     params: [
       { key: "jm_autoRelease", label: "Auto-Release Period", display: "duration", inputUnit: "days", getter: "AUTO_RELEASE_PERIOD", setter: "setAutoReleasePeriod", inputMultiplier: 86400 },
@@ -79,7 +100,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: "Platform Fees",
-    icon: "💰",
+    icon: <Wallet className="w-4 h-4" />,
     contractKey: "escrow",
     params: [
       { key: "es_platformFee", label: "Platform Fee", display: "bps", inputUnit: "BPS (100 = 1%)", getter: "platformFeeBps", setter: "setPlatformFee" },
@@ -88,7 +109,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: "Disputes",
-    icon: "⚖️",
+    icon: <Gavel className="w-4 h-4" />,
     contractKey: "disputes",
     params: [
       { key: "dr_response", label: "Response Period", display: "duration", inputUnit: "days", getter: "RESPONSE_PERIOD", setter: "setResponsePeriod", inputMultiplier: 86400 },
@@ -100,7 +121,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: "Governance",
-    icon: "🏛️",
+    icon: <Landmark className="w-4 h-4" />,
     contractKey: "governance",
     params: [
       { key: "gv_minPropose", label: "Min VRT to Propose", display: "vrt", inputUnit: "VRT", getter: "MIN_VRT_TO_PROPOSE", setter: "setMinVrtToPropose", parseEther: true },
@@ -111,7 +132,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: "Insurance Pool",
-    icon: "🛡️",
+    icon: <Shield className="w-4 h-4" />,
     contractKey: "insurance",
     params: [
       { key: "in_coverMult", label: "Coverage Multiplier", display: "raw", inputUnit: "×", getter: "COVERAGE_MULTIPLIER", setter: "setCoverageMultiplier" },
@@ -121,7 +142,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: "Reputation Loans",
-    icon: "🏦",
+    icon: <Building2 className="w-4 h-4" />,
     contractKey: "loans",
     params: [
       { key: "ln_maxAmount", label: "Max Loan Amount", display: "vrt", inputUnit: "VRT", getter: "MAX_LOAN_AMOUNT", setter: "setMaxLoanAmount", parseEther: true },
@@ -131,7 +152,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     title: "Bounties",
-    icon: "🎯",
+    icon: <Target className="w-4 h-4" />,
     contractKey: "bounty",
     params: [
       { key: "bb_vrtReward", label: "Bounty VRT Reward", display: "vrt", inputUnit: "VRT", getter: "BOUNTY_VRT_REWARD", setter: "setBountyVrtReward", parseEther: true },
@@ -505,17 +526,6 @@ export default function AdminPage() {
     padding: 24,
   };
 
-  const inputStyle: React.CSSProperties = {
-    background: colors.inputBg,
-    border: `1px solid ${colors.inputBorder}`,
-    borderRadius: 8,
-    padding: "8px 12px",
-    color: colors.pageFg,
-    outline: "none",
-    width: "100%",
-    fontSize: 14,
-  };
-
   const btnPrimary: React.CSSProperties = {
     background: colors.primary,
     color: colors.primaryText,
@@ -569,7 +579,7 @@ export default function AdminPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
         <div style={{ ...cardStyle, maxWidth: 480, margin: "0 auto" }} className="card-hover">
-          <p style={{ fontSize: 48, marginBottom: 16 }}>🔐</p>
+          <div className="flex justify-center mb-4"><LockKeyhole className="w-12 h-12" style={{ color: colors.primaryFg }} /></div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.pageFg, marginBottom: 8 }}>Admin Panel</h2>
           <p style={{ color: colors.mutedFg }}>Connect your wallet to access the admin panel.</p>
         </div>
@@ -589,7 +599,7 @@ export default function AdminPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
         <div style={{ ...cardStyle, maxWidth: 480, margin: "0 auto" }} className="card-hover">
-          <p style={{ fontSize: 48, marginBottom: 16 }}>🚫</p>
+          <div className="flex justify-center mb-4"><Ban className="w-12 h-12" style={{ color: colors.dangerText }} /></div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: colors.dangerText, marginBottom: 8 }}>Access Denied</h2>
           <p style={{ color: colors.mutedFg }}>
             Connected wallet <strong style={{ color: colors.pageFg }}>{shortenAddress(address)}</strong> does not have admin privileges.
@@ -609,12 +619,12 @@ export default function AdminPage() {
           <div style={currentValStyle}>Current: <strong style={{ color: colors.pageFg }}>{displayVal(p, raw)}</strong>{raw !== undefined ? ` (raw: ${raw.toString()})` : ""}</div>
         </div>
         <div style={{ flex: "1 1 160px", minWidth: 140 }}>
-          <input
-            style={inputStyle}
+          <Input
             placeholder={p.inputUnit}
             value={inputs[p.key] || ""}
             onChange={e => setInputs(prev => ({ ...prev, [p.key]: e.target.value }))}
             disabled={busy}
+            className="h-9"
           />
         </div>
         <button
@@ -635,7 +645,9 @@ export default function AdminPage() {
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 16px" }}>
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>🔐 Admin Panel</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+            <LockKeyhole className="w-6 h-6" /> Admin Panel
+          </h1>
           <p style={{ color: colors.mutedFg, fontSize: 14 }}>
             Platform configuration &amp; management — connected as <strong style={{ color: colors.primaryFg }}>{shortenAddress(address)}</strong>
           </p>
@@ -645,7 +657,7 @@ export default function AdminPage() {
             onClick={loadAll}
             disabled={busy}
           >
-            ↻ Refresh All Values
+            <span className="inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Refresh All Values</span>
           </button>
         </div>
 
@@ -663,7 +675,7 @@ export default function AdminPage() {
 
           {/* ── VRT Token & Tiers ── */}
           <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><span>🪙</span> VRT Token &amp; Tiers</div>
+            <div style={sectionTitle}><Coins className="w-4 h-4" /> VRT Token &amp; Tiers</div>
 
             {/* Thresholds */}
             <div style={{ marginBottom: 20 }}>
@@ -678,12 +690,12 @@ export default function AdminPage() {
                     <div style={{ fontSize: 12, color: colors.mutedFg, marginBottom: 4 }}>
                       {t.label}: <strong style={{ color: colors.pageFg }}>{formatVrt(t.val)} VRT</strong>
                     </div>
-                    <input
-                      style={inputStyle}
+                    <Input
                       placeholder={`New ${t.label} (VRT)`}
                       value={t.state}
                       onChange={e => t.set(e.target.value)}
                       disabled={busy}
+                      className="h-9"
                     />
                   </div>
                 ))}
@@ -708,12 +720,13 @@ export default function AdminPage() {
                       {name}: <strong style={{ color: colors.pageFg }}>{fmtBps(tierDiscounts[i])}</strong>
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <input
-                        style={{ ...inputStyle, flex: 1 }}
+                      <Input
+                        containerClassName="flex-1"
                         placeholder="BPS"
                         value={tierDiscountInputs[i]}
                         onChange={e => setTierDiscountInputs(prev => prev.map((v, j) => j === i ? e.target.value : v))}
                         disabled={busy}
+                        className="h-9"
                       />
                       <button
                         className="btn-hover"
@@ -733,17 +746,17 @@ export default function AdminPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
                 <div style={labelStyle}>Mint VRT</div>
-                <input style={{ ...inputStyle, marginBottom: 6 }} placeholder="Address" value={mintTo} onChange={e => setMintTo(e.target.value)} disabled={busy} />
+                <Input className="h-9 mb-1.5" placeholder="Address" value={mintTo} onChange={e => setMintTo(e.target.value)} disabled={busy} />
                 <div style={{ display: "flex", gap: 6 }}>
-                  <input style={{ ...inputStyle, flex: 1 }} placeholder="Amount (VRT)" value={mintAmt} onChange={e => setMintAmt(e.target.value)} disabled={busy} />
+                  <Input containerClassName="flex-1" className="h-9" placeholder="Amount (VRT)" value={mintAmt} onChange={e => setMintAmt(e.target.value)} disabled={busy} />
                   <button className="btn-hover" style={btnPrimary} disabled={busy || !mintTo.trim() || !mintAmt.trim()} onClick={handleMint}>Mint</button>
                 </div>
               </div>
               <div>
                 <div style={labelStyle}>Burn VRT</div>
-                <input style={{ ...inputStyle, marginBottom: 6 }} placeholder="Address" value={burnFrom} onChange={e => setBurnFrom(e.target.value)} disabled={busy} />
+                <Input className="h-9 mb-1.5" placeholder="Address" value={burnFrom} onChange={e => setBurnFrom(e.target.value)} disabled={busy} />
                 <div style={{ display: "flex", gap: 6 }}>
-                  <input style={{ ...inputStyle, flex: 1 }} placeholder="Amount (VRT)" value={burnAmt} onChange={e => setBurnAmt(e.target.value)} disabled={busy} />
+                  <Input containerClassName="flex-1" className="h-9" placeholder="Amount (VRT)" value={burnAmt} onChange={e => setBurnAmt(e.target.value)} disabled={busy} />
                   <button className="btn-hover" style={btnPrimary} disabled={busy || !burnFrom.trim() || !burnAmt.trim()} onClick={handleBurn}>Burn</button>
                 </div>
               </div>
@@ -752,7 +765,7 @@ export default function AdminPage() {
 
           {/* ── Escalated Disputes ── */}
           <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><span>🚨</span> Escalated Disputes</div>
+            <div style={sectionTitle}><Siren className="w-4 h-4" /> Escalated Disputes</div>
             {escalated.length === 0 ? (
               <p style={{ color: colors.mutedFg, fontSize: 14 }}>No escalated disputes.</p>
             ) : (
@@ -774,12 +787,13 @@ export default function AdminPage() {
                       </div>
                       <div style={{ fontSize: 13, color: colors.mutedFg, marginTop: 6 }}>{d.reason}</div>
                       <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
-                        <input
-                          style={{ ...inputStyle, maxWidth: 200 }}
+                        <Input
+                          containerClassName="max-w-[200px]"
                           placeholder="Freelancer % (0-100)"
                           value={resolveInputs[did] || ""}
                           onChange={e => setResolveInputs(prev => ({ ...prev, [did]: e.target.value }))}
                           disabled={busy}
+                          className="h-9"
                         />
                         <button
                           className="btn-hover"
@@ -799,7 +813,7 @@ export default function AdminPage() {
 
           {/* ── Treasury & Fees ── */}
           <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><span>🏦</span> Treasury &amp; Fees</div>
+            <div style={sectionTitle}><Building2 className="w-4 h-4" /> Treasury &amp; Fees</div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               <div style={{ background: colors.surfaceBg, borderRadius: 12, padding: 16, border: `1px solid ${colors.divider}` }}>
@@ -818,15 +832,15 @@ export default function AdminPage() {
             {/* Treasury withdraw */}
             <div style={labelStyle}>Withdraw from Treasury</div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <input style={{ ...inputStyle, flex: "1 1 200px" }} placeholder="Recipient address" value={treasuryTo} onChange={e => setTreasuryTo(e.target.value)} disabled={busy} />
-              <input style={{ ...inputStyle, flex: "0 0 120px", maxWidth: 140 }} placeholder="Amount (ETH)" value={treasuryAmt} onChange={e => setTreasuryAmt(e.target.value)} disabled={busy} />
+              <Input containerClassName="flex-[1_1_200px]" placeholder="Recipient address" value={treasuryTo} onChange={e => setTreasuryTo(e.target.value)} disabled={busy} className="h-9" />
+              <Input containerClassName="max-w-[140px] flex-[0_0_120px]" placeholder="Amount (ETH)" value={treasuryAmt} onChange={e => setTreasuryAmt(e.target.value)} disabled={busy} className="h-9" />
               <button className="btn-hover" style={btnPrimary} disabled={busy || !treasuryTo.trim() || !treasuryAmt.trim()} onClick={withdrawTreasury}>Send</button>
             </div>
           </div>
 
           {/* ── Execute Proposals ── */}
           <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><span>📜</span> Execute Passed Proposals</div>
+            <div style={sectionTitle}><Vote className="w-4 h-4" /> Execute Passed Proposals</div>
             {proposals.length === 0 ? (
               <p style={{ color: colors.mutedFg, fontSize: 14 }}>No proposals awaiting execution.</p>
             ) : (
@@ -846,7 +860,7 @@ export default function AdminPage() {
 
           {/* ── Loans: Withdraw forfeited collateral ── */}
           <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><span>💸</span> Forfeited Loan Collateral</div>
+            <div style={sectionTitle}><HandCoins className="w-4 h-4" /> Forfeited Loan Collateral</div>
             <p style={{ color: colors.mutedFg, fontSize: 14, marginBottom: 12 }}>
               Withdraw any forfeited collateral from defaulted loans to the admin wallet.
             </p>
@@ -857,7 +871,7 @@ export default function AdminPage() {
 
           {/* ── Transaction Log ── */}
           <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><span>📋</span> Transaction Log</div>
+            <div style={sectionTitle}><ClipboardList className="w-4 h-4" /> Transaction Log</div>
             {txLog.length === 0 ? (
               <p style={{ color: colors.mutedFg, fontSize: 14 }}>No transactions yet this session.</p>
             ) : (
@@ -865,7 +879,14 @@ export default function AdminPage() {
                 {txLog.map(l => (
                   <div key={l.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, padding: "6px 10px", borderRadius: 8, background: l.status === "success" ? colors.successBg : l.status === "error" ? colors.dangerBg : colors.surfaceBg }}>
                     <span style={{ color: l.status === "success" ? colors.successText : l.status === "error" ? colors.dangerText : colors.pageFg }}>
-                      {l.status === "pending" ? "⏳" : l.status === "success" ? "✅" : "❌"} {l.label}
+                      <span className="inline-flex items-center gap-1.5">
+                        {l.status === "pending"
+                          ? <Hourglass className="w-3.5 h-3.5" />
+                          : l.status === "success"
+                            ? <CircleCheck className="w-3.5 h-3.5" />
+                            : <CircleX className="w-3.5 h-3.5" />}
+                        {l.label}
+                      </span>
                     </span>
                     <span style={{ color: colors.mutedFg, fontSize: 11 }}>
                       {l.hash ? shortenAddress(l.hash) : l.error ? l.error.slice(0, 40) : "waiting…"}

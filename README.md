@@ -66,6 +66,8 @@ The platform is designed to be self-sustaining: a 1–2% fee on every transactio
 | Styling | Tailwind CSS v4 |
 | Animations | Framer Motion, GSAP, Three.js |
 | Wallet | ethers.js v6, MetaMask (via custom WalletContext) |
+| IPFS Storage | Pinata (server-side API proxy) |
+| Supported Networks | Polygon Amoy (recommended), Base Sepolia, Ethereum Sepolia, Localhost |
 
 ---
 
@@ -80,10 +82,11 @@ DFM/
 │   └── typechain-types/# Auto-generated TypeScript contract types
 └── frontend/           # Next.js application
     ├── app/            # App Router pages (jobs, profile, governance, …)
-    ├── components/     # Reusable UI components
+    │   └── api/        # Server-side API routes (IPFS upload proxy)
+    ├── components/     # Reusable UI components (IpfsFileUpload, etc.)
     ├── context/        # React contexts (Wallet, Theme, Notifications)
-    ├── hooks/          # Custom React hooks
-    └── lib/            # Contract ABIs and address config
+    ├── hooks/          # Custom React hooks (useIpfsUpload, etc.)
+    └── lib/            # Contract ABIs, address config, IPFS utilities
 ```
 
 ---
@@ -112,6 +115,7 @@ DFM/
 - Node.js >= 18
 - npm or yarn
 - MetaMask (or any EIP-1193 wallet)
+- A Pinata account for IPFS uploads (free tier works): https://app.pinata.cloud
 
 ### 1. Clone the repository
 
@@ -121,8 +125,6 @@ cd DFM
 ```
 
 ### 2. Install dependencies
-
-In two separate terminals, install dependencies for each package:
 
 ```bash
 # Terminal 1 — contracts
@@ -134,32 +136,92 @@ cd frontend
 npm install
 ```
 
-### 3. Start the local Hardhat node
+### 3. Configure environment variables
 
-In a terminal inside the `contracts` folder:
-
+**Contracts** (`contracts/.env`):
 ```bash
-cd contracts
-npx hardhat node
+cp contracts/.env.example contracts/.env
+# Edit contracts/.env and add your PRIVATE_KEY + RPC URL
 ```
 
-Keep this terminal running. It starts a local Ethereum node at `http://127.0.0.1:8545` (Chain ID `31337`).
-
-### 4. Deploy contracts
-
-Open a **new terminal**, also inside `contracts`:
-
+**Frontend** (`frontend/.env.local`):
 ```bash
-cd contracts
-npx hardhat run scripts/deploy.ts --network localhost
+cp frontend/.env.example frontend/.env.local
+# Add your Pinata JWT token (see below)
 ```
 
-The deploy script automatically writes these addresses to `frontend/.env.local`.
-If that write fails, copy the printed addresses into `frontend/.env.local` manually.
+### 4. Get a Pinata JWT (for IPFS uploads)
+
+1. Create a free account at https://app.pinata.cloud
+2. Go to **API Keys** → **New Key**
+3. Enable `pinFileToIPFS` and `pinJSONToIPFS`
+4. Copy the **JWT** token
+5. Add to `frontend/.env.local`:
+   ```
+   PINATA_JWT=your_jwt_here
+   NEXT_PUBLIC_PINATA_GATEWAY=https://gateway.pinata.cloud/ipfs
+   ```
+
+---
+
+### Option A: Local Development (quick start)
+
+```bash
+# Terminal 1 — start local chain (Anvil with state persistence)
+cd contracts
+npm run node
+
+# Terminal 2 — deploy contracts
+cd contracts
+npm run deploy:local
+
+# Terminal 3 — start frontend
+cd frontend
+npm run dev
+```
+
+Configure MetaMask:
+- **RPC URL**: `http://127.0.0.1:8545`
+- **Chain ID**: `31337`
+- Import a Hardhat test private key from the terminal output
+
+> Note: Local chain data is saved to `hardhat-state.json` by Anvil.
+> If you delete this file or start without the script, data resets.
+
+### Option B: Polygon Amoy Testnet (recommended for persistent data)
+
+```bash
+# 1. Get testnet MATIC from https://faucet.polygon.technology/
+# 2. Set up contracts/.env:
+#    PRIVATE_KEY=your_wallet_private_key
+#    POLYGON_AMOY_RPC_URL=https://rpc-amoy.polygon.technology
+
+# 3. Deploy contracts
+cd contracts
+npm run deploy:amoy
+
+# 4. Start frontend (addresses auto-written to .env.local)
+cd frontend
+npm run dev
+```
+
+Configure MetaMask:
+- **Network Name**: `Polygon Amoy`
+- **RPC URL**: `https://rpc-amoy.polygon.technology`
+- **Chain ID**: `80002`
+- **Currency Symbol**: `MATIC`
+
+### Option C: Other Testnets
+
+```bash
+# Base Sepolia
+npm run deploy:baseSepolia
+
+# Ethereum Sepolia
+npm run deploy:sepolia
+```
 
 ### 5. Run the frontend
-
-Open a **new terminal** inside `frontend`:
 
 ```bash
 cd frontend
@@ -168,20 +230,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 6. Configure MetaMask for local testing
-
-1. Open MetaMask and add a custom network:
-   - **Network Name**: `Hardhat Local`
-   - **RPC URL**: `http://127.0.0.1:8545`
-   - **Chain ID**: `31337`
-   - **Currency Symbol**: `ETH`
-2. Import one funded Hardhat account:
-   - In the terminal running `npx hardhat node`, copy any `Private Key` shown under `Accounts`.
-   - In MetaMask, use **Import Account** and paste that private key.
-3. Select the `Hardhat Local` network in MetaMask before connecting on the frontend.
-4. If transactions fail because of nonce/network mismatch, reset MetaMask activity for this network and re-import the account while the Hardhat node is running.
-
-> You must keep `npx hardhat node` running while testing, since account balances and contract state live in that local chain.
+> After deploying to a testnet: restarting the frontend or backend will **not** erase data.
+> All smart contract data persists on the blockchain permanently.
 
 
 ## License

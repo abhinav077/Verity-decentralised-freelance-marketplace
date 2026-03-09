@@ -6,6 +6,8 @@ import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import ReviewModal from "@/components/ReviewModal";
 import TaskBoard from "@/components/TaskBoard";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -392,11 +394,11 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 showBidForm ? (
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
                     <h4 className="font-semibold" style={{ color: colors.pageFg }}>Place a Bid</h4>
-                    <input type="number" step="0.001" placeholder="Your bid in ETH (can be above budget)"
-                      className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+                    <Input type="number" step="0.001" placeholder="Your bid in ETH (can be above budget)"
+                      containerClassName="w-full"
                       value={bidAmount} onChange={e => setBidAmount(e.target.value)} />
-                    <input type="number" min="1" placeholder="Completion days (how many days you need)"
-                      className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+                    <Input type="number" min="1" placeholder="Completion days (how many days you need)"
+                      containerClassName="w-full"
                       value={bidDays} onChange={e => setBidDays(e.target.value)} />
                     <textarea rows={3} placeholder="Your proposal…"
                       className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
@@ -517,16 +519,16 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <p className="text-xs" style={{ color: colors.muted }}>Suggest partial payment to end the job amicably.</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>% Complete</label>
-                      <input type="number" min="0" max="100" value={settlePct}
+                      <Label className="mb-1 block text-xs">% Complete</Label>
+                      <Input type="number" min="0" max="100" value={settlePct}
                         onChange={e => setSettlePct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
-                        className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
+                        className="h-9 px-2 py-1.5 text-sm" />
                     </div>
                     <div>
-                      <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>Freelancer gets %</label>
-                      <input type="number" min="0" max="100" value={settleFreelancerPct}
+                      <Label className="mb-1 block text-xs">Freelancer gets %</Label>
+                      <Input type="number" min="0" max="100" value={settleFreelancerPct}
                         onChange={e => setSettleFreelancerPct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
-                        className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
+                        className="h-9 px-2 py-1.5 text-sm" />
                     </div>
                   </div>
                   {(() => {
@@ -690,16 +692,16 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <p className="text-xs" style={{ color: colors.muted }}>Suggest partial payment to end the job amicably.</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>% Complete</label>
-                      <input type="number" min="0" max="100" value={settlePct}
+                      <Label className="mb-1 block text-xs">% Complete</Label>
+                      <Input type="number" min="0" max="100" value={settlePct}
                         onChange={e => setSettlePct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
-                        className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
+                        className="h-9 px-2 py-1.5 text-sm" />
                     </div>
                     <div>
-                      <label className="text-xs block mb-1" style={{ color: colors.mutedFg }}>Freelancer gets %</label>
-                      <input type="number" min="0" max="100" value={settleFreelancerPct}
+                      <Label className="mb-1 block text-xs">Freelancer gets %</Label>
+                      <Input type="number" min="0" max="100" value={settleFreelancerPct}
                         onChange={e => setSettleFreelancerPct(String(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))))}
-                        className="w-full border rounded-lg px-2 py-1.5 text-sm outline-none" style={inputStyle} />
+                        className="h-9 px-2 py-1.5 text-sm" />
                     </div>
                   </div>
                   {(() => {
@@ -873,8 +875,8 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
                     <h4 className="font-semibold" style={{ color: colors.pageFg }}>💝 Send a Tip</h4>
                     <p className="text-xs" style={{ color: colors.muted }}>Show your appreciation with an extra payment.</p>
-                    <input type="number" step="0.001" min="0.001" placeholder="Tip amount in ETH"
-                      className="w-full border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+                    <Input type="number" step="0.001" min="0.001" placeholder="Tip amount in ETH"
+                      containerClassName="w-full"
                       value={tipAmount} onChange={e => setTipAmount(e.target.value)} />
                     <div className="flex gap-2">
                       <button onClick={() => { setShowTipForm(false); setTipAmount(""); }}

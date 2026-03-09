@@ -8,6 +8,8 @@ import {
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import Link from "next/link";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -267,13 +269,11 @@ export default function GovernancePage() {
             <h2 className="text-xl font-bold mb-4" style={{ color: colors.pageFg }}>New Proposal</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Title</label>
-                <input value={title} onChange={e => setTitle(e.target.value)} required
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                <Label className="mb-1 block text-xs font-medium">Title</Label>
+                <Input value={title} onChange={e => setTitle(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Description</label>
+                <Label className="mb-1 block text-xs font-medium">Description</Label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={4}
                   className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none"
                   style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />

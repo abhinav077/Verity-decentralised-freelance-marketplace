@@ -1,7 +1,7 @@
 "use client";
 import { useWallet } from "@/context/WalletContext";
 import { useNotifications, NotifType } from "@/context/NotificationsContext";
-import { useTheme, THEME_NAMES, THEME_META } from "@/context/ThemeContext";
+import { useTheme, THEME_NAMES, THEME_META, ThemeName } from "@/context/ThemeContext";
 import { shortenAddress, getVRTToken, getEscrow, chatKey, chatReadKey } from "@/lib/contracts";
 import { useEffect, useCallback, useState, useRef } from "react";
 import { ethers } from "ethers";
@@ -9,6 +9,34 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import Image from 'next/image';
 import GlassSurface from './reactbits/GlassSurface';
+import {
+  Bell,
+  Briefcase,
+  Check,
+  CircleUserRound,
+  Gavel,
+  Hammer,
+  Landmark,
+  ListTodo,
+  LockKeyhole,
+  LogOut,
+  MessageCircle,
+  Moon,
+  Palette,
+  Rocket,
+  ScrollText,
+  Search,
+  Shield,
+  Star,
+  Stars,
+  Sun,
+  Sunset,
+  Target,
+  Trees,
+  Waves,
+  Flower2,
+  type LucideIcon,
+} from "lucide-react";
 
 function WalletAvatar({ address, size = 26 }: { address: string; size?: number }) {
   const color = "#" + address.slice(2, 8);
@@ -24,11 +52,22 @@ function WalletAvatar({ address, size = 26 }: { address: string; size?: number }
   );
 }
 
-const NOTIF_ICONS: Record<NotifType, string> = {
-  bid: "🔨",
-  dispute: "⚖️",
-  chat: "💬",
-  review: "⭐",
+const NOTIF_ICONS: Record<NotifType, LucideIcon> = {
+  bid: Hammer,
+  dispute: Gavel,
+  chat: MessageCircle,
+  review: Star,
+};
+
+const THEME_ICONS: Record<ThemeName, LucideIcon> = {
+  light: Sun,
+  dark: Moon,
+  midnight: Stars,
+  ocean: Waves,
+  sunset: Sunset,
+  forest: Trees,
+  rose: Flower2,
+  pastel: Palette,
 };
 
 export default function Navbar() {
@@ -149,6 +188,14 @@ export default function Navbar() {
       ? "0 12px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)"
       : "0 12px 40px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.95)",
   };
+  const iconNeutral = dk ? "#E2E8F0" : "#334155";
+  const iconSubtle = dk ? "#94A3B8" : "#475569";
+  const notifIconColor = (type: NotifType) => {
+    if (type === "bid") return colors.infoText;
+    if (type === "dispute") return colors.warningText;
+    if (type === "review") return colors.successText;
+    return colors.primaryFg;
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 pointer-events-none" style={{ fontFamily: "var(--font-mono-alt), var(--font-geist-mono), monospace" }}>
@@ -191,11 +238,11 @@ export default function Navbar() {
             </button>
             {findWorkOpen && (
               <div className="absolute left-0 top-full mt-2 w-52 py-1.5 z-50" style={dropdown}>
-                {[{ href: "/jobs", label: "Jobs", icon: "🔍" }, { href: "/sub-contracts", label: "Sub-Contracts", icon: "📜" }, { href: "/bounties", label: "Bounties", icon: "🎯" }].map(item => (
+                {[{ href: "/jobs", label: "Jobs", icon: Search }, { href: "/sub-contracts", label: "Sub-Contracts", icon: ScrollText }, { href: "/bounties", label: "Bounties", icon: Target }].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setFindWorkOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>
-                    <span className="w-5 text-center">{item.icon}</span>{item.label}
+                    <item.icon className="w-4 h-4" />{item.label}
                   </Link>
                 ))}
               </div>
@@ -222,11 +269,11 @@ export default function Navbar() {
             </button>
             {otherOpen && (
               <div className="absolute left-0 top-full mt-2 w-52 py-1.5 z-50" style={dropdown}>
-                {[{ href: "/governance", label: "Governance", icon: "🏛️" }, { href: "/crowdfunding", label: "Crowdfunding", icon: "🚀" }, { href: "/insurance", label: "Insurance", icon: "🛡️" }, { href: "/loans", label: "VRT Loans", icon: "🏦" }, ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: "🔐" }] : [])].map(item => (
+                {[{ href: "/governance", label: "Governance", icon: Landmark }, { href: "/crowdfunding", label: "Crowdfunding", icon: Rocket }, { href: "/insurance", label: "Insurance", icon: Shield }, { href: "/loans", label: "VRT Loans", icon: Briefcase }, ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: LockKeyhole }] : [])].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setOtherOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>
-                    <span className="w-5 text-center">{item.icon}</span>{item.label}
+                    <item.icon className="w-4 h-4" />{item.label}
                   </Link>
                 ))}
               </div>
@@ -280,10 +327,13 @@ export default function Navbar() {
               <button
                 onClick={() => { const v = !themeOpen; closeAll(); if (v) setThemeOpen(true); }}
                 className="p-2 rounded-xl transition-colors"
-                style={{ color: themeOpen ? colors.primaryFg : colors.muted, background: themeOpen ? colors.primaryLight : "transparent" }}
+                style={{ color: themeOpen ? colors.primaryFg : iconNeutral, background: themeOpen ? colors.primaryLight : "transparent" }}
                 aria-label="Change theme"
               >
-                <span className="text-base">{THEME_META[theme].emoji}</span>
+                {(() => {
+                  const ThemeIcon = THEME_ICONS[theme];
+                  return <ThemeIcon className="w-4 h-4" />;
+                })()}
               </button>
               {themeOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden py-2 z-50" style={dropdown}>
@@ -300,9 +350,12 @@ export default function Navbar() {
                         fontWeight: theme === t ? 600 : 400,
                       }}
                     >
-                      <span>{THEME_META[t].emoji}</span>
+                      {(() => {
+                        const ThemeIcon = THEME_ICONS[t];
+                        return <ThemeIcon className="w-4 h-4" />;
+                      })()}
                       {THEME_META[t].label}
-                      {theme === t && <span className="ml-auto text-xs">✓</span>}
+                      {theme === t && <Check className="ml-auto w-3.5 h-3.5" />}
                     </button>
                   ))}
                 </div>
@@ -315,13 +368,10 @@ export default function Navbar() {
                 <button
                   onClick={() => { const v = !bellOpen; closeAll(); if (v) setBellOpen(true); }}
                   className="relative p-2 rounded-xl transition-colors"
-                  style={{ color: bellOpen ? colors.primaryFg : colors.muted, background: bellOpen ? colors.primaryLight : "transparent" }}
+                  style={{ color: bellOpen ? colors.primaryFg : iconNeutral, background: bellOpen ? colors.primaryLight : "transparent" }}
                   aria-label="Notifications"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
+                  <Bell className="w-5 h-5" />
                   {totalCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center px-1"
                       style={{ background: colors.dangerText, color: "#fff" }}>
@@ -372,7 +422,10 @@ export default function Navbar() {
                               }}
                               className="flex-1 text-left px-4 py-3 flex items-start gap-3"
                             >
-                              <span className="text-lg shrink-0 mt-0.5">{NOTIF_ICONS[n.type]}</span>
+                              {(() => {
+                                const NotifIcon = NOTIF_ICONS[n.type];
+                                return <NotifIcon className="w-4 h-4 shrink-0 mt-1" style={{ color: notifIconColor(n.type) }} />;
+                              })()}
                               <p className="text-xs leading-relaxed" style={{ color: colors.pageFg }}>{n.message}</p>
                             </button>
                             <button
@@ -420,16 +473,16 @@ export default function Navbar() {
               {profileOpen && (
                 <div className="absolute right-0 top-full mt-2 w-60 py-1.5 z-50" style={dropdown}>
                   {[
-                    { href: `/profile/${address}`, label: "My Profile", icon: "👤" },
-                    { href: "/jobs?tab=mine", label: "My Jobs", icon: "📋" },
-                    { href: "/jobs?tab=working", label: "My Work", icon: "💼" },
-                    { href: "/disputes", label: "My Disputes", icon: "⚖️" },
+                    { href: `/profile/${address}`, label: "My Profile", icon: CircleUserRound },
+                    { href: "/jobs?tab=mine", label: "My Jobs", icon: ListTodo },
+                    { href: "/jobs?tab=working", label: "My Work", icon: Briefcase },
+                    { href: "/disputes", label: "My Disputes", icon: Gavel },
                   ].map(item => (
                     <Link key={item.label} href={item.href} onClick={() => setProfileOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                       style={{ background: pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href.split("?")[0])) ? colors.primaryLight : "transparent",
                                color: pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href.split("?")[0])) ? colors.primaryFg : colors.navText }}>
-                      <span className="w-5 text-center">{item.icon}</span>{item.label}
+                      <item.icon className="w-4 h-4" />{item.label}
                     </Link>
                   ))}
                   {(dfmBalance !== null || ethBalance !== null) && (
@@ -445,7 +498,7 @@ export default function Navbar() {
                   <button onClick={() => { disconnect(); setProfileOpen(false); }}
                     className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ color: colors.dangerText }}>
-                    <span className="w-5 text-center">🚪</span>Disconnect
+                    <LogOut className="w-4 h-4" />Disconnect
                   </button>
                 </div>
               )}
@@ -469,7 +522,7 @@ export default function Navbar() {
             >
             <button onClick={() => { const v = !mobileOpen; closeAll(); if (v) setMobileOpen(true); }}
               className="p-2 rounded-xl transition-colors"
-              style={{ color: mobileOpen ? colors.primaryFg : colors.muted }}
+              style={{ color: mobileOpen ? colors.primaryFg : iconSubtle }}
               aria-label="Menu">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 {mobileOpen
@@ -480,22 +533,22 @@ export default function Navbar() {
             </GlassSurface>
             {mobileOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 py-1.5 z-50" style={dropdown}>
-                {[{ href: "/jobs", label: "Jobs", icon: "🔍" }, { href: "/sub-contracts", label: "Sub-Contracts", icon: "📜" },
-                  { href: "/bounties", label: "Bounties", icon: "🎯" }, { href: "/disputes", label: "Disputes", icon: "⚖️" }].map(item => (
+                {[{ href: "/jobs", label: "Jobs", icon: Search }, { href: "/sub-contracts", label: "Sub-Contracts", icon: ScrollText },
+                  { href: "/bounties", label: "Bounties", icon: Target }, { href: "/disputes", label: "Disputes", icon: Gavel }].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>
-                    <span className="w-5 text-center">{item.icon}</span>{item.label}
+                    <item.icon className="w-4 h-4" />{item.label}
                   </Link>
                 ))}
                 <div className="my-1 mx-2 border-t" style={{ borderColor: colors.divider }} />
-                {[{ href: "/governance", label: "Governance", icon: "🏛️" }, { href: "/crowdfunding", label: "Crowdfunding", icon: "🚀" },
-                  { href: "/insurance", label: "Insurance", icon: "🛡️" }, { href: "/loans", label: "VRT Loans", icon: "🏦" },
-                  ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: "🔐" }] : [])].map(item => (
+                {[{ href: "/governance", label: "Governance", icon: Landmark }, { href: "/crowdfunding", label: "Crowdfunding", icon: Rocket },
+                  { href: "/insurance", label: "Insurance", icon: Shield }, { href: "/loans", label: "VRT Loans", icon: Briefcase },
+                  ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: LockKeyhole }] : [])].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>
-                    <span className="w-5 text-center">{item.icon}</span>{item.label}
+                    <item.icon className="w-4 h-4" />{item.label}
                   </Link>
                 ))}
               </div>

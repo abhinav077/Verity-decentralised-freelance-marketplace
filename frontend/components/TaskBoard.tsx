@@ -1,8 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "@/context/ThemeContext";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Input } from "@/components/reactbits/Input";
 
 interface Task { id: string; title: string; column: "todo" | "progress" | "done"; createdAt: number; }
 
@@ -22,10 +21,17 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
 
   // Load
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
       const raw = localStorage.getItem(storageKey(jobId));
-      if (raw) setTasks(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw) as Task[];
+        timer = setTimeout(() => setTasks(parsed), 0);
+      } else {
+        timer = setTimeout(() => setTasks([]), 0);
+      }
     } catch {}
+    return () => { if (timer) clearTimeout(timer); };
   }, [jobId]);
 
   // Save
@@ -75,11 +81,10 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
         {/* Add task */}
         {!readOnly && (
         <div className="p-4 flex gap-2" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-          <input value={newTask} onChange={e => setNewTask(e.target.value)}
+          <Input value={newTask} onChange={e => setNewTask(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") addTask(); }}
             placeholder="Add a new task…"
-            className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
-            style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+            containerClassName="flex-1" />
           <button onClick={addTask} disabled={!newTask.trim()}
             className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
             style={{ background: colors.primary, color: colors.primaryText }}>Add</button>

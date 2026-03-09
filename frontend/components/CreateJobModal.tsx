@@ -4,6 +4,8 @@ import { ethers } from "ethers";
 import { getJobMarket } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
 import { JsonRpcSigner } from "ethers";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -84,15 +86,14 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
 
         <form onSubmit={submit} className="p-6 space-y-4 overflow-y-auto flex-1">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: colors.mutedFg }}>Title *</label>
-            <input className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
-              style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+            <Label className="mb-1 block">Title *</Label>
+            <Input
               placeholder="e.g. Build a DeFi dashboard"
               value={form.title} onChange={e => set("title", e.target.value)} required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: colors.mutedFg }}>Description *</label>
+            <Label className="mb-1 block">Description *</Label>
             <textarea className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
               style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
               rows={4} placeholder="Describe the work in detail…"
@@ -101,7 +102,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: colors.mutedFg }}>Category</label>
+              <Label className="mb-1 block">Category</Label>
               <select className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
                 style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
                 value={form.category} onChange={e => set("category", e.target.value)}>
@@ -109,27 +110,21 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: colors.mutedFg }}>Budget (ETH) *</label>
-              <input type="number" step="0.001" min="0.001"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
-                style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+              <Label className="mb-1 block">Budget (ETH) *</Label>
+              <Input type="number" step="0.001" min="0.001"
                 placeholder="0.5" value={form.budget} onChange={e => set("budget", e.target.value)} required />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: colors.mutedFg }}>Deadline (days)</label>
-              <input type="number" min="1" max="365"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
-                style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+              <Label className="mb-1 block">Deadline (days)</Label>
+              <Input type="number" min="1" max="365"
                 value={form.daysUntilDeadline} onChange={e => set("daysUntilDeadline", e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: colors.mutedFg }}>Expected Days</label>
-              <input type="number" min="1" max="365" placeholder="e.g. 14"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
-                style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+              <Label className="mb-1 block">Expected Days</Label>
+              <Input type="number" min="1" max="365" placeholder="e.g. 14"
                 value={form.expectedDays} onChange={e => set("expectedDays", e.target.value)} />
             </div>
           </div>
@@ -139,9 +134,9 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
             <input type="checkbox" id="sealed" checked={form.sealedBidding}
               onChange={e => set("sealedBidding", e.target.checked)}
               className="w-4 h-4 rounded" />
-            <label htmlFor="sealed" className="text-sm" style={{ color: colors.pageFg }}>
+            <Label htmlFor="sealed" className="text-sm" style={{ color: colors.pageFg }}>
               🔒 Sealed Bidding — freelancers can&apos;t see each other&apos;s bids
-            </label>
+            </Label>
           </div>
 
           {form.sealedBidding && (
@@ -153,7 +148,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
           {/* Milestones */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium" style={{ color: colors.mutedFg }}>Milestones (optional)</label>
+              <Label className="text-sm font-medium">Milestones (optional)</Label>
               <button type="button" onClick={addMilestone} className="text-xs font-medium px-2 py-1 rounded-lg"
                 style={{ background: colors.primaryLight, color: colors.primaryFg }}>+ Add</button>
             </div>
@@ -161,13 +156,13 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
               <div className="space-y-2">
                 {milestones.map((ms, i) => (
                   <div key={i} className="flex gap-2 items-center">
-                    <input placeholder="Milestone title"
-                      className="flex-1 border rounded-lg px-2 py-1.5 text-sm outline-none"
-                      style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+                    <Input placeholder="Milestone title"
+                      className="h-9 px-2 py-1.5 text-sm"
+                      containerClassName="flex-1"
                       value={ms.title} onChange={e => setMs(i, "title", e.target.value)} />
-                    <input type="number" step="0.001" min="0.001" placeholder="ETH"
-                      className="w-24 border rounded-lg px-2 py-1.5 text-sm outline-none font-mono"
-                      style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+                    <Input type="number" step="0.001" min="0.001" placeholder="ETH"
+                      className="h-9 px-2 py-1.5 text-sm font-mono"
+                      containerClassName="w-24"
                       value={ms.amount} onChange={e => setMs(i, "amount", e.target.value)} />
                     <button type="button" onClick={() => removeMilestone(i)} className="text-lg" style={{ color: colors.dangerText }}>×</button>
                   </div>

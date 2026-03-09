@@ -7,6 +7,8 @@ import {
   formatDate, timeRemaining, CONTRACT_ADDRESSES,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
+import { Input } from "@/components/reactbits/Input";
+import { Label } from "@/components/reactbits/Label";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -152,10 +154,9 @@ export default function LoansPage() {
             </p>
             <form onSubmit={handleTakeLoan} className="flex gap-3 items-end flex-wrap">
               <div className="flex-1 min-w-[140px]">
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Amount (VRT)</label>
-                <input type="number" step="1" min="1" max={maxLoanDisplay} value={loanAmount} onChange={e => setLoanAmount(e.target.value)} required
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }}
+                <Label className="mb-1 block text-xs font-medium">Amount (VRT)</Label>
+                <Input type="number" step="1" min="1" max={maxLoanDisplay} value={loanAmount} onChange={e => setLoanAmount(e.target.value)} required
+                  className="font-mono"
                   placeholder="10" />
               </div>
               {loanAmount && Number(loanAmount) > 0 && (
@@ -208,10 +209,9 @@ export default function LoansPage() {
             {/* Repay */}
             <form onSubmit={handleRepay} className="flex gap-3 items-end">
               <div className="flex-1">
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.mutedFg }}>Repay Amount (VRT)</label>
-                <input type="number" step="0.01" min="0.01" value={repayAmount} onChange={e => setRepayAmount(e.target.value)} required
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none font-mono"
-                  style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
+                <Label className="mb-1 block text-xs font-medium">Repay Amount (VRT)</Label>
+                <Input type="number" step="0.01" min="0.01" value={repayAmount} onChange={e => setRepayAmount(e.target.value)} required
+                  className="font-mono" />
               </div>
               <button type="submit" disabled={busy}
                 className="px-5 py-2 rounded-xl text-sm font-semibold disabled:opacity-50 btn-hover"
