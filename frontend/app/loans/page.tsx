@@ -4,7 +4,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
   getReputationLoans, getVRTToken, getProvider, formatEth, formatVrt,
-  formatDate, timeRemaining, CONTRACT_ADDRESSES,
+  formatDate, timeRemaining, CONTRACT_ADDRESSES, NATIVE_SYMBOL,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import { Input } from "@/components/reactbits/Input";
@@ -52,7 +52,7 @@ export default function LoansPage() {
       const units = Math.ceil(amount / 10);
       return parseFloat(ethers.formatEther(collateralPer10)) * units;
     }
-    // Fallback: 0.005 ETH per 10 VRT
+    // Fallback: 0.005 ${NATIVE_SYMBOL} per 10 VRT
     return (Math.ceil(amount / 10) * 0.005);
   };
 
@@ -112,7 +112,7 @@ export default function LoansPage() {
         {/* Header */}
         <h1 className="text-3xl font-black mb-1" style={{ color: colors.pageFg }}>VRT Reputation Loans</h1>
         <p className="text-sm mb-6" style={{ color: colors.mutedFg }}>
-          Borrow VRT tokens backed by ETH collateral — build reputation faster
+          Borrow VRT tokens backed by {NATIVE_SYMBOL} collateral — build reputation faster
         </p>
 
         {/* Stats */}
@@ -150,7 +150,7 @@ export default function LoansPage() {
           <div className="rounded-2xl border p-5 mb-8" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <h2 className="text-lg font-bold mb-3" style={{ color: colors.pageFg }}>Take a Loan</h2>
             <p className="text-sm mb-4" style={{ color: colors.mutedFg }}>
-              Borrow up to {maxLoanDisplay} VRT for {durationDays} days. Collateral: {collateralPer10 > 0n ? parseFloat(ethers.formatEther(collateralPer10)).toFixed(4) : "0.005"} ETH per 10 VRT. Repay in full to get collateral back.
+              Borrow up to {maxLoanDisplay} VRT for {durationDays} days. Collateral: {collateralPer10 > 0n ? parseFloat(ethers.formatEther(collateralPer10)).toFixed(4) : "0.005"} {NATIVE_SYMBOL} per 10 VRT. Repay in full to get collateral back.
             </p>
             <form onSubmit={handleTakeLoan} className="flex gap-3 items-end flex-wrap">
               <div className="flex-1 min-w-[140px]">
@@ -163,7 +163,7 @@ export default function LoansPage() {
                 <div className="text-center px-3">
                   <p className="text-xs" style={{ color: colors.muted }}>Collateral Required</p>
                   <p className="font-mono font-bold text-sm" style={{ color: colors.warningText }}>
-                    {collateralFor(Number(loanAmount)).toFixed(4)} ETH
+                    {collateralFor(Number(loanAmount)).toFixed(4)} {NATIVE_SYMBOL}
                   </p>
                 </div>
               )}
@@ -196,7 +196,7 @@ export default function LoansPage() {
               <div>
                 <p className="text-xs" style={{ color: colors.muted }}>Collateral</p>
                 <p className="font-mono font-bold" style={{ color: colors.warningText }}>
-                  {formatEth(activeLoan.collateral)} ETH
+                  {formatEth(activeLoan.collateral)} {NATIVE_SYMBOL}
                 </p>
               </div>
               <div>
@@ -257,7 +257,7 @@ export default function LoansPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs" style={{ color: colors.muted }}>Collateral</p>
-                  <p className="font-mono text-sm font-bold" style={{ color: colors.warningText }}>{formatEth(l.collateral)} ETH</p>
+                  <p className="font-mono text-sm font-bold" style={{ color: colors.warningText }}>{formatEth(l.collateral)} {NATIVE_SYMBOL}</p>
                 </div>
               </div>
             ))}

@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getJobMarket, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey } from "@/lib/contracts";
+import { getJobMarket, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
 import { ethers } from "ethers";
 
 interface Attachment {
@@ -233,7 +233,7 @@ export default function ChatPage() {
                     : colors.mutedFg,
                 }}>{statusLabel}</span>
               <span className="text-xs" style={{ color: colors.muted }}>
-                Budget: {parseFloat(ethers.formatEther(job.budget)).toFixed(1)} ETH
+                Budget: {parseFloat(ethers.formatEther(job.budget)).toFixed(1)} {NATIVE_SYMBOL}
               </span>
             </div>
           </div>

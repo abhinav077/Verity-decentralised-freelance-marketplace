@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { getJobMarket } from "@/lib/contracts";
+import { getJobMarket, NATIVE_SYMBOL } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
 import { JsonRpcSigner } from "ethers";
 import { Input } from "@/components/reactbits/Input";
@@ -110,7 +110,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
               </select>
             </div>
             <div>
-              <Label className="mb-1 block">Budget (ETH) *</Label>
+              <Label className="mb-1 block">Budget ({NATIVE_SYMBOL}) *</Label>
               <Input type="number" step="0.001" min="0.001"
                 placeholder="0.5" value={form.budget} onChange={e => set("budget", e.target.value)} required />
             </div>
@@ -160,7 +160,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
                       className="h-9 px-2 py-1.5 text-sm"
                       containerClassName="flex-1"
                       value={ms.title} onChange={e => setMs(i, "title", e.target.value)} />
-                    <Input type="number" step="0.001" min="0.001" placeholder="ETH"
+                    <Input type="number" step="0.001" min="0.001" placeholder={NATIVE_SYMBOL}
                       className="h-9 px-2 py-1.5 text-sm font-mono"
                       containerClassName="w-24"
                       value={ms.amount} onChange={e => setMs(i, "amount", e.target.value)} />
@@ -168,7 +168,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
                   </div>
                 ))}
                 <p className="text-xs" style={{ color: msTotal > 0 && form.budget && msTotal > parseFloat(form.budget) ? colors.dangerText : colors.muted }}>
-                  Milestone total: {msTotal.toFixed(3)} ETH {form.budget ? `/ ${form.budget} ETH budget` : ""}
+                  Milestone total: {msTotal.toFixed(3)} {NATIVE_SYMBOL} {form.budget ? `/ ${form.budget} ${NATIVE_SYMBOL} budget` : ""}
                 </p>
               </div>
             )}

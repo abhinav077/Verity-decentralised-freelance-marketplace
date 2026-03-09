@@ -4,7 +4,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
   getSubContracting, getJobMarket, getProvider, formatEth, formatDate,
-  shortenAddress, SUB_CONTRACT_STATUS, CONTRACT_ADDRESSES,
+  shortenAddress, SUB_CONTRACT_STATUS, CONTRACT_ADDRESSES, NATIVE_SYMBOL,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import Link from "next/link";
@@ -187,7 +187,7 @@ function SubContractsInner() {
             </p>
           </div>
           <div className="text-right shrink-0 ml-3">
-            <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(s.payment)} ETH</p>
+            <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(s.payment)} {NATIVE_SYMBOL}</p>
             <p className="text-xs" style={{ color: colors.muted }}>{formatDate(s.createdAt)}</p>
           </div>
         </div>
@@ -366,7 +366,7 @@ function SubContractsInner() {
                   style={inputStyle} />
               </div>
               <div>
-                <Label className="mb-1 block text-xs font-medium">Payment (ETH)</Label>
+                <Label className="mb-1 block text-xs font-medium">Payment ({NATIVE_SYMBOL})</Label>
                 <Input type="number" step="0.001" min="0.001" value={payment} onChange={e => setPayment(e.target.value)} required
                   className="font-mono" />
               </div>

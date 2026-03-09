@@ -4,7 +4,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
   getGovernance, getVRTToken, getProvider, formatEth, formatVrt,
-  formatDate, timeRemaining, shortenAddress, CONTRACT_ADDRESSES,
+  formatDate, timeRemaining, shortenAddress, CONTRACT_ADDRESSES, NATIVE_SYMBOL,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import Link from "next/link";
@@ -145,7 +145,7 @@ export default function GovernancePage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <p className="text-xs" style={{ color: colors.muted }}>Treasury</p>
-            <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatEth(treasuryBal)} ETH</p>
+            <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatEth(treasuryBal)} {NATIVE_SYMBOL}</p>
           </div>
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <p className="text-xs" style={{ color: colors.muted }}>Your VRT</p>

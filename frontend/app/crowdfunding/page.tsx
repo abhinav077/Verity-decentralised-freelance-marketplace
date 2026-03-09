@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getGovernance, CONTRACT_ADDRESSES, formatEth, formatDate, shortenAddress } from "@/lib/contracts";
+import { getGovernance, CONTRACT_ADDRESSES, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
 import { Input } from "@/components/reactbits/Input";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -211,7 +211,7 @@ export default function CrowdfundingPage() {
               value={form.proofLink} onChange={e => setForm(f => ({ ...f, proofLink: e.target.value }))} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input type="number" step="0.01" min="0.01" placeholder="Goal (ETH)" required
+            <Input type="number" step="0.01" min="0.01" placeholder={`Goal (${NATIVE_SYMBOL})`} required
               value={form.goalAmount} onChange={e => setForm(f => ({ ...f, goalAmount: e.target.value }))} />
             <Input type="number" min="1" max="365" placeholder="Duration (days)"
               value={form.durationDays} onChange={e => setForm(f => ({ ...f, durationDays: e.target.value }))} />
@@ -282,7 +282,7 @@ export default function CrowdfundingPage() {
                 {/* Progress bar */}
                 <div className="mb-3">
                   <div className="flex justify-between text-xs mb-1" style={{ color: colors.muted }}>
-                    <span>{formatEth(p.totalRaised)} / {formatEth(p.goalAmount)} ETH</span>
+                    <span>{formatEth(p.totalRaised)} / {formatEth(p.goalAmount)} {NATIVE_SYMBOL}</span>
                     <span>{Math.min(pctFunded, 100)}%</span>
                   </div>
                   <div className="h-2.5 rounded-full overflow-hidden" style={{ background: colors.inputBg }}>
@@ -305,7 +305,7 @@ export default function CrowdfundingPage() {
                 <div className="flex flex-wrap gap-2">
                   {isActive && !isCreator && (
                     <div className="flex gap-2 flex-1">
-                      <Input type="number" step="0.01" min="0.01" placeholder="ETH"
+                      <Input type="number" step="0.01" min="0.01" placeholder={NATIVE_SYMBOL}
                         className="h-9 px-2 py-1.5 text-sm"
                         containerClassName="w-24"
                         value={expandedId === p.id ? contributeAmt : ""}
@@ -347,7 +347,7 @@ export default function CrowdfundingPage() {
                       disabled={!!txLoading}
                       className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-60 btn-hover"
                       style={{ background: colors.warningText, color: "#fff" }}>
-                      {txLoading === `refund-${pid}` ? "…" : `Refund (${formatEth(myContrib)} ETH)`}
+                      {txLoading === `refund-${pid}` ? "…" : `Refund (${formatEth(myContrib)} ${NATIVE_SYMBOL})`}
                     </button>
                   )}
                 </div>
@@ -355,7 +355,7 @@ export default function CrowdfundingPage() {
                 {/* My contribution */}
                 {myContrib > 0n && isActive && (
                   <p className="text-xs mt-2" style={{ color: colors.successText }}>
-                    You&apos;ve contributed {formatEth(myContrib)} ETH
+                    You&apos;ve contributed {formatEth(myContrib)} {NATIVE_SYMBOL}
                   </p>
                 )}
 

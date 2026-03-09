@@ -1,5 +1,5 @@
 "use client";
-import { JOB_STATUS, formatEth, formatDate, shortenAddress } from "@/lib/contracts";
+import { JOB_STATUS, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
 
 interface Job {
@@ -46,7 +46,7 @@ export default function JobCard({ job, currentAddress, onClick }: Props) {
 
       <div className="flex flex-wrap gap-3 text-sm">
         <span className="px-2 py-1 rounded-md" style={{ background: colors.inputBg, color: colors.mutedFg }}>{job.category}</span>
-        <span className="font-semibold" style={{ color: colors.primaryFg }}>{formatEth(job.budget)} ETH</span>
+        <span className="font-semibold" style={{ color: colors.primaryFg }}>{formatEth(job.budget)} {NATIVE_SYMBOL}</span>
         <span style={{ color: colors.muted }}>Deadline: {formatDate(job.deadline)}</span>
       </div>
 

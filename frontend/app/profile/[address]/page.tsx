@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getUserProfile, getVRTToken, getJobMarket, shortenAddress, CONTRACT_ADDRESSES, formatDate } from "@/lib/contracts";
+import { getUserProfile, getVRTToken, getJobMarket, shortenAddress, CONTRACT_ADDRESSES, formatDate, NATIVE_SYMBOL } from "@/lib/contracts";
 import { resolveIpfsUrl, isIpfsReference } from "@/lib/ipfs";
 import { ethers } from "ethers";
 import Link from "next/link";
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                   <p className="text-2xl font-bold" style={{ color: colors.successText }}>
                     {parseFloat(ethers.formatEther(stats.totalEarned)).toFixed(2)}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: colors.successText }}>ETH Earned</p>
+                  <p className="text-xs mt-0.5" style={{ color: colors.successText }}>{NATIVE_SYMBOL} Earned</p>
                 </div>
               )}
               {stats && Number(stats.totalSpent) > 0 && (
@@ -365,7 +365,7 @@ export default function ProfilePage() {
                   <p className="text-2xl font-bold" style={{ color: colors.warningText }}>
                     {parseFloat(ethers.formatEther(stats.totalSpent)).toFixed(2)}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: colors.warningText }}>ETH Spent</p>
+                  <p className="text-xs mt-0.5" style={{ color: colors.warningText }}>{NATIVE_SYMBOL} Spent</p>
                 </div>
               )}
               <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: "#fef9c3" }}>

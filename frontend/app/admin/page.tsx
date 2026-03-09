@@ -7,7 +7,7 @@ import {
   getInsurancePool, getVRTToken, getJobMarket,
   getBountyBoard, getProvider,
   formatEth, formatVrt, shortenAddress,
-  DISPUTE_STATUS, disputeStatusStyle,
+  DISPUTE_STATUS, disputeStatusStyle, NATIVE_SYMBOL,
 } from "@/lib/contracts";
 import { ethers } from "ethers";
 import { Input } from "@/components/reactbits/Input";
@@ -137,7 +137,7 @@ const SECTIONS: SectionDef[] = [
     params: [
       { key: "in_coverMult", label: "Coverage Multiplier", display: "raw", inputUnit: "×", getter: "COVERAGE_MULTIPLIER", setter: "setCoverageMultiplier" },
       { key: "in_duration", label: "Policy Duration", display: "duration", inputUnit: "days", getter: "POLICY_DURATION", setter: "setPolicyDuration", inputMultiplier: 86400 },
-      { key: "in_minPremium", label: "Min Premium", display: "eth", inputUnit: "ETH", getter: "MIN_PREMIUM", setter: "setMinPremium", parseEther: true },
+      { key: "in_minPremium", label: "Min Premium", display: "eth", inputUnit: NATIVE_SYMBOL, getter: "MIN_PREMIUM", setter: "setMinPremium", parseEther: true },
     ],
   },
   {
@@ -147,7 +147,7 @@ const SECTIONS: SectionDef[] = [
     params: [
       { key: "ln_maxAmount", label: "Max Loan Amount", display: "vrt", inputUnit: "VRT", getter: "MAX_LOAN_AMOUNT", setter: "setMaxLoanAmount", parseEther: true },
       { key: "ln_duration", label: "Loan Duration", display: "duration", inputUnit: "days", getter: "LOAN_DURATION", setter: "setLoanDuration", inputMultiplier: 86400 },
-      { key: "ln_collateral", label: "Collateral per 10 VRT", display: "eth", inputUnit: "ETH", getter: "COLLATERAL_PER_10_VRT", setter: "setCollateralPer10Vrt", parseEther: true },
+      { key: "ln_collateral", label: "Collateral per 10 VRT", display: "eth", inputUnit: NATIVE_SYMBOL, getter: "COLLATERAL_PER_10_VRT", setter: "setCollateralPer10Vrt", parseEther: true },
     ],
   },
   {
@@ -325,7 +325,7 @@ export default function AdminPage() {
       case "duration": return fmtDuration(raw);
       case "bps": return fmtBps(raw);
       case "vrt": return formatVrt(raw) + " VRT";
-      case "eth": return formatEth(raw) + " ETH";
+      case "eth": return formatEth(raw) + " " + NATIVE_SYMBOL;
       default: return raw.toString();
     }
   }
@@ -818,12 +818,12 @@ export default function AdminPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
               <div style={{ background: colors.surfaceBg, borderRadius: 12, padding: 16, border: `1px solid ${colors.divider}` }}>
                 <div style={{ fontSize: 13, color: colors.mutedFg }}>Governance Treasury</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: colors.primaryFg }}>{formatEth(treasuryBal)} ETH</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: colors.primaryFg }}>{formatEth(treasuryBal)} {NATIVE_SYMBOL}</div>
               </div>
               <div style={{ background: colors.surfaceBg, borderRadius: 12, padding: 16, border: `1px solid ${colors.divider}` }}>
                 <div style={{ fontSize: 13, color: colors.mutedFg }}>Collected Escrow Fees</div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: colors.primaryFg }}>{formatEth(escrowFees)} ETH</span>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: colors.primaryFg }}>{formatEth(escrowFees)} {NATIVE_SYMBOL}</span>
                   <button className="btn-hover" style={btnPrimary} disabled={busy || escrowFees === 0n} onClick={withdrawEscrowFees}>Withdraw</button>
                 </div>
               </div>
@@ -833,7 +833,7 @@ export default function AdminPage() {
             <div style={labelStyle}>Withdraw from Treasury</div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <Input containerClassName="flex-[1_1_200px]" placeholder="Recipient address" value={treasuryTo} onChange={e => setTreasuryTo(e.target.value)} disabled={busy} className="h-9" />
-              <Input containerClassName="max-w-[140px] flex-[0_0_120px]" placeholder="Amount (ETH)" value={treasuryAmt} onChange={e => setTreasuryAmt(e.target.value)} disabled={busy} className="h-9" />
+              <Input containerClassName="max-w-[140px] flex-[0_0_120px]" placeholder={`Amount (${NATIVE_SYMBOL})`} value={treasuryAmt} onChange={e => setTreasuryAmt(e.target.value)} disabled={busy} className="h-9" />
               <button className="btn-hover" style={btnPrimary} disabled={busy || !treasuryTo.trim() || !treasuryAmt.trim()} onClick={withdrawTreasury}>Send</button>
             </div>
           </div>

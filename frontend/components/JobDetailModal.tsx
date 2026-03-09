@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { ethers, JsonRpcSigner } from "ethers";
-import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, JOB_STATUS, chatKey, chatReadKey, timeRemaining } from "@/lib/contracts";
+import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, JOB_STATUS, chatKey, chatReadKey, timeRemaining, NATIVE_SYMBOL } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import ReviewModal from "@/components/ReviewModal";
@@ -190,7 +190,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   });
 
   const acceptBid = (bid: Bid) => {
-    if (!confirm(`Accept this bid for ${formatEth(bid.amount)} ETH? Funds will be locked in escrow.`)) return;
+    if (!confirm(`Accept this bid for ${formatEth(bid.amount)} ${NATIVE_SYMBOL}? Funds will be locked in escrow.`)) return;
     run("Accepting bid…", async () => {
       const tx = await getJobMarket(signer!).acceptBid(bid.id, { value: bid.amount });
       await tx.wait();
@@ -325,12 +325,12 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <p className="text-sm mt-1" style={{ color: colors.muted }}>
                   {JOB_STATUS[liveStatus]}
                   {accepted ? (
-                    <> · Price: <strong>{formatEth(accepted.amount)} ETH</strong>
+                    <> · Price: <strong>{formatEth(accepted.amount)} {NATIVE_SYMBOL}</strong>
                       {Number(accepted.completionDays) > 0 && <> · {Number(accepted.completionDays)} days</>}
                       <span className="text-xs ml-1">(budget: {formatEth(job.budget)})</span>
                     </>
                   ) : (
-                    <> · Budget: <strong>{formatEth(job.budget)} ETH</strong></>
+                    <> · Budget: <strong>{formatEth(job.budget)} {NATIVE_SYMBOL}</strong></>
                   )}
                   {" · Deadline: "}{formatDate(job.deadline)}
                   {!accepted && Number(job.expectedDays) > 0 && <> · Expected: {Number(job.expectedDays)} days</>}
@@ -394,7 +394,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 showBidForm ? (
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
                     <h4 className="font-semibold" style={{ color: colors.pageFg }}>Place a Bid</h4>
-                    <Input type="number" step="0.001" placeholder="Your bid in ETH (can be above budget)"
+                    <Input type="number" step="0.001" placeholder={`Your bid in ${NATIVE_SYMBOL} (can be above budget)`}
                       containerClassName="w-full"
                       value={bidAmount} onChange={e => setBidAmount(e.target.value)} />
                     <Input type="number" min="1" placeholder="Completion days (how many days you need)"
@@ -474,7 +474,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                         style={{ borderColor: colors.cardBorder }}>
                         <div>
                           <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{ms.title || `Milestone ${idx + 1}`}</p>
-                          <p className="text-xs" style={{ color: colors.muted }}>{formatEth(ms.amount)} ETH · <span style={{ color: msColor }}>{msStatus}</span></p>
+                          <p className="text-xs" style={{ color: colors.muted }}>{formatEth(ms.amount)} {NATIVE_SYMBOL} · <span style={{ color: msColor }}>{msStatus}</span></p>
                         </div>
                         {ms.status === 0 && isFreelancer && (
                           <button onClick={() => submitMilestone(idx)} disabled={!!txLoading}
@@ -538,13 +538,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       const pct = BigInt(parseInt(settleFreelancerPct) || 0);
                       return (
                         <p className="text-xs" style={{ color: colors.infoText }}>
-                          Freelancer would receive ≈ {formatEth(amt * pct / 100n)} ETH of {formatEth(amt)} escrowed
+                          Freelancer would receive ≈ {formatEth(amt * pct / 100n)} {NATIVE_SYMBOL} of {formatEth(amt)} escrowed
                         </p>
                       );
                     } catch {
                       return (
                         <p className="text-xs" style={{ color: colors.infoText }}>
-                          Freelancer would receive ≈ 0 ETH of {formatEth(amt)} escrowed
+                          Freelancer would receive ≈ 0 {NATIVE_SYMBOL} of {formatEth(amt)} escrowed
                         </p>
                       );
                     }
@@ -570,7 +570,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     return (
                       <p className="text-sm" style={{ color: colors.pageFg }}>
                         {Number(settlement.percentComplete)}% complete, freelancer gets {Number(settlement.freelancerPercent)}% of escrowed funds
-                        ({formatEth(amt * settlement.freelancerPercent / 100n)} ETH)
+                        ({formatEth(amt * settlement.freelancerPercent / 100n)} {NATIVE_SYMBOL})
                       </p>
                     );
                   })()}
@@ -663,7 +663,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     return (
                       <p className="text-sm" style={{ color: colors.pageFg }}>
                         {Number(settlement.percentComplete)}% complete, freelancer gets {Number(settlement.freelancerPercent)}% of escrowed funds
-                        ({formatEth(amt * settlement.freelancerPercent / 100n)} ETH)
+                        ({formatEth(amt * settlement.freelancerPercent / 100n)} {NATIVE_SYMBOL})
                       </p>
                     );
                   })()}
@@ -711,13 +711,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       const pct = BigInt(parseInt(settleFreelancerPct) || 0);
                       return (
                         <p className="text-xs" style={{ color: colors.infoText }}>
-                          Freelancer would receive ≈ {formatEth(amt * pct / 100n)} ETH of {formatEth(amt)} escrowed
+                          Freelancer would receive ≈ {formatEth(amt * pct / 100n)} {NATIVE_SYMBOL} of {formatEth(amt)} escrowed
                         </p>
                       );
                     } catch {
                       return (
                         <p className="text-xs" style={{ color: colors.infoText }}>
-                          Freelancer would receive ≈ 0 ETH of {formatEth(amt)} escrowed
+                          Freelancer would receive ≈ 0 {NATIVE_SYMBOL} of {formatEth(amt)} escrowed
                         </p>
                       );
                     }
@@ -875,7 +875,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
                     <h4 className="font-semibold" style={{ color: colors.pageFg }}>💝 Send a Tip</h4>
                     <p className="text-xs" style={{ color: colors.muted }}>Show your appreciation with an extra payment.</p>
-                    <Input type="number" step="0.001" min="0.001" placeholder="Tip amount in ETH"
+                    <Input type="number" step="0.001" min="0.001" placeholder={`Tip amount in ${NATIVE_SYMBOL}`}
                       containerClassName="w-full"
                       value={tipAmount} onChange={e => setTipAmount(e.target.value)} />
                     <div className="flex gap-2">
@@ -932,7 +932,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-sm font-semibold" style={{ color: colors.primaryFg }}>
-                          {formatEth(bid.amount)} ETH
+                          {formatEth(bid.amount)} {NATIVE_SYMBOL}
                           {bid.amount > job.budget && (
                             <span className="text-xs ml-1" style={{ color: colors.warningText }}>above budget</span>
                           )}

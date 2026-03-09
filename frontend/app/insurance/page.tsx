@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getInsurancePool, CONTRACT_ADDRESSES, formatEth, shortenAddress, formatDate } from "@/lib/contracts";
+import { getInsurancePool, CONTRACT_ADDRESSES, formatEth, shortenAddress, formatDate, NATIVE_SYMBOL } from "@/lib/contracts";
 import { ethers } from "ethers";
 import Link from "next/link";
 import { Input } from "@/components/reactbits/Input";
@@ -147,7 +147,7 @@ export default function InsurancePage() {
           <Link href="/" className="text-sm hover:underline" style={{ color: colors.primaryFg }}>← Back to Home</Link>
           <h1 className="text-2xl font-bold mt-1">🛡️ Insurance Pool</h1>
           <p className="text-sm" style={{ color: colors.muted }}>
-            Stake ETH for {coverageMult}× coverage protection. If a dispute resolves in your favor, get compensated from the pool.
+            Stake {NATIVE_SYMBOL} for {coverageMult}× coverage protection. If a dispute resolves in your favor, get compensated from the pool.
           </p>
         </div>
       </div>
@@ -158,13 +158,13 @@ export default function InsurancePage() {
           <p className="text-2xl font-bold" style={{ color: colors.primaryFg }}>
             {loading ? "…" : formatEth(poolBalance)}
           </p>
-          <p className="text-xs mt-0.5" style={{ color: colors.primaryFg, opacity: 0.7 }}>Pool Balance (ETH)</p>
+          <p className="text-xs mt-0.5" style={{ color: colors.primaryFg, opacity: 0.7 }}>Pool Balance ({NATIVE_SYMBOL})</p>
         </div>
         <div className="flex-1 min-w-[120px] rounded-xl p-4 text-center stat-hover" style={{ background: colors.successBg }}>
           <p className="text-2xl font-bold" style={{ color: colors.successText }}>
             {loading ? "…" : formatEth(totalBalance)}
           </p>
-          <p className="text-xs mt-0.5" style={{ color: colors.successText }}>Total Staked (ETH)</p>
+          <p className="text-xs mt-0.5" style={{ color: colors.successText }}>Total Staked ({NATIVE_SYMBOL})</p>
         </div>
         <div className="flex-1 min-w-[120px] rounded-xl p-4 text-center stat-hover" style={{ background: colors.surfaceBg }}>
           <p className="text-2xl font-bold" style={{ color: colors.pageFg }}>
@@ -205,18 +205,18 @@ export default function InsurancePage() {
           <div className="rounded-xl border p-5 space-y-4" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <h3 className="font-semibold" style={{ color: colors.pageFg }}>Buy Insurance</h3>
             <p className="text-sm" style={{ color: colors.muted }}>
-              Stake ETH as a premium. You get {coverageMult}× coverage (if you stake 0.1 ETH, your coverage is {(0.1 * coverageMult).toFixed(1)} ETH).
+              Stake {NATIVE_SYMBOL} as a premium. You get {coverageMult}× coverage (if you stake 0.1 {NATIVE_SYMBOL}, your coverage is {(0.1 * coverageMult).toFixed(1)} {NATIVE_SYMBOL}).
               Policies last {policyDuration} days. If no claim is filed, you can withdraw your premium after expiry.
             </p>
             <div>
-              <Label className="text-xs font-medium">Premium Amount (ETH)</Label>
+              <Label className="text-xs font-medium">Premium Amount ({NATIVE_SYMBOL})</Label>
               <Input value={premiumAmount} onChange={e => setPremiumAmount(e.target.value)}
                 type="number" step="0.01" min={minPremium.toString()}
-                placeholder={`Min ${minPremium} ETH`}
+                placeholder={`Min ${minPremium} ${NATIVE_SYMBOL}`}
                 className="mt-1" />
               {premiumAmount && parseFloat(premiumAmount) >= minPremium && (
                 <p className="text-xs mt-1" style={{ color: colors.successText }}>
-                  Coverage: {(parseFloat(premiumAmount) * coverageMult).toFixed(4)} ETH
+                  Coverage: {(parseFloat(premiumAmount) * coverageMult).toFixed(4)} {NATIVE_SYMBOL}
                 </p>
               )}
             </div>
@@ -232,11 +232,11 @@ export default function InsurancePage() {
           <div className="rounded-xl border p-5 space-y-3" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
             <h3 className="font-semibold" style={{ color: colors.pageFg }}>Fund the Pool</h3>
             <p className="text-sm" style={{ color: colors.muted }}>
-              Anyone can contribute ETH to strengthen the insurance pool.
+              Anyone can contribute {NATIVE_SYMBOL} to strengthen the insurance pool.
             </p>
             <div className="flex gap-2">
               <Input value={fundAmount} onChange={e => setFundAmount(e.target.value)}
-                type="number" step="0.01" min="0.01" placeholder="ETH amount"
+                type="number" step="0.01" min="0.01" placeholder={`${NATIVE_SYMBOL} amount`}
                 containerClassName="flex-1" />
               <button onClick={handleFundPool}
                 disabled={funding || !fundAmount || parseFloat(fundAmount) <= 0 || !signer}
@@ -273,7 +273,7 @@ export default function InsurancePage() {
                         {st.label}
                       </span>
                       <p className="text-sm font-medium mt-2" style={{ color: colors.pageFg }}>
-                        Premium: {formatEth(p.premium)} ETH → Coverage: {formatEth(p.coverage)} ETH
+                        Premium: {formatEth(p.premium)} {NATIVE_SYMBOL} → Coverage: {formatEth(p.coverage)} {NATIVE_SYMBOL}
                       </p>
                       <p className="text-xs mt-1" style={{ color: colors.muted }}>
                         {formatDate(p.createdAt)} — Expires {formatDate(p.expiresAt)}

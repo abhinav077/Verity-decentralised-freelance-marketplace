@@ -4,7 +4,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
   getBountyBoard, formatEth, formatDate, timeRemaining,
-  shortenAddress, BOUNTY_STATUS, SUBMISSION_STATUS, CONTRACT_ADDRESSES,
+  shortenAddress, BOUNTY_STATUS, SUBMISSION_STATUS, CONTRACT_ADDRESSES, NATIVE_SYMBOL,
 } from "@/lib/contracts";
 import { resolveIpfsUrl } from "@/lib/ipfs";
 import IpfsFileUpload from "@/components/IpfsFileUpload";
@@ -163,7 +163,7 @@ export default function BountiesPage() {
           <div>
             <h1 className="text-3xl font-black" style={{ color: colors.pageFg }}>Bounty Board</h1>
             <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>
-              Open bounties with ETH + {bountyVrtReward} VRT rewards — submit work, get paid
+              Open bounties with {NATIVE_SYMBOL} + {bountyVrtReward} VRT rewards — submit work, get paid
             </p>
           </div>
           {address && (
@@ -210,7 +210,7 @@ export default function BountiesPage() {
                   <p className="text-xs mb-3 line-clamp-2" style={{ color: colors.mutedFg }}>{b.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="font-mono font-bold text-sm" style={{ color: colors.primaryFg }}>
-                      {formatEth(b.reward)} ETH
+                      {formatEth(b.reward)} {NATIVE_SYMBOL}
                     </span>
                     <span className="text-xs" style={{ color: colors.muted }}>
                       {Number(b.approvedCount)}/{Number(b.maxWinners)} winners
@@ -253,7 +253,7 @@ export default function BountiesPage() {
                   <Input value={category} onChange={e => setCategory(e.target.value)} required />
                 </div>
                 <div>
-                  <Label className="mb-1 block text-xs font-medium">Reward (ETH)</Label>
+                  <Label className="mb-1 block text-xs font-medium">Reward ({NATIVE_SYMBOL})</Label>
                   <Input type="number" step="0.001" min="0.001" value={reward} onChange={e => setReward(e.target.value)} required
                     className="font-mono" />
                 </div>
@@ -306,7 +306,7 @@ export default function BountiesPage() {
             <div className="flex gap-4 mb-6">
               <div className="rounded-xl px-4 py-2" style={{ background: colors.primaryLight }}>
                 <p className="text-xs" style={{ color: colors.muted }}>Reward</p>
-                <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(selectedBounty.reward)} ETH</p>
+                <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(selectedBounty.reward)} {NATIVE_SYMBOL}</p>
               </div>
               <div className="rounded-xl px-4 py-2" style={{ background: colors.surfaceBg }}>
                 <p className="text-xs" style={{ color: colors.muted }}>Winners</p>

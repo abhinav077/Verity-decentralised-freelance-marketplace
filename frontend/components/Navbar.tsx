@@ -2,7 +2,7 @@
 import { useWallet } from "@/context/WalletContext";
 import { useNotifications, NotifType } from "@/context/NotificationsContext";
 import { useTheme, THEME_NAMES, THEME_META, ThemeName } from "@/context/ThemeContext";
-import { shortenAddress, getVRTToken, getEscrow, chatKey, chatReadKey } from "@/lib/contracts";
+import { shortenAddress, getVRTToken, getEscrow, chatKey, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
 import { useEffect, useCallback, useState, useRef } from "react";
 import { ethers } from "ethers";
 import Link from "next/link";
@@ -100,7 +100,7 @@ export default function Navbar() {
   const fetchBalances = useCallback(async () => {
     if (!address || !provider) { setEthBalance(null); setDfmBalance(null); return; }
     provider.getBalance(address).then((b: bigint) =>
-      setEthBalance(parseFloat(ethers.formatEther(b)).toFixed(3))
+      setEthBalance(parseFloat(ethers.formatEther(b)).toFixed(4))
     ).catch(() => setEthBalance(null));
     getVRTToken(provider).balanceOf(address).then((b: bigint) =>
       setDfmBalance(parseFloat(ethers.formatEther(b)).toFixed(1))
@@ -493,7 +493,7 @@ export default function Navbar() {
                       <div className="my-1.5 mx-3 border-t" style={{ borderColor: colors.divider }} />
                       <div className="mx-3 px-3 py-2 rounded-lg flex items-center justify-between" style={{ background: colors.badgeBg }}>
                         {dfmBalance !== null && <span className="text-xs font-mono font-bold" style={{ color: colors.badgeText }}>{dfmBalance} VRT</span>}
-                        {ethBalance !== null && <span className="text-xs font-mono" style={{ color: colors.mutedFg }}>{ethBalance} ETH</span>}
+                        {ethBalance !== null && <span className="text-xs font-mono" style={{ color: colors.mutedFg }}>{ethBalance} {NATIVE_SYMBOL}</span>}
                       </div>
                     </>
                   )}
