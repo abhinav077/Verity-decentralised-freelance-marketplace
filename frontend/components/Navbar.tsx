@@ -71,7 +71,7 @@ const THEME_ICONS: Record<ThemeName, LucideIcon> = {
 };
 
 export default function Navbar() {
-  const { address, provider, chainId, connect, disconnect, connecting } = useWallet();
+  const { address, provider, chainId, connect, disconnect, connecting, switchToExpectedChain } = useWallet();
   const { notifications, totalCount, dismiss, refresh } = useNotifications();
   const { theme, colors, setTheme } = useTheme();
   const dk = colors.colorScheme === "dark";
@@ -156,7 +156,8 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, [findWorkOpen, otherOpen, profileOpen, bellOpen, themeOpen, mobileOpen]);
 
-  const wrongNetwork = chainId !== null && chainId !== 31337 && chainId !== 11155111;
+  const expectedChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "31337");
+  const wrongNetwork = chainId !== null && chainId !== expectedChainId;
 
   /* Shared island height for visual consistency */
   const islandStyle: React.CSSProperties = { overflow: 'visible', minHeight: 44 };
@@ -307,10 +308,12 @@ export default function Navbar() {
           )}
 
           {wrongNetwork && (
-            <span className="text-xs px-2.5 py-1 rounded-full font-medium hidden sm:block"
-              style={{ background: colors.dangerBg, color: colors.dangerText }}>
-              Wrong Network
-            </span>
+            <button onClick={switchToExpectedChain}
+              className="text-xs px-2.5 py-1 rounded-full font-medium hidden sm:block cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ background: colors.dangerBg, color: colors.dangerText }}
+              title="Click to switch network">
+              Wrong Network — Switch
+            </button>
           )}
 
           {/* Theme + Bell island */}

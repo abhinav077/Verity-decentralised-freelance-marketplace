@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getUserProfile, getVRTToken, getJobMarket, shortenAddress, CONTRACT_ADDRESSES, formatDate } from "@/lib/contracts";
-import { resolveIpfsUrl } from "@/lib/ipfs";
+import { resolveIpfsUrl, isIpfsReference } from "@/lib/ipfs";
 import { ethers } from "ethers";
 import Link from "next/link";
 import LinkifyText from "@/components/LinkifyText";
@@ -84,8 +84,6 @@ export default function ProfilePage() {
 
   // B12: Avatar
   const [avatarIpfs, setAvatarIpfs] = useState("");
-  const [settingAvatar, setSettingAvatar] = useState(false);
-  const [showAvatarForm, setShowAvatarForm] = useState(false);
 
   // B13: Achievements
   const [achievements, setAchievements] = useState<{ name: string; description: string; icon: string; unlockedAt: bigint }[]>([]);
@@ -165,7 +163,13 @@ export default function ProfilePage() {
       const skillsArr = editSkills.split(",").map(s => s.trim()).filter(Boolean);
       const fn = profileExists ? "updateProfile" : "createProfile";
       const tx = await up[fn](editName.trim(), editBio, skillsArr);
-      await tx.wait(); await loadProfile(); setEditing(false);
+      await tx.wait();
+      // If avatar was set/changed, save it too (separate on-chain call)
+      if (avatarIpfs.trim() && avatarIpfs.trim() !== (profile?.ipfsAvatar || "")) {
+        const avatarTx = await up.setAvatar(avatarIpfs.trim());
+        await avatarTx.wait();
+      }
+      await loadProfile(); setEditing(false);
     } catch (e: any) { setSaveError(e?.reason || e?.message?.split("(")[0] || "Save failed"); }
     finally { setSaving(false); }
   };
@@ -198,20 +202,6 @@ export default function ProfilePage() {
     finally { setAddingPortfolio(false); }
   };
 
-  // B12: Set avatar
-  const handleSetAvatar = async () => {
-    if (!signer || !avatarIpfs.trim()) return;
-    setSettingAvatar(true);
-    try {
-      const up = getUserProfile(signer);
-      const tx = await up.setAvatar(avatarIpfs.trim());
-      await tx.wait();
-      setAvatarIpfs(""); setShowAvatarForm(false);
-      loadProfile();
-    } catch (e: any) { alert(e?.reason || "Set avatar failed"); }
-    finally { setSettingAvatar(false); }
-  };
-
   const skillList = profile?.skills ?? [];
 
   return (
@@ -230,7 +220,15 @@ export default function ProfilePage() {
         <div className="rounded-2xl shadow-sm border overflow-hidden" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
           {/* Profile header */}
           <div className="px-6 py-8 flex items-center gap-5" style={{ background: colors.primary }}>
-            <Avatar address={targetAddress} size={72} />
+            {profile?.ipfsAvatar ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={resolveIpfsUrl(profile.ipfsAvatar)}
+                alt="Profile Photo" className="w-[72px] h-[72px] rounded-full object-cover border-2 border-white/30 shrink-0"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            ) : (
+              <Avatar address={targetAddress} size={72} />
+            )}
             <div className="text-white">
               <h1 className="text-2xl font-bold">
                 {profileExists && profile?.name ? profile.name : shortenAddress(targetAddress)}
@@ -244,7 +242,7 @@ export default function ProfilePage() {
               )}
             </div>
             {isOwnProfile && !editing && (
-              <button onClick={() => setEditing(true)}
+              <button onClick={() => { setEditing(true); setAvatarIpfs(profile?.ipfsAvatar || ""); }}
                 className="ml-auto text-white text-sm px-3 py-1.5 rounded-lg"
                 style={{ background: "rgba(255,255,255,0.2)" }}>
                 {profileExists ? "Edit Profile" : "Set Up Profile"}
@@ -256,8 +254,33 @@ export default function ProfilePage() {
             {/* Edit form */}
             {editing && isOwnProfile && (
               <div className="border rounded-xl p-5 space-y-3" style={{ background: colors.primaryLight, borderColor: colors.primary + "33" }}>
-                <h3 className="font-semibold" style={{ color: colors.pageFg }}>Edit Profile</h3>
+                <h3 className="font-semibold" style={{ color: colors.pageFg }}>{profileExists ? "Edit Profile" : "Set Up Profile"}</h3>
                 {saveError && <p className="text-sm" style={{ color: colors.dangerText }}>{saveError}</p>}
+                <div>
+                  <Label className="text-xs font-medium">Profile Photo</Label>
+                  <div className="mt-1 flex items-center gap-4">
+                    {avatarIpfs ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={resolveIpfsUrl(avatarIpfs)}
+                        alt="Preview" className="w-16 h-16 rounded-full object-cover border"
+                        style={{ borderColor: colors.cardBorder }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    ) : (
+                      <Avatar address={targetAddress} size={64} />
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <IpfsFileUpload
+                        accept="image/*"
+                        label="Upload Photo"
+                        existingCid={avatarIpfs || undefined}
+                        onUpload={(cid) => setAvatarIpfs(cid)}
+                      />
+                      <Input value={avatarIpfs} onChange={e => setAvatarIpfs(e.target.value)}
+                        placeholder="Or paste IPFS hash / URL"
+                        className="text-xs" />
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <Label className="text-xs font-medium">Name</Label>
                   <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="e.g. Alice Dev"
@@ -286,7 +309,7 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <p className="text-xs text-center" style={{ color: colors.warningText }}>
-                  🦊 Profile is stored on-chain — one wallet transaction saves everything
+                  🦊 Profile is stored on-chain — one wallet transaction saves your info{avatarIpfs.trim() && avatarIpfs.trim() !== (profile?.ipfsAvatar || "") ? " (+ a second for your photo)" : ""}
                 </p>
               </div>
             )}
@@ -384,53 +407,6 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* B12: Avatar */}
-            {profileExists && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold" style={{ color: colors.mutedFg }}>Avatar</h3>
-                  {isOwnProfile && (
-                    <button onClick={() => setShowAvatarForm(!showAvatarForm)}
-                      className="text-xs px-2 py-1 rounded-lg" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
-                      {showAvatarForm ? "Cancel" : "Set Avatar"}
-                    </button>
-                  )}
-                </div>
-                {profile?.ipfsAvatar ? (
-                  <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={resolveIpfsUrl(profile.ipfsAvatar)}
-                      alt="Avatar" className="w-16 h-16 rounded-full object-cover border" style={{ borderColor: colors.cardBorder }}
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    <span className="text-xs break-all" style={{ color: colors.muted }}>{profile.ipfsAvatar}</span>
-                  </div>
-                ) : (
-                  <p className="text-sm" style={{ color: colors.muted }}>No custom avatar set.</p>
-                )}
-                {showAvatarForm && isOwnProfile && (
-                  <div className="mt-3 space-y-2">
-                    <IpfsFileUpload
-                      accept="image/*"
-                      label="Upload Avatar Image"
-                      existingCid={avatarIpfs || undefined}
-                      onUpload={(cid) => setAvatarIpfs(cid)}
-                    />
-                    <p className="text-xs" style={{ color: colors.muted }}>Or paste an IPFS hash / URL directly:</p>
-                    <div className="flex gap-2">
-                      <Input value={avatarIpfs} onChange={e => setAvatarIpfs(e.target.value)}
-                        placeholder="IPFS hash or URL for avatar"
-                        containerClassName="flex-1" />
-                      <button onClick={handleSetAvatar} disabled={settingAvatar || !avatarIpfs.trim()}
-                        className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60"
-                        style={{ background: colors.primary, color: colors.primaryText }}>
-                        {settingAvatar ? "Saving…" : "Save"}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* B10: Endorsements */}
             <div>
               <h3 className="text-sm font-semibold mb-3" style={{ color: colors.mutedFg }}>
@@ -501,9 +477,9 @@ export default function ProfilePage() {
                     existingCid={portfolioIpfs || undefined}
                     onUpload={(cid) => setPortfolioIpfs(cid)}
                   />
-                  <p className="text-xs" style={{ color: colors.muted }}>Or paste an IPFS hash / URL:</p>
+                  <p className="text-xs" style={{ color: colors.muted }}>Or paste a link / IPFS hash:</p>
                   <Input value={portfolioIpfs} onChange={e => setPortfolioIpfs(e.target.value)}
-                    placeholder="IPFS hash or URL"
+                    placeholder="https://github.com/… or IPFS hash"
                     className="w-full" />
                   <Input value={portfolioJobId} onChange={e => setPortfolioJobId(e.target.value)}
                     placeholder="Related Job ID (optional)"
@@ -526,7 +502,7 @@ export default function ProfilePage() {
                         <a href={resolveIpfsUrl(item.ipfsHash)}
                           target="_blank" rel="noopener noreferrer"
                           className="text-xs hover:underline" style={{ color: colors.primaryFg }}>
-                          View on IPFS ↗
+                          {isIpfsReference(item.ipfsHash) ? "View on IPFS ↗" : "View Link ↗"}
                         </a>
                       </div>
                       <div className="text-right">

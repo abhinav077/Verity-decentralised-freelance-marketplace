@@ -219,10 +219,10 @@ function JobsInner() {
             Deploy contracts and add addresses to <code className="px-1 rounded" style={{ background: colors.inputBg }}>.env.local</code>.
           </p>
           <ol className="text-sm space-y-1 list-decimal list-inside" style={{ color: colors.warningText }}>
-            <li>In the <strong>contracts</strong> folder: <code className="px-1 rounded" style={{ background: colors.inputBg }}>npx hardhat node</code></li>
-            <li>In another terminal: <code className="px-1 rounded" style={{ background: colors.inputBg }}>npx hardhat run scripts/deploy.ts --network localhost</code></li>
-            <li>Create <code className="px-1 rounded" style={{ background: colors.inputBg }}>frontend/.env.local</code> with the printed addresses</li>
-            <li>Restart the dev server</li>
+            <li>In the <strong>contracts</strong> folder, create a <code className="px-1 rounded" style={{ background: colors.inputBg }}>.env</code> file with your private key and RPC URL</li>
+            <li>Run: <code className="px-1 rounded" style={{ background: colors.inputBg }}>npx hardhat run scripts/deploy.ts --network amoy</code></li>
+            <li>The deploy script auto-creates <code className="px-1 rounded" style={{ background: colors.inputBg }}>frontend/.env.local</code> with all addresses</li>
+            <li>Restart the dev server: <code className="px-1 rounded" style={{ background: colors.inputBg }}>npm run dev</code></li>
           </ol>
         </div>
       )}

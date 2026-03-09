@@ -52,7 +52,7 @@
 | **Input** | MetaMask popup → approve connection |
 | **Output** | Your wallet address appears in navbar, shows your ETH and VRT balances |
 | **Network** | Polygon Amoy (80002), Base Sepolia (84532), Ethereum Sepolia (11155111), or Hardhat Local (31337) |
-| **Note** | A wrong-network warning badge appears if you're on the wrong chain |
+| **Note** | A "Wrong Network" badge appears if you're on the wrong chain — click it to auto-switch to the correct network |
 
 ### Creating Your Profile
 
@@ -60,9 +60,9 @@
 |---|---|
 | **What** | Set up your on-chain identity |
 | **Where** | Click your address in navbar → "My Profile" → "Set Up Profile" |
-| **Inputs** | **Name** (text), **Bio** (text), **Skills** (comma-separated, e.g., "Solidity, React, Design") |
-| **Output** | Profile page shows your name, bio, skills, and stats (all zeroes initially) |
-| **Optional** | Set avatar via IPFS — upload directly from the profile page (auto-pinned via Pinata) or paste an IPFS hash/URL |
+| **Inputs** | **Name** (text), **Bio** (text), **Skills** (comma-separated, e.g., "Solidity, React, Design"), **Profile Photo** (optional — upload an image directly or paste an IPFS hash) |
+| **Output** | Profile page shows your name, bio, skills, profile photo, and stats (all zeroes initially) |
+| **Note** | Profile photo is saved as part of the "Set Up Profile" / "Edit Profile" form. If you upload a photo, it auto-uploads to IPFS via Pinata and saves on-chain in a second transaction. |
 | **Costs** | Gas fee only (no ETH payment) |
 | **Note** | One profile per wallet address. Can be updated anytime. |
 
@@ -626,8 +626,9 @@ Every user's profile shows:
 |---|---|
 | **What** | Showcase your work |
 | **Where** | Your own profile → "Add Portfolio Item" |
-| **Inputs** | Title, IPFS link (to the work), optional Job ID |
-| **Output** | Portfolio item displayed on your profile with clickable IPFS link |
+| **Inputs** | Title, file upload (IPFS) OR regular URL (GitHub link, website, etc.), optional Job ID |
+| **Output** | Portfolio item displayed on your profile with a clickable link. IPFS files show "View on IPFS ↗", regular URLs show "View Link ↗" |
+| **Note** | You can upload a file directly (auto-uploads to IPFS via Pinata) OR paste any regular link like `https://github.com/...` — regular links open normally, not through an IPFS gateway |
 
 ### Achievements (Gamification)
 

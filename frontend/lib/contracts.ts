@@ -3,7 +3,6 @@ import { ethers, BrowserProvider, Contract } from "ethers";
 import {
   JOB_MARKET_ABI,
   VRT_TOKEN_ABI,
-  DFM_TOKEN_ABI,
   ESCROW_ABI,
   DISPUTE_RESOLUTION_ABI,
   USER_PROFILE_ABI,
@@ -29,9 +28,6 @@ export const CONTRACT_ADDRESSES = {
   InsurancePool:     process.env.NEXT_PUBLIC_INSURANCE_POOL        || "",
 };
 
-// Backward compat alias
-export const DFMToken = CONTRACT_ADDRESSES.VRTToken;
-
 // ─── Status helpers ────────────────────────────────────────────────────────────
 export const JOB_STATUS: Record<number, string> = {
   0: "Open",
@@ -56,16 +52,6 @@ export function jobStatusStyle(status: number, c: ThemeColors): React.CSSPropert
   return map[status] ?? {};
 }
 
-/** @deprecated — use jobStatusStyle() with theme colors instead */
-export const JOB_STATUS_COLOR: Record<number, string> = {
-  0: "bg-green-100 text-green-800",
-  1: "bg-blue-100 text-blue-800",
-  2: "bg-gray-100 text-gray-700",
-  3: "bg-red-100 text-red-700",
-  4: "bg-yellow-100 text-yellow-800",
-  5: "bg-purple-100 text-purple-800",
-};
-
 export const DISPUTE_STATUS: Record<number, string> = {
   0: "Active",
   1: "Response Period",
@@ -88,17 +74,6 @@ export function disputeStatusStyle(status: number, c: ThemeColors): React.CSSPro
   };
   return map[status] ?? {};
 }
-
-/** @deprecated — use disputeStatusStyle() with theme colors instead */
-export const DISPUTE_STATUS_COLOR: Record<number, string> = {
-  0: "bg-orange-100 text-orange-800",
-  1: "bg-yellow-100 text-yellow-800",
-  2: "bg-blue-100 text-blue-800",
-  3: "bg-green-100 text-green-800",
-  4: "bg-gray-100 text-gray-700",
-  5: "bg-gray-100 text-gray-700",
-  6: "bg-red-100 text-red-800",
-};
 
 export const BOUNTY_STATUS: Record<number, string> = {
   0: "Open",
@@ -153,11 +128,6 @@ export function getJobMarket(sp: SP) {
 
 export function getVRTToken(sp: SP) {
   return new Contract(CONTRACT_ADDRESSES.VRTToken, VRT_TOKEN_ABI, sp);
-}
-
-/** @deprecated Use getVRTToken instead */
-export function getDFMToken(sp: SP) {
-  return getVRTToken(sp);
 }
 
 export function getEscrow(sp: SP) {

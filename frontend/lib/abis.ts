@@ -96,9 +96,6 @@ export const VRT_TOKEN_ABI = [
   "event TierChanged(address indexed user, uint8 oldTier, uint8 newTier)",
 ] as const;
 
-// Backward compat alias
-export const DFM_TOKEN_ABI = VRT_TOKEN_ABI;
-
 // ── Escrow ───────────────────────────────────────────────────────────────────
 
 export const ESCROW_ABI = [

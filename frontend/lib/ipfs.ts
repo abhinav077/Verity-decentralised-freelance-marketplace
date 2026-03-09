@@ -51,6 +51,11 @@ export function resolveIpfsUrl(uri: string | null | undefined): string {
     return `${getGateway()}/${trimmed}`;
   }
 
+  // If it looks like a domain/URL without protocol, prepend https://
+  if (trimmed.includes(".") && !trimmed.includes(" ")) {
+    return `https://${trimmed}`;
+  }
+
   // Fallback — assume it's a relative CID-like path
   return `${getGateway()}/${trimmed}`;
 }
