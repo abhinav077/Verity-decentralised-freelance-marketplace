@@ -6,6 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { JsonRpcSigner } from "ethers";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
+import { Lock } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -135,7 +136,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
               onChange={e => set("sealedBidding", e.target.checked)}
               className="w-4 h-4 rounded" />
             <Label htmlFor="sealed" className="text-sm" style={{ color: colors.pageFg }}>
-              🔒 Sealed Bidding — freelancers can&apos;t see each other&apos;s bids
+              <Lock size={14} className="inline mr-1" />Sealed Bidding — freelancers can&apos;t see each other&apos;s bids
             </Label>
           </div>
 

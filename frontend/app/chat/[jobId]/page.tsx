@@ -4,8 +4,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getJobMarket, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
+import { getJobMarket, getSubContracting, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey, NATIVE_SYMBOL, SUB_CONTRACT_STATUS } from "@/lib/contracts";
 import { ethers } from "ethers";
+import { Paperclip, MessageCircle, FileText } from "lucide-react";
 
 interface Attachment {
   name: string;
@@ -70,28 +71,52 @@ export default function ChatPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Detect sub-contract chat (sc-X prefix)
+  const isSubContract = jobId?.startsWith("sc-") ?? false;
+  const scNumericId = isSubContract ? jobId.slice(3) : null;
+
   // Derived state
-  const canFetch = !!(provider || signer) && !!jobId && !!CONTRACT_ADDRESSES.JobMarket;
+  const canFetch = !!(provider || signer) && !!jobId && (isSubContract ? !!CONTRACT_ADDRESSES.SubContracting : !!CONTRACT_ADDRESSES.JobMarket);
   const loadingJob = canFetch && !jobLoaded;
   const accessDenied = !!(job && address &&
     job.client.toLowerCase() !== address.toLowerCase() &&
     job.selectedFreelancer.toLowerCase() !== address.toLowerCase());
 
-  // Load job info (and keep it fresh so we notice completion)
+  // Load job/sub-contract info (and keep it fresh so we notice completion)
   useEffect(() => {
     const reader = provider || signer;
-    if (!reader || !jobId || !CONTRACT_ADDRESSES.JobMarket) return;
+    if (!reader || !jobId) return;
 
     const fetchJob = () => {
-      getJobMarket(reader).getJob(BigInt(jobId)).then((j) => {
-        const newStatus = Number(j.status);
-        setJob({
-          id: j.id, title: j.title, client: j.client,
-          selectedFreelancer: j.selectedFreelancer,
-          status: newStatus, budget: j.budget,
-        });
-        setJobLoaded(true);
-      }).catch(() => setJobLoaded(true));
+      if (isSubContract && scNumericId) {
+        if (!CONTRACT_ADDRESSES.SubContracting) return;
+        getSubContracting(reader).getSubContract(BigInt(scNumericId)).then((sc: any) => {
+          const newStatus = Number(sc.status);
+          // Map SC status to job-like status for display: 0=Open,1=Active,2=Delivered,3=Completed,4=Disputed,5=Cancelled
+          const displayStatus = newStatus === 1 ? 1 : newStatus === 2 ? 5 : newStatus === 3 ? 2 : newStatus === 4 ? 4 : newStatus === 5 ? 3 : 0;
+          // Parse title from description (format: "Title | Category | ...\n\nDescription")
+          const descStr = sc.description || "";
+          const firstLine = descStr.split("\n")[0] || "";
+          const parsedTitle = firstLine.includes(" | ") ? firstLine.split(" | ")[0] : `Sub-Contract #${scNumericId}`;
+          setJob({
+            id: sc.id, title: parsedTitle, client: sc.primaryFreelancer,
+            selectedFreelancer: sc.subContractor,
+            status: displayStatus, budget: sc.payment,
+          });
+          setJobLoaded(true);
+        }).catch(() => setJobLoaded(true));
+      } else {
+        if (!CONTRACT_ADDRESSES.JobMarket) return;
+        getJobMarket(reader).getJob(BigInt(jobId)).then((j: any) => {
+          const newStatus = Number(j.status);
+          setJob({
+            id: j.id, title: j.title, client: j.client,
+            selectedFreelancer: j.selectedFreelancer,
+            status: newStatus, budget: j.budget,
+          });
+          setJobLoaded(true);
+        }).catch(() => setJobLoaded(true));
+      }
     };
 
     fetchJob();
@@ -101,7 +126,7 @@ export default function ChatPage() {
       provider.on("block", debouncedFetch);
       return () => { clearTimeout(timer); provider.off("block", debouncedFetch); };
     }
-  }, [provider, signer, jobId]);
+  }, [provider, signer, jobId, isSubContract, scNumericId]);
 
   // Poll messages from localStorage every 1.5s + cross-tab sync
   useEffect(() => {
@@ -182,8 +207,10 @@ export default function ChatPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <p className="mb-4" style={{ color: colors.muted }}>Job not found.</p>
-          <Link href="/jobs" className="hover:underline" style={{ color: colors.primaryFg }}>Back to Jobs</Link>
+          <p className="mb-4" style={{ color: colors.muted }}>{isSubContract ? "Sub-contract" : "Job"} not found.</p>
+          <Link href={isSubContract ? "/sub-contracts" : "/jobs"} className="hover:underline" style={{ color: colors.primaryFg }}>
+            Back to {isSubContract ? "Sub-Contracts" : "Jobs"}
+          </Link>
         </div>
       </div>
     );
@@ -194,8 +221,10 @@ export default function ChatPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <p className="text-2xl mb-2" style={{ color: colors.dangerText }}>Access Denied</p>
-          <p className="mb-4" style={{ color: colors.muted }}>Only the client and assigned freelancer can view this chat.</p>
-          <Link href="/jobs" className="hover:underline" style={{ color: colors.primaryFg }}>Back to Jobs</Link>
+          <p className="mb-4" style={{ color: colors.muted }}>Only the {isSubContract ? "primary freelancer and sub-contractor" : "client and assigned freelancer"} can view this chat.</p>
+          <Link href={isSubContract ? "/sub-contracts" : "/jobs"} className="hover:underline" style={{ color: colors.primaryFg }}>
+            Back to {isSubContract ? "Sub-Contracts" : "Jobs"}
+          </Link>
         </div>
       </div>
     );
@@ -204,15 +233,19 @@ export default function ChatPage() {
   const statusLabel = ["Open", "In Progress", "Completed", "Cancelled", "Disputed", "Delivered"][job.status] ?? "Unknown";
   const otherParty = job.client.toLowerCase() === address.toLowerCase()
     ? job.selectedFreelancer : job.client;
-  const otherRole = job.client.toLowerCase() === address.toLowerCase() ? "Freelancer" : "Client";
+  const otherRole = job.client.toLowerCase() === address.toLowerCase()
+    ? (isSubContract ? "Sub-Contractor" : "Freelancer")
+    : (isSubContract ? "Primary Freelancer" : "Client");
+  const backHref = isSubContract ? "/sub-contracts" : "/jobs";
+  const backLabel = isSubContract ? "Sub-Contracts" : "Jobs";
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col h-[calc(100vh-72px)]">
 
       {/* Header */}
       <div className="mb-4">
-        <Link href="/jobs" className="text-sm hover:underline mb-2 inline-block" style={{ color: colors.primaryFg }}>
-          ← Back to Jobs
+        <Link href={backHref} className="text-sm hover:underline mb-2 inline-block" style={{ color: colors.primaryFg }}>
+          ← Back to {backLabel}
         </Link>
         <div className="rounded-2xl p-4 shadow-sm flex items-start justify-between gap-4 border"
           style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
@@ -254,7 +287,7 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-12" style={{ color: colors.muted }}>
-            <div className="text-4xl mb-3">💬</div>
+            <MessageCircle size={40} className="mb-3" />
             <p className="font-medium">No messages yet</p>
             <p className="text-sm mt-1">Start the conversation below.</p>
           </div>
@@ -297,7 +330,7 @@ export default function ChatPage() {
       {attachment && (
         <div className="mb-2 flex items-center gap-3 rounded-xl px-4 py-2 border"
           style={{ background: colors.primaryLight, borderColor: colors.primary + "33" }}>
-          <span style={{ color: colors.primaryFg }} className="text-lg">📎</span>
+          <Paperclip size={18} style={{ color: colors.primaryFg }} />
           <span className="text-sm truncate flex-1" style={{ color: colors.primaryFg }}>{attachment.name}</span>
           <button onClick={() => setAttachment(null)}
             className="text-lg leading-none" style={{ color: colors.muted }}>&times;</button>
@@ -372,7 +405,7 @@ function AttachmentBubble({ attachment, isMine, colors }: { attachment: Attachme
         ? { background: colors.primaryHover, borderColor: colors.primary, color: colors.primaryText }
         : { background: colors.cardBg, borderColor: colors.cardBorder, color: colors.primaryFg }
       }>
-      <span>📄</span>
+      <span><FileText size={16} /></span>
       <span className="truncate max-w-[180px]">{attachment.name}</span>
       <span className="opacity-60 text-xs">↓</span>
     </a>

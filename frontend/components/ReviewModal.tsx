@@ -4,6 +4,7 @@ import { JsonRpcSigner } from "ethers";
 import { getUserProfile } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
 import { Label } from "@/components/reactbits/Label";
+import { Star } from "lucide-react";
 
 interface Props {
   jobId: bigint;
@@ -86,7 +87,7 @@ export default function ReviewModal({ jobId, revieweeAddress, revieweeLabel, job
           {mandatory && (
             <div className="flex-1 flex items-center gap-1.5 text-xs border rounded-xl px-3 justify-center"
               style={{ background: colors.warningBg, color: colors.warningText, borderColor: colors.warningText + "44" }}>
-              ⭐ Review is required to close
+              <Star size={14} className="inline mr-1" />Review is required to close
             </div>
           )}
           <button onClick={submit} disabled={loading || rating === 0 || !comment.trim()}

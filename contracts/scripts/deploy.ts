@@ -119,7 +119,11 @@ async function main() {
   const scAddr = await subContracting.getAddress();
   console.log("  SubContracting:", scAddr);
 
-  console.log("  SubContracting: deployed (standalone)");
+  // SubContracting → set VRT, DisputeResolution; grant MINTER_ROLE
+  await subContracting.setVRTToken(vrtAddr);
+  await subContracting.setDisputeResolutionContract(disputeAddr);
+  await vrt.grantRole(MINTER_ROLE, scAddr);
+  console.log("  SubContracting: linked VRT, DR, MINTER_ROLE granted");
 
 
 

@@ -8,6 +8,7 @@ import ReviewModal from "@/components/ReviewModal";
 import TaskBoard from "@/components/TaskBoard";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
+import { Star, ClipboardList, Package, Heart, MessageCircle, Video, Handshake, Users, Lock, AlertTriangle, PenLine, Pencil, Clock } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -317,7 +318,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
             <span className="text-xs font-medium px-2 py-1 rounded-full"
               style={{ background: colors.primaryLight, color: colors.primaryFg }}>{job.category}</span>
             {job.sealedBidding && <span className="text-xs font-medium px-2 py-1 rounded-full ml-1"
-              style={{ background: colors.warningBg, color: colors.warningText }}>🔒 Sealed</span>}
+              style={{ background: colors.warningBg, color: colors.warningText }}><Lock size={12} className="inline" /> Sealed</span>}
             <h2 className="text-xl font-bold mt-2" style={{ color: colors.pageFg }}>{job.title}</h2>
             {(() => {
               const accepted = bids.find(b => b.id === job.acceptedBidId);
@@ -342,7 +343,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs px-2.5 py-1.5 rounded-lg font-medium hidden sm:block border"
                 style={{ background: colors.warningBg, color: colors.warningText, borderColor: colors.warningText + "44" }}>
-                ⭐ Review required
+                <Star size={14} className="inline" /> Review required
               </span>
               <button disabled title="Submit your review first"
                 className="text-2xl leading-none shrink-0 cursor-not-allowed" style={{ color: colors.muted }}>&times;</button>
@@ -381,7 +382,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {/* Sealed bid info banner */}
               {job.sealedBidding && (
                 <div className="rounded-xl p-4 border" style={{ background: colors.warningBg, borderColor: colors.warningText + "33" }}>
-                  <p className="font-semibold text-sm" style={{ color: colors.warningText }}>🔒 Sealed Bid Job</p>
+                  <p className="font-semibold text-sm" style={{ color: colors.warningText }}><Lock size={14} className="inline mr-1" />Sealed Bid Job</p>
                   <p className="text-xs mt-1" style={{ color: colors.warningText }}>
                     {isClient
                       ? "You can see all bids. Freelancers can only see their own bid."
@@ -440,17 +441,17 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <Link href={`/chat/${job.id.toString()}`}
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
-                    💬 Open Chat
+                    <MessageCircle size={16} /> Open Chat
                   </Link>
                   <a href={`https://meet.jit.si/verity-job-${job.id.toString()}`} target="_blank" rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ background: colors.infoBg, borderColor: colors.infoText + "33", color: colors.infoText }}>
-                    📹 Start Video Call
+                    <Video size={16} /> Start Video Call
                   </a>
                   <button onClick={() => setShowTaskBoard(true)}
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
-                    📋 Task Board
+                    <ClipboardList size={16} /> Task Board
                   </button>
                 </>
               )}
@@ -459,7 +460,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <Link href={`/sub-contracts?jobId=${job.id.toString()}`}
                   className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                   style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
-                  🤝 Sub-Contract Part of This Job
+                  <Handshake size={16} /> Sub-Contract Part of This Job
                 </Link>
               )}
               {/* Milestones */}
@@ -495,7 +496,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <button onClick={deliverJob} disabled={!!txLoading}
                   className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
                   style={{ background: "#7c3aed", color: "#fff" }}>
-                  {txLoading === "Delivering…" ? "Delivering…" : "📦 Mark as Delivered"}
+                  {txLoading === "Delivering…" ? "Delivering…" : <><Package size={16} className="inline mr-1" />Mark as Delivered</>}
                 </button>
               )}
               {isClient && (
@@ -510,7 +511,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <button onClick={() => setShowSettlementForm(true)}
                   className="w-full border rounded-lg py-2 text-sm"
                   style={{ borderColor: colors.infoText + "55", color: colors.infoText }}>
-                  🤝 Propose Settlement
+                  <Handshake size={14} className="inline mr-1" />Propose Settlement
                 </button>
               )}
               {showSettlementForm && (
@@ -563,7 +564,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {/* Active settlement from other party */}
               {settlement && settlement.active && settlement.proposer.toLowerCase() !== currentAddress?.toLowerCase() && (
                 <div className="rounded-xl p-4 border space-y-3" style={{ background: colors.infoBg, borderColor: colors.infoText + "33" }}>
-                  <p className="font-semibold text-sm" style={{ color: colors.infoText }}>🤝 Settlement Proposal</p>
+                  <p className="font-semibold text-sm" style={{ color: colors.infoText }}><Handshake size={14} className="inline mr-1" />Settlement Proposal</p>
                   {(() => {
                     const ab = bids.find(b => b.id === job.acceptedBidId);
                     const amt = ab ? ab.amount : job.budget;
@@ -616,7 +617,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
           {liveStatus === 5 && signer && (
             <div className="space-y-3">
               <div className="rounded-xl p-4 border" style={{ background: "#ede9fe", borderColor: "#7c3aed33" }}>
-                <p className="font-semibold text-sm" style={{ color: "#7c3aed" }}>📦 Work has been delivered</p>
+                <p className="font-semibold text-sm" style={{ color: "#7c3aed" }}><Package size={14} className="inline mr-1" />Work has been delivered</p>
                 <p className="text-xs mt-1" style={{ color: "#6d28d9" }}>
                   Delivered {formatDate(job.deliveredAt)}. Auto-release in {autoReleasePeriod != null ? timeRemaining(Number(job.deliveredAt) + autoReleasePeriod) : "…"}.
                 </p>
@@ -627,12 +628,12 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <Link href={`/chat/${job.id.toString()}`}
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
-                    💬 Open Chat
+                    <MessageCircle size={16} /> Open Chat
                   </Link>
                   <a href={`https://meet.jit.si/verity-job-${job.id.toString()}`} target="_blank" rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ background: colors.infoBg, borderColor: colors.infoText + "33", color: colors.infoText }}>
-                    📹 Start Video Call
+                    <Video size={16} /> Start Video Call
                   </a>
                 </>
               )}
@@ -648,7 +649,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <button onClick={requestRevision} disabled={!!txLoading}
                     className="w-full border rounded-lg py-2 text-sm disabled:opacity-60"
                     style={{ borderColor: "#7c3aed55", color: "#7c3aed" }}>
-                    {txLoading === "Requesting revision…" ? "Requesting…" : "✏️ Request Revision"}
+                    {txLoading === "Requesting revision…" ? "Requesting…" : <><Pencil size={14} className="inline mr-1" />Request Revision</>}
                   </button>
                 </>
               )}
@@ -656,7 +657,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {/* Settlement — both parties can propose or respond */}
               {(isClient || isFreelancer) && settlement && settlement.active && settlement.proposer.toLowerCase() !== currentAddress?.toLowerCase() && (
                 <div className="rounded-xl p-4 border space-y-3" style={{ background: colors.infoBg, borderColor: colors.infoText + "33" }}>
-                  <p className="font-semibold text-sm" style={{ color: colors.infoText }}>🤝 Settlement Proposal</p>
+                  <p className="font-semibold text-sm" style={{ color: colors.infoText }}><Handshake size={14} className="inline mr-1" />Settlement Proposal</p>
                   {(() => {
                     const ab = bids.find(b => b.id === job.acceptedBidId);
                     const amt = ab ? ab.amount : job.budget;
@@ -683,7 +684,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <button onClick={() => setShowSettlementForm(true)}
                   className="w-full border rounded-lg py-2 text-sm"
                   style={{ borderColor: colors.infoText + "55", color: colors.infoText }}>
-                  🤝 Propose Settlement
+                  <Handshake size={14} className="inline mr-1" />Propose Settlement
                 </button>
               )}
               {showSettlementForm && (
@@ -776,14 +777,14 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   {activeDisputeId && disputeInitiator ? (
                     currentAddress?.toLowerCase() === disputeInitiator.toLowerCase() ? (
                       <>
-                        <p className="font-semibold text-sm" style={{ color: colors.warningText }}>⚠️ You raised a dispute</p>
+                        <p className="font-semibold text-sm" style={{ color: colors.warningText }}><AlertTriangle size={14} className="inline mr-1" />You raised a dispute</p>
                         <p className="text-xs mt-1" style={{ color: colors.warningText }}>
                           You can cancel below. Voting on the <a href="/disputes" className="underline font-medium">Disputes page</a>.
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="font-semibold text-sm" style={{ color: colors.dangerText }}>⚠️ A dispute has been raised</p>
+                        <p className="font-semibold text-sm" style={{ color: colors.dangerText }}><AlertTriangle size={14} className="inline mr-1" />A dispute has been raised</p>
                         <p className="text-xs mt-1" style={{ color: colors.dangerText }}>
                           {disputeResponseSubmitted
                             ? <>Your response submitted. Voting on <a href="/disputes" className="underline font-medium">Disputes page</a>.</>
@@ -792,7 +793,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       </>
                     )
                   ) : (
-                    <p className="font-semibold text-sm" style={{ color: colors.dangerText }}>⚠️ A dispute has been raised</p>
+                    <p className="font-semibold text-sm" style={{ color: colors.dangerText }}><AlertTriangle size={14} className="inline mr-1" />A dispute has been raised</p>
                   )}
                 </div>
               )}
@@ -801,7 +802,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <Link href={`/chat/${job.id.toString()}`}
                   className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                   style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
-                  💬 Open Chat
+                  <MessageCircle size={16} /> Open Chat
                 </Link>
               )}
 
@@ -818,7 +819,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   </button>
                 ) : (
                   <div className="rounded-lg p-3 text-xs border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.muted }}>
-                    🔒 Cancellation window closed.
+                    <Lock size={14} className="inline mr-1" />Cancellation window closed.
                   </div>
                 );
               })()}
@@ -848,7 +849,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     <button onClick={() => setShowResponseForm(true)}
                       className="w-full border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                       style={{ borderColor: colors.infoText + "55", color: colors.infoText }}>
-                      ✍️ Submit Your Side of the Dispute
+                      <PenLine size={14} className="inline mr-1" />Submit Your Side of the Dispute
                     </button>
                   )
                 ) : (
@@ -873,7 +874,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {isClient && (
                 showTipForm ? (
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
-                    <h4 className="font-semibold" style={{ color: colors.pageFg }}>💝 Send a Tip</h4>
+                    <h4 className="font-semibold flex items-center gap-1.5" style={{ color: colors.pageFg }}><Heart size={16} /> Send a Tip</h4>
                     <p className="text-xs" style={{ color: colors.muted }}>Show your appreciation with an extra payment.</p>
                     <Input type="number" step="0.001" min="0.001" placeholder={`Tip amount in ${NATIVE_SYMBOL}`}
                       containerClassName="w-full"
@@ -892,7 +893,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <button onClick={() => setShowTipForm(true)}
                     className="w-full border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ borderColor: colors.primary + "55", color: colors.primaryFg }}>
-                    💝 Tip Freelancer
+                    <Heart size={16} className="inline mr-1" />Tip Freelancer
                   </button>
                 )
               )}
@@ -940,7 +941,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                         <p className="text-xs font-mono mt-0.5" style={{ color: colors.muted }}>
                           {bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() ? "You" : shortenAddress(bid.freelancer)}
                           {Number(bid.completionDays) > 0 && (
-                            <span className="ml-2 font-sans">⏱ {Number(bid.completionDays)} days</span>
+                            <span className="ml-2 font-sans"><Clock size={12} className="inline mr-0.5" />{Number(bid.completionDays)} days</span>
                           )}
                           {bid.id === job.acceptedBidId && (
                             <span className="ml-2 font-medium" style={{ color: colors.successText }}>✓ Accepted</span>

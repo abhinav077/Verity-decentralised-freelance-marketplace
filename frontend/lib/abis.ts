@@ -304,26 +304,57 @@ export const BOUNTY_BOARD_ABI = [
 
 // ── SubContracting ──────────────────────────────────────────────────────────
 
-const SUB_CONTRACT_TUPLE = "tuple(uint256 id, uint256 parentJobId, address primaryFreelancer, address subContractor, string description, uint256 payment, uint8 status, uint256 createdAt, uint256 completedAt)";
+const SC_BID_TUPLE = "tuple(uint256 id, uint256 scId, address bidder, uint256 amount, uint256 completionDays, string proposal, uint256 timestamp, bool isActive)";
+
+const SC_SETTLEMENT_TUPLE = "tuple(address proposer, uint256 freelancerPercent, bool active)";
+
+const SUB_CONTRACT_TUPLE = "tuple(uint256 id, uint256 parentJobId, address primaryFreelancer, address subContractor, string description, uint256 payment, uint8 status, uint256 createdAt, uint256 deliveredAt, uint256 completedAt, uint256 acceptedBidId)";
 
 export const SUB_CONTRACTING_ABI = [
   "function subContractCounter() view returns (uint256)",
+  "function AUTO_RELEASE_PERIOD() view returns (uint256)",
+  // Create
   "function createSubContract(uint256 parentJobId, address subContractor, string description) external payable returns (uint256)",
+  // Bidding
+  "function placeBid(uint256 scId, uint256 amount, uint256 completionDays, string proposal) external returns (uint256)",
+  "function withdrawBid(uint256 bidId) external",
+  "function acceptBid(uint256 bidId) external",
+  // Legacy apply/assign (still supported)
   "function applyForSubContract(uint256 scId) external",
   "function assignSubContractor(uint256 scId, address _sub) external",
-  "function submitWork(uint256 scId) external",
+  // Delivery lifecycle
+  "function deliverWork(uint256 scId) external",
   "function approveWork(uint256 scId) external",
+  "function requestRevision(uint256 scId) external",
+  "function autoRelease(uint256 scId) external",
+  // Cancel
   "function cancelSubContract(uint256 scId) external",
+  // Settlement
+  "function requestSettlement(uint256 scId, uint256 freelancerPct) external",
+  "function respondToSettlement(uint256 scId, bool accept) external",
+  // Dispute hooks
+  "function markDisputed(uint256 scId) external",
+  // Views
   `function getSubContract(uint256 id) view returns (${SUB_CONTRACT_TUPLE})`,
   `function getJobSubContracts(uint256 jobId) view returns (${SUB_CONTRACT_TUPLE}[])`,
   `function getUserSubContracts(address user) view returns (${SUB_CONTRACT_TUPLE}[])`,
   `function getOpenSubContracts() view returns (${SUB_CONTRACT_TUPLE}[])`,
   "function getApplications(uint256 scId) view returns (address[])",
+  `function getScBids(uint256 scId) view returns (${SC_BID_TUPLE}[])`,
+  `function getSettlement(uint256 scId) view returns (${SC_SETTLEMENT_TUPLE})`,
   "function hasApplied(uint256 scId, address user) view returns (bool)",
+  "function hasBidOn(uint256 scId, address user) view returns (bool)",
+  // Events
   "event SubContractCreated(uint256 indexed id, uint256 indexed parentJobId, address indexed primaryFreelancer, uint256 payment, bool isOpen)",
-  "event ApplicationSubmitted(uint256 indexed id, address indexed applicant)",
-  "event SubContractorAssigned(uint256 indexed id, address indexed subContractor)",
-  "event WorkSubmitted(uint256 indexed id, address indexed subContractor)",
+  "event BidPlaced(uint256 indexed bidId, uint256 indexed scId, address indexed bidder, uint256 amount)",
+  "event BidAccepted(uint256 indexed bidId, uint256 indexed scId, address indexed subContractor)",
+  "event WorkDelivered(uint256 indexed id, address indexed subContractor, uint256 autoReleaseAt)",
   "event WorkApproved(uint256 indexed id, address indexed subContractor, uint256 payment)",
+  "event RevisionRequested(uint256 indexed id)",
   "event SubContractCancelled(uint256 indexed id)",
+  "event AutoReleased(uint256 indexed id)",
+  "event DisputeRaised(uint256 indexed id, address indexed initiator)",
+  "event SettlementRequested(uint256 indexed id, address indexed proposer, uint256 freelancerPercent)",
+  "event SettlementAccepted(uint256 indexed id)",
+  "event SettlementRejected(uint256 indexed id)",
 ] as const;

@@ -5,6 +5,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getGovernance, CONTRACT_ADDRESSES, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
 import { Input } from "@/components/reactbits/Input";
+import { Paperclip, Wallet, Link as LinkIcon } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -44,6 +45,7 @@ export default function CrowdfundingPage() {
   const [updateLink, setUpdateLink] = useState("");
   // Contribute amount
   const [contributeAmt, setContributeAmt] = useState("");
+  const [withdrawn, setWithdrawn] = useState<Record<string, bigint>>({});
 
   const configured = CONTRACT_ADDRESSES.Governance !== "";
 
@@ -70,6 +72,15 @@ export default function CrowdfundingPage() {
         } catch {}
       }
       setProjects(list.reverse());
+      // Load withdrawn amounts for each project
+      const wMap: Record<string, bigint> = {};
+      for (const p of list) {
+        try {
+          const w = await gov.crowdfundWithdrawn(p.id);
+          if (w > 0n) wMap[p.id.toString()] = w;
+        } catch {}
+      }
+      setWithdrawn(wMap);
       // Load user contributions
       if (address) {
         const contribs: Record<string, bigint> = {};
@@ -296,7 +307,7 @@ export default function CrowdfundingPage() {
                   <p className="text-xs mb-3">
                     <a href={p.proofLink} target="_blank" rel="noopener noreferrer"
                       style={{ color: colors.primaryFg }} className="hover:underline">
-                      📎 Project documentation / proof
+                      <Paperclip size={12} className="inline mr-1" />Project documentation / proof
                     </a>
                   </p>
                 )}
@@ -318,12 +329,13 @@ export default function CrowdfundingPage() {
                       </button>
                     </div>
                   )}
-                  {isCreator && isFunded && !p.fundsWithdrawn && (
+                  {isCreator && (isActive || isFunded) && (p.totalRaised - (withdrawn[pid] || 0n)) > 0n && (
                     <button onClick={() => withdrawFunds(p.id)}
                       disabled={!!txLoading}
-                      className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-60 btn-hover"
+                      className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-60 btn-hover flex items-center gap-1.5"
                       style={{ background: colors.successText, color: "#fff" }}>
-                      {txLoading === `withdraw-${pid}` ? "…" : "💰 Withdraw Funds"}
+                      <Wallet size={14} />
+                      {txLoading === `withdraw-${pid}` ? "…" : `Withdraw ${formatEth(p.totalRaised - (withdrawn[pid] || 0n))} ${NATIVE_SYMBOL}`}
                     </button>
                   )}
                   {isCreator && isActive && (
@@ -373,7 +385,7 @@ export default function CrowdfundingPage() {
                             {u.link && (
                               <a href={u.link} target="_blank" rel="noopener noreferrer"
                                 className="text-xs hover:underline mt-1 block" style={{ color: colors.primaryFg }}>
-                                🔗 {u.link}
+                                <LinkIcon size={12} className="inline mr-1" />{u.link}
                               </a>
                             )}
                             <p className="text-[10px] mt-1" style={{ color: colors.muted }}>{formatDate(u.timestamp)}</p>

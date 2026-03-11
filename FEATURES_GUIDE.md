@@ -32,9 +32,9 @@
 **Verity** is a decentralized freelance marketplace on Ethereum. Clients post jobs, freelancers bid, payments are held in smart contract escrow, and disputes are resolved by community voting. Everything (payments, reputation, reviews) lives on-chain — no middleman.
 
 **Key Concepts:**
-- **ETH** = real money (Ether cryptocurrency) used for payments, bounties, crowdfunding
+- **ETH / MATIC** = real cryptocurrency used for payments, bounties, crowdfunding (ETH on Ethereum/Base, MATIC on Polygon)
 - **VRT (Verity Reputation Token)** = soulbound (non-transferable) reputation points earned by working on the platform
-- **Escrow** = a smart contract that holds the client's ETH safely until work is complete
+- **Escrow** = a smart contract that holds the client's funds safely until work is complete
 - **On-chain** = stored permanently on the blockchain, visible to everyone, cannot be edited or deleted
 
 ---
@@ -116,7 +116,7 @@ Click on any **Open** job → the detail modal opens → scroll to "Place a Bid"
 | Output | Details |
 |---|---|
 | **On success** | Your bid appears in the job's bid list |
-| **Rules** | One bid per freelancer per job. If `Min VRT to Bid` is set (admin config), you need that many VRT tokens to bid. |
+| **Rules** | One bid per freelancer per job. |
 | **Sealed bidding** | If enabled, other freelancers cannot see your bid — only the client sees all bids |
 | **Cost** | Gas fee only |
 
@@ -148,33 +148,37 @@ Once a bid is accepted, here's the complete flow:
 ```
 Open → [Bid Accepted] → In Progress → [Freelancer Delivers] → Delivered
                               ↓                                    ↓
-                         [Client Cancels]                [Client Completes] → Completed
-                              ↓                          [Client Requests Revision] → back to In Progress
-                          Cancelled                      [14 days pass, no action] → Auto-Released → Completed
-                              ↓
-                         [Either party raises dispute] → Disputed → [Voting] → Resolved → Completed
+                         [Either party                   [Client Completes] → Completed
+                          raises dispute]                [Client Requests Revision] → back to In Progress
+                              ↓                          [14 days pass, no action] → Auto-Released → Completed
+                          Disputed → [Voting] → Resolved → Completed
 ```
 
 ### Available Actions by Status
+
+#### Open
+
+| Action | Who | What It Does | Inputs |
+|---|---|---|---|
+| **Cancel Job** | Client | Cancels the job before any bid is accepted. No penalty. | None |
 
 #### In Progress
 
 | Action | Who | What It Does | Inputs |
 |---|---|---|---|
 | **Deliver Job** | Freelancer | Marks the job as "Delivered" and starts a 14-day auto-release timer | None (just click) |
-| **Cancel Job** | Client | Cancels the job. Freelancer gets refunded but client pays a 5% penalty | None |
 | **Raise Dispute** | Client or Freelancer | Opens a dispute (see Section 7) | Reason text |
 | **Propose Settlement** | Either party | Propose a mutual money split without going to dispute | % complete (0-100), Freelancer's share % (0-100) |
 | **Chat** | Client or Freelancer | Open the job chat room | — |
 | **Video Call** | Either party | Opens a Jitsi video call room | — |
-| **Task Board** | Freelancer (edit) / Client (view-only) | Kanban board to track sub-tasks | — |
+| **Task Board** | Freelancer (edit) / Client (view-only) | — |
 | **Sub-Contract** | Freelancer | Delegate part of work to someone else (see Section 9) | — |
 
 #### Delivered
 
 | Action | Who | What It Does | Inputs |
 |---|---|---|---|
-| **Complete Job & Release Payment** | Client | Approves the delivery. ETH released from escrow to freelancer (minus platform fee). Both parties earn VRT reputation tokens. | None |
+| **Complete Job & Release Payment** | Client | Approves the delivery. ETH released from escrow to freelancer. Both parties earn VRT reputation tokens. | None |
 | **Request Revision** | Client | Sends job back to "In Progress" — freelancer must re-deliver | None |
 | **Tip Freelancer** | Client | Send extra ETH as a bonus | ETH amount |
 | **Auto-Release** | Anyone (after 14 days) | If the client hasn't acted for 14 days, anyone can trigger auto-release to complete the job | None |
@@ -194,7 +198,7 @@ Instead of going to a dispute, either party can propose a settlement:
 |---|---|---|
 | 1 | **Propose Settlement** | One party enters: "% of work complete" and "freelancer's share %". Example: 60% complete, freelancer gets 60% |
 | 2 | **Other Party Responds** | Accept → funds are split per the agreed percentages. Reject → proposal cancelled, parties can try again or raise dispute |
-| 3 | **Result** | If accepted: freelancer gets their % (minus platform fee), client gets the rest. Job is completed. |
+| 3 | **Result** | If accepted: freelancer gets their %, client gets the rest. Job is completed. |
 
 ---
 
@@ -249,7 +253,7 @@ Raise Dispute → Response Phase (3 days) → Voting Phase (5 days) → Resoluti
 | **Submit Evidence** | Either party | Provide IPFS hash/link to supporting evidence (screenshots, files, etc.) |
 | **Set Proportion Demand** | Either party | Enter what % of the escrow funds you believe you deserve (0-100%) |
 | **Withdraw Dispute** | Initiator only | Cancel the dispute → job returns to "In Progress" |
-| **Escalate to Admin** | Either party (after 3-day deadline passes with no response) | Skip voting, let admin decide |
+| **Escalate to Admin** | Either party (after 3-day response deadline + 7-day grace period passes with no response) | Skip voting, let admin decide |
 
 ### Phase 3: Voting Phase (5 days)
 
@@ -284,7 +288,7 @@ After the 5-day voting deadline:
 | **Client wins** (most votes) | The client's proportion demand is used. Example: client demanded 70% → client gets 70% of escrow, freelancer gets 30% |
 | **Freelancer wins** | The freelancer's proportion demand is used. Example: freelancer demanded 80% → freelancer gets 80%, client gets 20% |
 | **Re-Proportion wins** | No one wins yet! The voting resets to a new round. Both parties can adjust their demands. Community votes again. |
-| **Tie** | Client wins (client advantage on ties) |
+| **Tie** | 50-50 tie triggers a new voting round (re-vote). Both parties can adjust their demands. |
 | **No votes at all** | Either party can escalate to admin |
 
 ### Dispute Status Reference
@@ -294,7 +298,7 @@ After the 5-day voting deadline:
 | **Response Phase** | Waiting for the other party to respond (3-day window) |
 | **Voting Phase** | Community is voting (5-day window) |
 | **Resolved** | Voting completed, funds distributed |
-| **Auto-Resolved** | 14 days passed with no action, system resolved automatically |
+| **Auto-Resolved** | 10 days passed with no action, system resolved automatically |
 | **Withdrawn** | Initiator cancelled the dispute |
 | **Escalated to Admin** | Admin will decide the outcome |
 
@@ -309,8 +313,8 @@ After the 5-day voting deadline:
 
 ### Auto-Resolution (Safety Net)
 
-If a dispute has been open for 14 days with no resolution:
-- **If no votes were cast** → The non-initiator (the person who didn't raise the dispute) wins
+If a dispute has been open for 10 days with no resolution:
+- **If no votes were cast** → The initiator (the person who raised the dispute) wins
 - **If votes exist** → The side with the majority wins
 
 ---
@@ -366,14 +370,14 @@ When the number of approved submissions equals Max Winners, the bounty auto-comp
 
 ## 9. Sub-Contracting
 
-A freelancer who has been hired for a job can delegate part (or all) of the work to another freelancer.
+A freelancer who has been hired for a job can delegate part (or all) of the work to another freelancer. Sub-contracts follow the same full lifecycle as regular jobs: bidding, delivery, revision, auto-release, disputes, and settlement.
 
 ### Two Modes
 
 | Mode | How It Works |
 |---|---|
-| **Direct Assignment** | You know who to assign → enter their wallet address when creating |
-| **Open Listing** | Leave the sub-contractor address empty → other freelancers can browse and apply |
+| **Direct Assignment** | You know who to assign — enter their wallet address when creating. Status starts at Active. |
+| **Open Listing (Bidding)** | Leave the sub-contractor address empty — other freelancers can browse and place bids with their proposed amount, completion time, and a short proposal. |
 
 ### Creating a Sub-Contract
 
@@ -384,24 +388,66 @@ A freelancer who has been hired for a job can delegate part (or all) of the work
 | **Work Description** | Yes | What the sub-contractor needs to do | "Design the UI mockups" |
 | **Payment** | Yes | ETH amount (sent with transaction, locked in contract) | 0.1 |
 
+### Bidding (Open Listings)
+
+When an open listing is posted, any freelancer (except the poster) can place a bid:
+
+| Field | Description |
+|---|---|
+| **Bid Amount** | How much ETH the bidder wants for the work |
+| **Completion Days** | Estimated days to finish |
+| **Proposal** | A short message explaining why they're a good fit |
+
+- A bidder may withdraw their bid before it is accepted.
+- The primary freelancer reviews bids and clicks **Accept** on the best one. The sub-contractor is assigned and the sub-contract moves to Active.
+
 ### Sub-Contract Lifecycle
 
 ```
-Created → [Direct: Active immediately / Open: Wait for applications] → Active → Submitted → Approved (paid)
-  ↓
-[Cancel at any time before approval → refund]
+Created → [Direct: Active / Open: Bidding] → Active → Delivered → Completed
+                                                ↓          ↓
+                                             Disputed   Revision → Active (loop)
+                                                ↓
+                                              Resolved
+Cancel: only when Open (before any sub-contractor is assigned) → ETH refunded
 ```
 
-| Step | Who | Action |
-|---|---|---|
-| 1 (Direct) | — | Sub-contract created as "Active" |
-| 1 (Open) | Freelancers | Browse open listings, click "Apply" |
-| 2 (Open) | Primary freelancer | View applicants, click "Assign" on one |
-| 3 | Sub-contractor | Click "Submit Work" when done |
-| 4 | Primary freelancer | Click "Approve & Release Payment" → ETH sent to sub-contractor |
-
-| Cancel | Primary freelancer can cancel if status is Open or Active → ETH refunded |
+| Status | Description |
 |---|---|
+| **Open** | Waiting for bids (open listing) or no sub-contractor yet |
+| **Active** | Sub-contractor assigned and working |
+| **Delivered** | Sub-contractor submitted their work; primary reviews |
+| **Completed** | Primary approved; payment released and VRT minted to both parties |
+| **Disputed** | Either party raised a dispute (resolved via DisputeResolution) |
+| **Cancelled** | Primary cancelled while Open; ETH refunded |
+
+### Delivery & Approval
+
+1. Sub-contractor clicks **Deliver Work** → status moves to Delivered.
+2. Primary freelancer can:
+   - **Approve** → payment released to sub-contractor, VRT minted to both.
+   - **Request Revision** → status reverts to Active (sub-contractor works again).
+
+### Auto-Release
+
+If the primary freelancer does not respond within **14 days** after delivery, anyone can trigger **Auto-Release** — the payment is sent to the sub-contractor automatically.
+
+### Settlement
+
+Either party can propose a **mutual settlement** during Active or Delivered status:
+- Proposer sets a percentage split (e.g., 60% to sub-contractor, 40% to primary).
+- The other party **accepts** (funds split accordingly) or **rejects** (no change).
+
+### Disputes
+
+Either party can open a dispute through the DisputeResolution contract. While disputed:
+- The sub-contract is frozen (no delivery/approval).
+- Community jurors vote on the outcome.
+- Resolution can: award to one party, split funds, or restore to Active.
+
+### Cancel
+
+The primary freelancer can cancel **only while the sub-contract is Open** (no sub-contractor assigned yet). ETH is refunded in full.
 
 ---
 
@@ -412,7 +458,7 @@ The platform has a DAO (Decentralized Autonomous Organization) for community dec
 ### Viewing Governance Stats
 
 The governance page header shows:
-- **Treasury Balance** — ETH collected from platform fees
+- **Treasury Balance** — ETH held in the governance treasury (can receive direct deposits)
 - **Your VRT Balance** — your voting power
 - **Total Proposals** — how many proposals have been created
 - **Min VRT to Propose** — minimum VRT needed to create a proposal (default: 100)
@@ -491,10 +537,12 @@ Community members can create crowdfunding campaigns for projects.
 
 | Status | What Can Happen |
 |---|---|
-| **Active** | Contributions accepted. Creator can post updates. Creator can cancel. |
-| **Funded** | Goal reached! Creator can withdraw funds (one-time). Creator can post updates. |
-| **Failed** | Deadline passed without reaching goal. Anyone can mark it failed. Contributors can get refunds. |
-| **Cancelled** | Creator cancelled. Contributors can get refunds. |
+| **Active** | Contributions accepted. Creator can withdraw available funds at any time. Creator can post updates. Creator can cancel (if there are remaining funds for refunds). |
+| **Funded** | Goal reached! Creator can withdraw remaining funds. Creator can post updates. |
+| **Failed** | Deadline passed without reaching goal. Anyone can mark it failed. Contributors can get refunds for unwithdrawn amounts. |
+| **Cancelled** | Creator cancelled. Contributors can get refunds for unwithdrawn amounts. |
+
+> **Note:** The progress bar always shows total amount raised vs. goal, regardless of how much the creator has withdrawn. Creators can withdraw available funds multiple times — each withdrawal transfers whatever hasn't been withdrawn yet.
 
 ### Posting Updates (Creator Only)
 
@@ -555,16 +603,16 @@ Achievements are unlocked automatically based on your activity:
 
 | Achievement | How to Unlock |
 |---|---|
-| 🏆 **First Job** | Complete your 1st job |
-| ⭐ **Experienced** | Complete 5 jobs |
-| 🎖️ **Veteran** | Complete 10 jobs |
-| 💯 **Perfect Score** | Receive a 5-star review |
-| ✍️ **Reviewer** | Submit your first review |
-| 🤝 **Endorsed** | Receive your first skill endorsement |
-| 📁 **Showcase** | Add your first portfolio item |
-| 🔥 **Popular** | Receive 5 reviews |
-| 🎯 **Bounty Hunter** | Complete a bounty |
-| 💰 **Top Earner** | Earn 1 ETH total on the platform |
+| **First Job** | Complete your 1st job |
+| **Experienced** | Complete 5 jobs |
+| **Veteran** | Complete 10 jobs |
+| **Perfect Score** | Receive a 5-star review |
+| **Reviewer** | Submit your first review |
+| **Endorsed** | Receive your first skill endorsement |
+| **Showcase** | Add your first portfolio item |
+| **Popular** | Receive 5 reviews |
+| **Bounty Hunter** | Complete a bounty |
+| **Top Earner** | Earn 1 ETH total on the platform |
 
 ---
 
@@ -612,22 +660,22 @@ VRT (Verity Reputation Token) is a **soulbound** token — it CANNOT be transfer
 
 Your tier is based on **total VRT ever earned** (not current balance — burning tokens doesn't lower your tier).
 
-| Tier | Total VRT Earned Required | Platform Fee Discount | Governance Vote Weight |
-|---|---|---|---|
-| 🥉 **Bronze** | 0 | 0% (full 2% fee) | 1× |
-| 🥈 **Silver** | 50 | 25% off (1.5% fee) | 1× |
-| 🥇 **Gold** | 200 | 50% off (1% fee) | 1× |
-| 💎 **Platinum** | 500 | 75% off (0.5% fee) | 2× |
+| Tier | Total VRT Earned Required | Governance Vote Weight |
+|---|---|---|
+| **Bronze** | 0 | 1× |
+| **Silver** | 50 | 1× |
+| **Gold** | 200 | 1× |
+| **Platinum** | 500 | 2× |
+
+> **Note:** The platform is currently fee-free (0% platform fee). Tier-based fee discounts will apply if a platform fee is introduced in the future.
 
 ### What VRT Unlocks
 
 | Feature | VRT Requirement |
 |---|---|
-| Bid on jobs (if configured) | Min VRT to Bid (admin-set, default 0) |
 | Vote on disputes | Min VRT to Vote (admin-set, default 0) |
 | Create governance proposals | 100 VRT |
 | Create crowdfunding projects | 5 VRT |
-| Lower platform fees | Automatic via tier |
 | Stronger governance votes | Platinum = 2× weight |
 
 ---
@@ -644,13 +692,11 @@ The Admin Panel is only accessible to the account that has the `ADMIN_ROLE` on t
 |---|---|---|---|
 | **Jobs** | Auto-Release Period | 14 days | Days after delivery before auto-payment |
 | **Jobs** | Reputation Reward | 10 VRT | VRT minted to both parties on job completion |
-| **Jobs** | Cancel Penalty | 500 BPS (5%) | % penalty when client cancels an in-progress job |
-| **Jobs** | Min VRT to Bid | 0 | Minimum VRT required to place a bid |
-| **Fees** | Platform Fee | 200 BPS (2%) | Fee taken from freelancer's payment |
+| **Fees** | Platform Fee | 0 BPS (0%) | Fee taken from freelancer's payment (currently fee-free) |
 | **Fees** | Max Fee Cap | 500 BPS (5%) | Maximum allowed platform fee |
 | **Disputes** | Response Period | 3 days | Time for opponent to respond |
 | **Disputes** | Voting Period | 5 days | Duration of community voting |
-| **Disputes** | Auto-Resolve Deadline | 14 days | Safety timeout for unresolved disputes |
+| **Disputes** | Auto-Resolve Deadline | 10 days | Safety timeout for unresolved disputes |
 | **Disputes** | Voter Reward | 2 VRT | VRT reward for voters on winning side |
 | **Disputes** | Min VRT to Vote | 0 | Minimum VRT to participate in dispute voting |
 | **Governance** | Min VRT to Propose | 100 VRT | Minimum VRT to create proposals |
@@ -664,13 +710,11 @@ The Admin Panel is only accessible to the account that has the `ADMIN_ROLE` on t
 | Action | What It Does |
 |---|---|
 | **Resolve Escalated Disputes** | Enter Freelancer % to manually resolve disputes escalated to admin |
-| **Withdraw Escrow Fees** | Collect accumulated platform fees |
 | **Withdraw Treasury** | Withdraw ETH from governance treasury |
 | **Execute Passed Proposals** | Execute proposals that have been voted and passed |
 | **Mint VRT** | Mint VRT to any address (for testing/rewards) |
 | **Burn VRT** | Burn VRT from any address |
 | **Set Tier Thresholds** | Change Silver/Gold/Platinum VRT requirements |
-| **Set Tier Fee Discounts** | Change fee discount percentages per tier |
 
 ---
 
@@ -680,10 +724,10 @@ The bell icon in the navbar shows notification count. Notifications are generate
 
 | Type | Trigger | What It Says |
 |---|---|---|
-| 🔔 **New Bids** | Someone bids on your open job | "X active bids on Job #Y" |
-| ⚠️ **Dispute** | A dispute involves you (response/voting phase) | "Active dispute on Job #Y" |
-| 💬 **Chat** | Unread messages from the other party | "Unread messages for Job #Y" |
-| ⭐ **Review** | Completed job not yet reviewed | "Review pending for Job #Y" |
+| **New Bids** | Someone bids on your open job | \"X active bids on Job #Y\" |
+| **Dispute** | A dispute involves you (response/voting phase) | \"Active dispute on Job #Y\" |
+| **Chat** | Unread messages from the other party | \"Unread messages for Job #Y\" |
+| **Review** | Completed job not yet reviewed | \"Review pending for Job #Y\" |
 
 Click the bell to see all notifications. Click a notification to go to the relevant page. Dismiss individual notifications with the × button.
 
@@ -700,7 +744,7 @@ Click the bell to see all notifications. Click a notification to go to the relev
 | 5 | **Complete Job** | Jobs (detail) | Accept delivery, release payment | None (click button) | ETH sent to freelancer, both earn 10 VRT | Client only |
 | 6 | **Request Revision** | Jobs (detail) | Ask for changes | None | Job → back to "In Progress" | Client (when Delivered) |
 | 7 | **Auto-Release** | Jobs (detail) | Force payment after 14 days | None | Job completed, freelancer paid | Anyone (after timer) |
-| 8 | **Cancel Job** | Jobs (detail) | Cancel the job | None | If Open: cancelled. If In Progress: refund + 5% penalty | Client only |
+| 8 | **Cancel Job** | Jobs (detail) | Cancel the job | None | Only when Open: cancelled, no penalty | Client only |
 | 9 | **Tip Freelancer** | Jobs (detail) | Send extra ETH bonus | ETH amount | ETH sent directly to freelancer | Client (after completion) |
 | 10 | **Propose Settlement** | Jobs (detail) | Agree on partial payment | % complete, Freelancer % | If accepted: funds split per agreement | Client or Freelancer |
 | 11 | **Submit Milestone** | Jobs (detail) | Submit a milestone phase | None (click button) | Milestone → "Submitted" | Freelancer |
@@ -715,31 +759,34 @@ Click the bell to see all notifications. Click a notification to go to the relev
 | 20 | **Submit Bounty Work** | Bounties | Submit work for a bounty | Description, IPFS Proof | Submission listed as "Pending" | Anyone (not poster) |
 | 21 | **Approve/Reject Submission** | Bounties | Judge bounty work | None (click button) | Approve: winner gets ETH + 5 VRT. Reject: nothing. | Bounty poster |
 | 22 | **Create Sub-Contract** | Sub-Contracts | Delegate work | Job ID, optional Address, Description, Payment (ETH) | Sub-contract created, ETH locked | Freelancer |
-| 23 | **Apply for Sub-Contract** | Sub-Contracts | Apply for open listing | None (click Apply) | Application recorded | Any freelancer |
-| 24 | **Approve Sub-Contract Work** | Sub-Contracts | Accept sub-contractor's delivery | None | ETH paid to sub-contractor | Primary freelancer |
-| 25 | **Create Proposal** | Governance | Propose platform change | Title, Description | Proposal → "Active", voting opens | Users with ≥100 VRT |
-| 26 | **Vote on Proposal** | Governance | Vote For or Against | For / Against | Vote recorded (VRT-weighted) | Any VRT holder |
-| 27 | **Create Crowdfund** | Crowdfunding | Start a fundraiser | Title, Description, Category, Proof Link, Goal (ETH), Duration (days) | Campaign listed as "Active" | Users with ≥5 VRT |
-| 28 | **Contribute to Crowdfund** | Crowdfunding | Fund a project | ETH amount | Progress bar updates. Auto-"Funded" when goal met. | Anyone (not creator) |
-| 29 | **Create Profile** | Profile | Set up identity | Name, Bio, Skills | Profile visible on-chain | Any connected wallet |
-| 30 | **Write Review** | Jobs/Profile | Rate the other party | Stars (1-5), Comment | Review on reviewee's profile (permanent) | After job completion |
-| 31 | **Endorse Skill** | Profile | Vouch for someone's skill | Skill name, optional Job ID | Endorsement on their profile | Any user (not self) |
-| 32 | **Add Portfolio** | Profile | Showcase work | Title, IPFS link, optional Job ID | Portfolio item on your profile | Profile owner |
-| 33 | **Chat** | Chat | Message the other party | Text message, optional file (≤1MB) | Chat bubbles with timestamps | Client + Freelancer |
-| 34 | **Task Board** | Jobs (detail) | Track sub-tasks | Task name | Kanban board: To Do / In Progress / Done | Freelancer (edit), Client (view) |
+| 23 | **Place Sub-Contract Bid** | Sub-Contracts | Bid on open listing | Amount (ETH), Completion Days, Proposal | Bid recorded; primary reviews | Any freelancer (not poster) |
+| 24 | **Accept Sub-Contract Bid** | Sub-Contracts | Assign winning bidder | Select bid | Sub-contract → Active | Primary freelancer |
+| 25 | **Deliver Sub-Contract Work** | Sub-Contracts | Mark work done | None | Sub-contract → Delivered, 14-day auto-release timer starts | Sub-contractor |
+| 26 | **Approve Sub-Contract Work** | Sub-Contracts | Accept delivery | None | ETH paid to sub-contractor, both earn 10 VRT | Primary freelancer |
+| 27 | **Request Revision** | Sub-Contracts | Ask for changes | None | Sub-contract → back to Active | Primary freelancer (when Delivered) |
+| 28 | **Auto-Release Sub-Contract** | Sub-Contracts | Force payment after 14 days | None | Sub-contract completed, sub-contractor paid | Anyone (after timer) |
+| 29 | **Propose Sub-Contract Settlement** | Sub-Contracts | Mutual fund split | Sub-contractor % | Other party accepts/rejects | Either party |
+| 30 | **Create Proposal** | Governance | Propose platform change | Title, Description | Proposal → "Active", voting opens | Users with ≥100 VRT |
+| 31 | **Vote on Proposal** | Governance | Vote For or Against | For / Against | Vote recorded (VRT-weighted) | Any VRT holder |
+| 32 | **Create Crowdfund** | Crowdfunding | Start a fundraiser | Title, Description, Category, Proof Link, Goal (ETH), Duration (days) | Campaign listed as "Active" | Users with ≥5 VRT |
+| 33 | **Contribute to Crowdfund** | Crowdfunding | Fund a project | ETH amount | Progress bar updates. Auto-"Funded" when goal met. | Anyone (not creator) |
+| 34 | **Create Profile** | Profile | Set up identity | Name, Bio, Skills | Profile visible on-chain | Any connected wallet |
+| 35 | **Write Review** | Jobs/Profile | Rate the other party | Stars (1-5), Comment | Review on reviewee's profile (permanent) | After job completion |
+| 36 | **Endorse Skill** | Profile | Vouch for someone's skill | Skill name, optional Job ID | Endorsement on their profile | Any user (not self) |
+| 37 | **Add Portfolio** | Profile | Showcase work | Title, IPFS link, optional Job ID | Portfolio item on your profile | Profile owner |
+| 38 | **Chat** | Chat | Message the other party | Text message, optional file (≤1 MB) | Chat bubbles with timestamps | Client + Freelancer |
+| 39 | **Task Board** | Jobs (detail) | Track sub-tasks | Task name | Kanban board: To Do / In Progress / Done | Freelancer (edit), Client (view) |
 
 ---
 
 ## Platform Fee Structure
 
+The platform is currently **fee-free** (0% platform fee) to encourage early adoption. The fee infrastructure exists in the smart contracts and can be activated by the admin in the future.
+
 | Item | Rate |
 |---|---|
-| **Base platform fee** | 2% of freelancer's payment |
-| **Fee discount (Silver)** | 25% off → effective 1.5% |
-| **Fee discount (Gold)** | 50% off → effective 1.0% |
-| **Fee discount (Platinum)** | 75% off → effective 0.5% |
-| **Cancellation penalty** | 5% of escrow amount (when client cancels In Progress job) |
-| **Where fees go** | Governance Treasury |
+| **Platform fee** | 0% (fee-free) |
+| **Job cancellation** | Only allowed when job is Open (before any bid is accepted). No penalty. |
 
 ---
 
@@ -747,7 +794,7 @@ Click the bell to see all notifications. Click a notification to go to the relev
 
 | Term | Meaning |
 |---|---|
-| **ETH** | Ether — the cryptocurrency used for all payments |
+| **ETH / MATIC** | The native cryptocurrency used for payments on the deployed network (ETH on Ethereum/Base, MATIC on Polygon) |
 | **VRT** | Verity Reputation Token — earned by working, cannot be transferred |
 | **Escrow** | Smart contract vault that holds payment until work is verified |
 | **Soulbound** | Token that is permanently attached to your wallet and cannot be sent to anyone |

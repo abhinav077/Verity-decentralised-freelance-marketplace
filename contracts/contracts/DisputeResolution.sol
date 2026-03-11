@@ -53,7 +53,7 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
 
     uint256 public RESPONSE_PERIOD      = 3 days;
     uint256 public VOTING_PERIOD         = 5 days;
-    uint256 public AUTO_RESOLVE_DEADLINE = 14 days;
+    uint256 public AUTO_RESOLVE_DEADLINE = 10 days;  // 3 days response + 7 days grace
 
     // ── Rewards ──────────────────────────────────────────────────────────
 
@@ -348,8 +348,21 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
             return;
         }
 
-        // Determine winner
-        bool clientWins = d.clientVotes >= d.freelancerVotes; // client wins ties
+        // Determine winner — ties trigger re-vote
+        if (d.clientVotes == d.freelancerVotes) {
+            // 50-50 tie: reset voting round for re-vote
+            d.votingRound++;
+            d.clientVotes = 0;
+            d.freelancerVotes = 0;
+            d.reProportionVotes = 0;
+            d.totalVoters = 0;
+            d.votingDeadline = block.timestamp + VOTING_PERIOD;
+
+            emit VotingReset(did, d.votingRound);
+            return;
+        }
+
+        bool clientWins = d.clientVotes > d.freelancerVotes;
         d.clientWon = clientWins;
 
         // Apply proportion demands
@@ -376,7 +389,7 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
 
     /**
      * @notice Either party can escalate to admin if:
-     *   - Response deadline passed with no response, OR
+     *   - Response deadline passed with no response AND 7-day grace period also passed, OR
      *   - Voting ended with no votes
      */
     function escalateToAdmin(uint256 did) external {
@@ -385,9 +398,9 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
 
         bool canEscalate = false;
 
-        // Case 1: Response deadline passed, no response given
+        // Case 1: Response deadline passed, no response given, and 7-day grace period passed
         if (d.status == Status.ResponsePhase &&
-            block.timestamp >= d.responseDeadline &&
+            block.timestamp >= d.responseDeadline + 7 days &&
             !d.responseSubmitted) {
             canEscalate = true;
         }
@@ -462,8 +475,8 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
 
         bool clientWins;
         if (d.totalVoters == 0) {
-            // No votes — respondent (non-initiator) wins
-            clientWins = d.initiator != d.client;
+            // No votes — initiator wins (they raised the dispute, other party didn't respond)
+            clientWins = d.initiator == d.client;
         } else {
             clientWins = d.clientVotes > d.freelancerVotes;
         }
@@ -477,7 +490,7 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
 
         emit DisputeAutoResolved(
             did,
-            d.totalVoters == 0 ? "No votes, respondent wins" : "Deadline reached"
+            d.totalVoters == 0 ? "No response, initiator wins" : "Deadline reached"
         );
     }
 

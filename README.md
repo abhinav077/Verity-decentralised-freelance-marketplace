@@ -1,6 +1,6 @@
 # Verity — Decentralized Freelancing Marketplace
 
-> A fully on-chain, trustless freelancing platform powered by Ethereum smart contracts, a soulbound reputation system, and a DAO governance layer.
+> A fully on-chain, trustless freelancing platform powered by Ethereum/Polygon smart contracts, a soulbound reputation system, and a DAO governance layer.
 
 ---
 
@@ -8,7 +8,7 @@
 
 Verity DFM is an open, permissionless freelancing marketplace where clients and freelancers interact directly through smart contracts — no intermediaries, no hidden fees, and no central authority. Payments are held in escrow, disputes are resolved by a decentralized jury, and reputation is built on-chain through a non-transferable token system.
 
-The platform is designed to be self-sustaining: a 1–2 % fee on every transaction flows into a DAO treasury that the community governs through VRT-weighted proposals.
+The platform is currently **fee-free** (0% platform fee) to encourage early adoption. A DAO treasury exists for community-governed proposals and crowdfunding.
 
 ---
 
@@ -22,7 +22,7 @@ The platform is designed to be self-sustaining: a 1–2 % fee on every transacti
 
 ### Reputation System
 - **VRT (Verity Reputation Token)** — Soulbound (non-transferable) ERC-20 token earned by completing jobs and contributing to the platform. It can never be bought, only earned.
-- **Tiers** — Bronze → Silver (50 VRT) → Gold (200 VRT) → Platinum (500 VRT), unlocking fee discounts, governance weight, and jury eligibility.
+- **Tiers** — Bronze → Silver (50 VRT) → Gold (200 VRT) → Platinum (500 VRT), unlocking governance weight and jury eligibility.
 
 ### User Profiles
 - On-chain profiles with name, bio, profile photo (IPFS), and skills.
@@ -33,7 +33,9 @@ The platform is designed to be self-sustaining: a 1–2 % fee on every transacti
 
 ### Dispute Resolution
 - Disputed jobs go to a jury of VRT-holding peers, weighted by tier.
-- Disputes can be escalated to admin arbitration.
+- 50-50 ties trigger a re-vote instead of auto-resolving.
+- Disputes auto-resolve after 10 days; initiator wins if no votes are cast.
+- Disputes can be escalated to admin arbitration after a 7-day grace period.
 
 ### Bounty Board
 - Anyone can post an open bounty with an ETH prize.
@@ -45,8 +47,8 @@ The platform is designed to be self-sustaining: a 1–2 % fee on every transacti
 
 ### DAO Governance & Treasury
 - VRT-weighted on-chain proposals and voting.
-- Platform fees (1–2 %) accumulate in the treasury.
-- Crowdfunding module for community-driven public-good projects.
+- Governance treasury for community funds.
+- Crowdfunding module for community-driven public-good projects (creators can withdraw funds as they are raised).
 
 ---
 

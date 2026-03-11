@@ -11,6 +11,7 @@ import LinkifyText from "@/components/LinkifyText";
 import IpfsFileUpload from "@/components/IpfsFileUpload";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
+import { Trophy, AlertTriangle, Wallet } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -212,7 +213,7 @@ export default function ProfilePage() {
         <div className="rounded-2xl p-8 text-center animate-pulse" style={{ background: colors.cardBg, color: colors.muted }}>Loading profile…</div>
       ) : loadError ? (
         <div className="rounded-2xl p-8 text-center space-y-2" style={{ background: colors.cardBg }}>
-          <p className="text-2xl">⚠️</p>
+          <p className="text-2xl"><AlertTriangle size={28} /></p>
           <p className="font-medium" style={{ color: colors.pageFg }}>{loadError}</p>
           <button onClick={loadProfile} className="mt-2 text-sm hover:underline" style={{ color: colors.primaryFg }}>Try again</button>
         </div>
@@ -309,7 +310,7 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <p className="text-xs text-center" style={{ color: colors.warningText }}>
-                  🦊 Profile is stored on-chain — one wallet transaction saves your info{avatarIpfs.trim() && avatarIpfs.trim() !== (profile?.ipfsAvatar || "") ? " (+ a second for your photo)" : ""}
+                  <Wallet size={14} className="inline mr-1" />Profile is stored on-chain — one wallet transaction saves your info{avatarIpfs.trim() && avatarIpfs.trim() !== (profile?.ipfsAvatar || "") ? " (+ a second for your photo)" : ""}
                 </p>
               </div>
             )}
@@ -528,7 +529,7 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {achievements.map((a, i) => (
                     <div key={i} className="border rounded-xl p-3 text-center" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
-                      <span className="text-2xl">{a.icon || "🏆"}</span>
+                      <Trophy size={28} style={{ color: colors.primary }} />
                       <p className="text-sm font-semibold mt-1" style={{ color: colors.pageFg }}>{a.name}</p>
                       <p className="text-xs" style={{ color: colors.muted }}>{a.description}</p>
                       {Number(a.unlockedAt) > 0 && (

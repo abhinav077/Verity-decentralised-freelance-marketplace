@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useTheme } from "@/context/ThemeContext";
+import { Heart } from "lucide-react";
 
 const Grainient = dynamic(() => import("./reactbits/GradientFooter"), { ssr: false });
 
@@ -104,7 +105,7 @@ export default function Footer() {
           style={{ borderColor: colors.divider, color: colors.muted }}
         >
           <p>&copy; {new Date().getFullYear()} Verity. Open-source, on-chain, unstoppable.</p>
-          <p>Built with ❤️ on Ethereum</p>
+          <p>Built with <Heart size={14} className="inline text-red-500" /> on Ethereum</p>
         </div>
       </div>
     </footer>

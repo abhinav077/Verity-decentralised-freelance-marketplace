@@ -284,10 +284,6 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         require(!hasBidOnJob[jobId][msg.sender],       "Already bid");
         require(block.timestamp < job.deadline,        "Deadline passed");
 
-        if (minVrtToBid > 0 && vrtToken != address(0)) {
-            require(IVRT(vrtToken).balanceOf(msg.sender) >= minVrtToBid, "VRT too low");
-        }
-
         bidCounter++;
         uint256 bid_ = bidCounter;
         bids[bid_] = Bid(bid_, jobId, msg.sender, amount, completionDays, proposal, block.timestamp, true);
@@ -311,10 +307,6 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         require(bytes(proposal).length > 0,            "Proposal required");
         require(!hasBidOnJob[jobId][msg.sender],       "Already bid");
         require(block.timestamp < job.deadline,        "Deadline passed");
-
-        if (minVrtToBid > 0 && vrtToken != address(0)) {
-            require(IVRT(vrtToken).balanceOf(msg.sender) >= minVrtToBid, "VRT too low");
-        }
 
         bidCounter++;
         uint256 bid_ = bidCounter;
@@ -447,18 +439,10 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     function cancelJob(uint256 jobId) external nonReentrant {
         Job storage job = jobs[jobId];
         require(job.client == msg.sender, "Only client");
+        require(job.status == JobStatus.Open, "Cannot cancel after bid accepted - use dispute or settlement");
 
-        if (job.status == JobStatus.Open) {
-            job.status = JobStatus.Cancelled;
-            emit JobCancelled(jobId, msg.sender, 0);
-        } else if (job.status == JobStatus.InProgress) {
-            job.status = JobStatus.Cancelled;
-            uint256 penalty = (bids[job.acceptedBidId].amount * CANCEL_PENALTY_BPS) / 10000;
-            if (escrowContract != address(0)) IEscrow(escrowContract).refundClient(jobId);
-            emit JobCancelled(jobId, msg.sender, penalty);
-        } else {
-            revert("Cannot cancel");
-        }
+        job.status = JobStatus.Cancelled;
+        emit JobCancelled(jobId, msg.sender, 0);
     }
 
     /// @notice Tip freelancer after completion

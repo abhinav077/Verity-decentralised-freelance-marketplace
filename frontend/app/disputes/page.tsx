@@ -10,6 +10,7 @@ import { resolveIpfsUrl } from "@/lib/ipfs";
 import { useIpfsUpload } from "@/hooks/useIpfsUpload";
 import { ethers } from "ethers";
 import { Input } from "@/components/reactbits/Input";
+import { Paperclip, Scale, Timer, Clock, Vote, BarChart3, PenLine } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -97,7 +98,7 @@ function EvidenceUploader({ onUpload }: { onUpload: (cid: string) => void }) {
             fontSize: 13,
           }}
         >
-          {uploading ? "Uploading…" : "📎 Upload File to IPFS"}
+          {uploading ? "Uploading…" : <><Paperclip size={13} className="inline mr-1" />Upload File to IPFS</>}
           <input
             type="file"
             style={{ display: "none" }}
@@ -253,7 +254,7 @@ function DisputeCard({
       {/* Evidence */}
       {evidence.length > 0 && (
         <div className="rounded-lg border p-3 mb-3 space-y-2" style={{ borderColor: colors.cardBorder }}>
-          <p className="text-xs font-semibold" style={{ color: colors.mutedFg }}>📎 Evidence ({evidence.length})</p>
+          <p className="text-xs font-semibold" style={{ color: colors.mutedFg }}><Paperclip size={12} className="inline mr-1" />Evidence ({evidence.length})</p>
           {evidence.map((e, i) => (
             <div key={i} className="flex items-center justify-between text-xs rounded-lg px-3 py-2 border" style={{ borderColor: colors.cardBorder }}>
               <div>
@@ -295,7 +296,7 @@ function DisputeCard({
           <button onClick={() => setShowEvidenceForm(true)}
             className="w-full border rounded-lg py-1.5 text-xs mb-3 btn-outline-hover"
             style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
-            📎 Submit Evidence
+            <><Paperclip size={12} className="inline mr-1" />Submit Evidence</>
           </button>
         )
       )}
@@ -337,7 +338,7 @@ function DisputeCard({
       )}
       {isEscalated && (
         <div className="mt-3 rounded-lg p-3 text-sm border" style={{ background: colors.dangerBg, borderColor: colors.dangerText + "44", color: colors.dangerText }}>
-          ⚖️ Escalated to Admin — awaiting manual resolution
+          <Scale size={14} className="inline mr-1" />Escalated to Admin — awaiting manual resolution
         </div>
       )}
 
@@ -348,12 +349,12 @@ function DisputeCard({
         <div className="mt-3">
           {!responseExpired ? (
             <p className="text-xs" style={{ color: colors.warningText }}>
-              ⏳ Waiting for response · {timeLeft(dispute.responseDeadline)} to respond
+              <Timer size={14} className="inline mr-1" />Waiting for response · {timeLeft(dispute.responseDeadline)} to respond
             </p>
           ) : (
             <div className="space-y-2">
               <p className="text-xs" style={{ color: colors.warningText }}>
-                ⏰ Response deadline passed. Anyone can advance to voting.
+                <Clock size={14} className="inline mr-1" />Response deadline passed. Anyone can advance to voting.
               </p>
               <button
                 onClick={() => onAdvancePhase(dispute.id)}
@@ -372,7 +373,7 @@ function DisputeCard({
                   disabled={!!txLoading}
                   className="w-full border rounded-lg py-2 text-xs disabled:opacity-60"
                   style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
-                  {txLoading === `escalate-${disputeKey}` ? "Escalating…" : "⚖️ Escalate to Admin (No Response)"}
+                  {txLoading === `escalate-${disputeKey}` ? "Escalating…" : <><Scale size={12} className="inline mr-1" />Escalate to Admin (No Response)</>}
                 </button>
               )}
             </div>
@@ -403,7 +404,7 @@ function DisputeCard({
               <button onClick={() => setShowResponseForm(true)}
                 className="mt-3 w-full border rounded-lg py-2 text-sm btn-outline-hover"
                 style={{ borderColor: colors.infoText + "55", color: colors.infoText }}>
-                ✍️ Submit Your Side
+                <PenLine size={14} className="inline mr-1" />Submit Your Side
               </button>
             )
           )}
@@ -421,7 +422,7 @@ function DisputeCard({
           {!votingExpired ? (
             <>
               <p className="text-xs mb-2" style={{ color: colors.infoText }}>
-                🗳 Voting Phase — {timeLeft(dispute.votingDeadline)} · Cast your vote directly
+                <Vote size={14} className="inline mr-1" />Voting Phase — {timeLeft(dispute.votingDeadline)} · Cast your vote directly
               </p>
               {/* Non-parties can vote */}
               {!isParty && currentAddress && (
@@ -475,7 +476,7 @@ function DisputeCard({
                   <button onClick={() => setShowVoteForm(true)}
                     className="w-full border rounded-lg py-2 text-sm btn-outline-hover"
                     style={{ borderColor: colors.primary + "55", color: colors.primaryFg }}>
-                    🗳 Vote on this Dispute
+                    <Vote size={14} className="inline mr-1" />Vote on this Dispute
                   </button>
                 )
               )}
@@ -512,7 +513,7 @@ function DisputeCard({
                   <button onClick={() => setShowDemandForm(true)}
                     className="mt-2 w-full border rounded-lg py-2 text-xs btn-outline-hover"
                     style={{ borderColor: colors.badgeText + "55", color: colors.badgeText }}>
-                    📊 Set My Proportion Demand
+                    <BarChart3 size={14} className="inline mr-1" />Set My Proportion Demand
                     {((isClientParty && dispute.clientDemandSet) || (isFreelancerParty && dispute.freelancerDemandSet)) &&
                       " (already set)"}
                   </button>
@@ -522,7 +523,7 @@ function DisputeCard({
           ) : (
             <div className="space-y-2">
               <p className="text-xs" style={{ color: colors.warningText }}>
-                ⏰ Voting period ended. Ready to resolve.
+                <Clock size={14} className="inline mr-1" />Voting period ended. Ready to resolve.
               </p>
               {Number(dispute.totalVoters) > 0 ? (
                 <button
@@ -551,7 +552,7 @@ function DisputeCard({
                       disabled={!!txLoading}
                       className="w-full border rounded-lg py-2 text-xs disabled:opacity-60"
                       style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
-                      {txLoading === `escalate-${disputeKey}` ? "Escalating…" : "⚖️ Escalate to Admin (No Votes)"}
+                      {txLoading === `escalate-${disputeKey}` ? "Escalating…" : <><Scale size={12} className="inline mr-1" />Escalate to Admin (No Votes)</>}
                     </button>
                   )}
                 </>

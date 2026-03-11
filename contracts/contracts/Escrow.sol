@@ -35,7 +35,7 @@ contract Escrow is AccessControl, ReentrancyGuard {
 
     // ── Config ───────────────────────────────────────────────────────────
 
-    uint256 public platformFeeBps = 200;   // 2 %  (user asked 1-2 %)
+    uint256 public platformFeeBps = 0;     // fee-free for now
     uint256 public MAX_FEE_BPS = 500;
 
     // ── State ────────────────────────────────────────────────────────────

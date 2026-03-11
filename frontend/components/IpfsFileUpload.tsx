@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback } from "react";
 import { useIpfsUpload } from "@/hooks/useIpfsUpload";
 import { resolveIpfsUrl } from "@/lib/ipfs";
+import { Loader, AlertTriangle } from "lucide-react";
 
 interface IpfsFileUploadProps {
   /** Called with the CID after a successful upload */
@@ -165,7 +166,7 @@ export default function IpfsFileUpload({
       >
         {uploading ? (
           <p style={{ margin: 0, color: "var(--foreground, #e0e0e0)" }}>
-            ⏳ Uploading to IPFS…
+            <Loader size={14} className="inline animate-spin mr-1" /> Uploading to IPFS…
           </p>
         ) : (
           <>
@@ -189,7 +190,7 @@ export default function IpfsFileUpload({
 
       {error && (
         <p style={{ color: "var(--danger, #ef4444)", fontSize: 13, marginTop: 6 }}>
-          ⚠ {error}
+          <AlertTriangle size={14} className="inline mr-1" />{error}
         </p>
       )}
 

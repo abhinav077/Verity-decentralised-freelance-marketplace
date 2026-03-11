@@ -1,6 +1,7 @@
 "use client";
 import { JOB_STATUS, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
+import { Lock } from "lucide-react";
 
 interface Job {
   id: bigint; client: string; title: string; description: string; category: string;
@@ -38,7 +39,7 @@ export default function JobCard({ job, currentAddress, onClick }: Props) {
         <h3 className="font-semibold text-lg leading-tight line-clamp-2" style={{ color: colors.pageFg }}>{job.title}</h3>
         <span className="text-xs font-medium px-2 py-1 rounded-full shrink-0"
           style={{ background: statusBg[job.status] || colors.cardBg, color: statusFg[job.status] || colors.muted }}>
-          {JOB_STATUS[job.status]}{job.sealedBidding ? " 🔒" : ""}
+          {JOB_STATUS[job.status]}{job.sealedBidding ? <> <Lock size={12} className="inline" /></> : ""}
         </span>
       </div>
 

@@ -96,9 +96,10 @@ export const SUBMISSION_STATUS: Record<number, string> = {
 export const SUB_CONTRACT_STATUS: Record<number, string> = {
   0: "Open",
   1: "Active",
-  2: "Submitted",
-  3: "Approved",
-  4: "Cancelled",
+  2: "Delivered",
+  3: "Completed",
+  4: "Disputed",
+  5: "Cancelled",
 };
 
 export const TIER_NAMES: Record<number, string> = {

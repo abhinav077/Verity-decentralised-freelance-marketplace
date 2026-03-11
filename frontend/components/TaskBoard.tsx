@@ -2,13 +2,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Input } from "@/components/reactbits/Input";
+import { ClipboardList, Hammer, CheckCircle2 } from "lucide-react";
 
 interface Task { id: string; title: string; column: "todo" | "progress" | "done"; createdAt: number; }
 
 const COLUMNS = [
-  { key: "todo" as const, label: "To Do", emoji: "📋" },
-  { key: "progress" as const, label: "In Progress", emoji: "🔨" },
-  { key: "done" as const, label: "Done", emoji: "✅" },
+  { key: "todo" as const, label: "To Do", icon: ClipboardList },
+  { key: "progress" as const, label: "In Progress", icon: Hammer },
+  { key: "done" as const, label: "Done", icon: CheckCircle2 },
 ];
 
 function storageKey(jobId: string) { return `verity:tasks:${jobId}`; }
@@ -74,7 +75,7 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
       <div className="rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] flex flex-col" style={{ background: colors.cardBg }}>
         {/* Header */}
         <div className="flex items-center justify-between p-5" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-          <h2 className="text-lg font-bold" style={{ color: colors.pageFg }}>📋 Task Board — Job #{jobId}</h2>
+          <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.pageFg }}><ClipboardList size={20} /> Task Board — Job #{jobId}</h2>
           <button onClick={onClose} className="text-2xl leading-none" style={{ color: colors.muted }}>&times;</button>
         </div>
 
@@ -101,7 +102,7 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
                 className="rounded-xl p-3 border flex flex-col"
                 style={{ background: colors.inputBg, borderColor: colors.cardBorder }}>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5" style={{ color: colors.pageFg }}>
-                  {col.emoji} {col.label}
+                  <col.icon size={14} /> {col.label}
                   <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
                     {tasks.filter(t => t.column === col.key).length}
                   </span>

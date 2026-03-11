@@ -12,6 +12,7 @@ import { ethers } from "ethers";
 import Link from "next/link";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
+import { Target } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -181,7 +182,7 @@ export default function BountiesPage() {
           <div className="text-center py-16" style={{ color: colors.muted }}>Loading bounties…</div>
         ) : bounties.length === 0 ? (
           <div className="text-center py-16 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-4xl mb-3">🎯</p>
+            <Target size={40} className="mb-3 mx-auto" style={{ color: colors.muted }} />
             <p className="font-semibold text-lg" style={{ color: colors.pageFg }}>No bounties yet</p>
             <p className="text-sm mt-1" style={{ color: colors.muted }}>Be the first to post a bounty!</p>
           </div>

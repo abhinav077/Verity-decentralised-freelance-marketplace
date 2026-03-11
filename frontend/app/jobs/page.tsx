@@ -9,6 +9,7 @@ import JobCard from "@/components/JobCard";
 import CreateJobModal from "@/components/CreateJobModal";
 import JobDetailModal from "@/components/JobDetailModal";
 import ReviewModal from "@/components/ReviewModal";
+import { Star, AlertTriangle, Settings } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -174,7 +175,7 @@ function JobsInner() {
               className="flex items-center justify-between gap-4 rounded-xl px-5 py-4 border"
               style={{ background: colors.dangerBg, borderColor: colors.dangerText + "44" }}>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">⚠️</span>
+                <AlertTriangle size={20} className="mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-sm" style={{ color: colors.dangerText }}>A dispute has been raised against you</p>
                   <p className="text-sm" style={{ color: colors.dangerText }}>
@@ -198,7 +199,7 @@ function JobsInner() {
               className="flex items-center justify-between gap-4 rounded-xl px-5 py-4 border"
               style={{ background: colors.warningBg, borderColor: colors.warningText + "44" }}>
               <div className="flex items-start gap-3">
-                <span className="text-xl mt-0.5">⭐</span>
+                <Star size={20} className="mt-0.5" style={{ color: "#facc15" }} />
                 <div>
                   <p className="font-semibold text-sm" style={{ color: colors.warningText }}>Leave a review for a completed job</p>
                   <p className="text-sm" style={{ color: colors.warningText }}>Job: <strong>{job.title}</strong></p>
@@ -214,7 +215,7 @@ function JobsInner() {
 
       {!contractsConfigured && (
         <div className="rounded-xl p-5 mb-6 border" style={{ background: colors.warningBg, borderColor: colors.warningText + "33" }}>
-          <h3 className="font-semibold mb-2" style={{ color: colors.warningText }}>⚙️ Setup Required</h3>
+          <h3 className="font-semibold mb-2" style={{ color: colors.warningText }}><Settings size={16} className="inline mr-1" />Setup Required</h3>
           <p className="text-sm mb-3" style={{ color: colors.warningText }}>
             Deploy contracts and add addresses to <code className="px-1 rounded" style={{ background: colors.inputBg }}>.env.local</code>.
           </p>

@@ -18,7 +18,7 @@ interface IVRT_Gov {
  *
  * Features:
  *  G1 – DAO governance (VRT-weighted proposals)
- *  G2 – Treasury receiving 1-2 % platform fees
+ *  G2 – Treasury (community deposits, crowdfunding)
  *  G5 – Crowdfunding: propose projects for societal good, community donates
  */
 contract Governance is AccessControl, ReentrancyGuard {
@@ -87,6 +87,7 @@ contract Governance is AccessControl, ReentrancyGuard {
     mapping(uint256 => CrowdfundProject) public crowdfundProjects;
     mapping(uint256 => mapping(address => uint256)) public crowdfundContributions; // projectId → user → amount
     mapping(uint256 => CrowdfundUpdate[]) public crowdfundUpdates;
+    mapping(uint256 => uint256) public crowdfundWithdrawn;  // projectId → total ETH withdrawn
 
     // ── Events ───────────────────────────────────────────────────────────
 
@@ -300,21 +301,24 @@ contract Governance is AccessControl, ReentrancyGuard {
     }
 
     /**
-     * @notice Creator withdraws funds after project is funded.
+     * @notice Creator withdraws available funds (can withdraw multiple times).
+     *         Withdrawal does not change totalRaised — progress bar always shows total funded.
      */
     function withdrawCrowdfundFunds(uint256 projectId) external nonReentrant {
         CrowdfundProject storage p = crowdfundProjects[projectId];
         require(msg.sender == p.creator, "Only creator");
-        require(p.status == CrowdfundStatus.Funded, "Not funded");
-        require(!p.fundsWithdrawn, "Already withdrawn");
+        require(p.status == CrowdfundStatus.Active || p.status == CrowdfundStatus.Funded, "Cannot withdraw");
 
+        uint256 available = p.totalRaised - crowdfundWithdrawn[projectId];
+        require(available > 0, "Nothing to withdraw");
+
+        crowdfundWithdrawn[projectId] += available;
         p.fundsWithdrawn = true;
-        uint256 amount = p.totalRaised;
 
-        (bool ok,) = payable(msg.sender).call{value: amount}("");
+        (bool ok,) = payable(msg.sender).call{value: available}("");
         require(ok, "Withdraw failed");
 
-        emit CrowdfundFundsWithdrawn(projectId, msg.sender, amount);
+        emit CrowdfundFundsWithdrawn(projectId, msg.sender, available);
     }
 
     /**

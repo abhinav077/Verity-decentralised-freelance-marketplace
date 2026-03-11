@@ -93,7 +93,6 @@ const SECTIONS: SectionDef[] = [
       { key: "jm_autoRelease", label: "Auto-Release Period", display: "duration", inputUnit: "days", getter: "AUTO_RELEASE_PERIOD", setter: "setAutoReleasePeriod", inputMultiplier: 86400 },
       { key: "jm_repReward", label: "Reputation Reward", display: "vrt", inputUnit: "VRT", getter: "REPUTATION_REWARD", setter: "setReputationReward", parseEther: true },
       { key: "jm_cancelPenalty", label: "Cancel Penalty", display: "bps", inputUnit: "BPS (100 = 1%)", getter: "CANCEL_PENALTY_BPS", setter: "setCancelPenaltyBps" },
-      { key: "jm_minVrtBid", label: "Min VRT to Bid", display: "vrt", inputUnit: "VRT", getter: "minVrtToBid", setter: "setMinVrtToBid", parseEther: true },
     ],
   },
   {
