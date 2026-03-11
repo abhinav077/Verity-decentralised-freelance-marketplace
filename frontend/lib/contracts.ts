@@ -9,8 +9,6 @@ import {
   GOVERNANCE_ABI,
   BOUNTY_BOARD_ABI,
   SUB_CONTRACTING_ABI,
-  REPUTATION_LOANS_ABI,
-  INSURANCE_POOL_ABI,
 } from "./abis";
 
 // ─── Native currency symbol (chain-aware) ──────────────────────────────────────
@@ -34,8 +32,6 @@ export const CONTRACT_ADDRESSES = {
   Governance:        process.env.NEXT_PUBLIC_GOVERNANCE           || "",
   BountyBoard:       process.env.NEXT_PUBLIC_BOUNTY_BOARD         || "",
   SubContracting:    process.env.NEXT_PUBLIC_SUB_CONTRACTING      || "",
-  ReputationLoans:   process.env.NEXT_PUBLIC_REPUTATION_LOANS     || "",
-  InsurancePool:     process.env.NEXT_PUBLIC_INSURANCE_POOL        || "",
 };
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
@@ -162,14 +158,6 @@ export function getBountyBoard(sp: SP) {
 
 export function getSubContracting(sp: SP) {
   return new Contract(CONTRACT_ADDRESSES.SubContracting, SUB_CONTRACTING_ABI, sp);
-}
-
-export function getReputationLoans(sp: SP) {
-  return new Contract(CONTRACT_ADDRESSES.ReputationLoans, REPUTATION_LOANS_ABI, sp);
-}
-
-export function getInsurancePool(sp: SP) {
-  return new Contract(CONTRACT_ADDRESSES.InsurancePool, INSURANCE_POOL_ABI, sp);
 }
 
 // ─── Provider helper ───────────────────────────────────────────────────────────

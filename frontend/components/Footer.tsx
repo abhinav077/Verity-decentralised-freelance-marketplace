@@ -23,13 +23,6 @@ const NAV_GROUPS = [
       { href: "/crowdfunding", label: "Crowdfunding" },
     ],
   },
-  {
-    title: "Earn",
-    links: [
-      { href: "/insurance", label: "Insurance Pool" },
-      { href: "/loans", label: "VRT Loans" },
-    ],
-  },
 ];
 
 export default function Footer() {

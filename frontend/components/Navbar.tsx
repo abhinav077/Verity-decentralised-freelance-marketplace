@@ -26,7 +26,6 @@ import {
   Rocket,
   ScrollText,
   Search,
-  Shield,
   Star,
   Stars,
   Sun,
@@ -270,7 +269,7 @@ export default function Navbar() {
             </button>
             {otherOpen && (
               <div className="absolute left-0 top-full mt-2 w-52 py-1.5 z-50" style={dropdown}>
-                {[{ href: "/governance", label: "Governance", icon: Landmark }, { href: "/crowdfunding", label: "Crowdfunding", icon: Rocket }, { href: "/insurance", label: "Insurance", icon: Shield }, { href: "/loans", label: "VRT Loans", icon: Briefcase }, ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: LockKeyhole }] : [])].map(item => (
+                {[{ href: "/governance", label: "Governance", icon: Landmark }, { href: "/crowdfunding", label: "Crowdfunding", icon: Rocket }, ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: LockKeyhole }] : [])].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setOtherOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"
                     style={{ background: pathname.startsWith(item.href) ? colors.primaryLight : "transparent", color: pathname.startsWith(item.href) ? colors.primaryFg : colors.navText }}>
@@ -546,7 +545,6 @@ export default function Navbar() {
                 ))}
                 <div className="my-1 mx-2 border-t" style={{ borderColor: colors.divider }} />
                 {[{ href: "/governance", label: "Governance", icon: Landmark }, { href: "/crowdfunding", label: "Crowdfunding", icon: Rocket },
-                  { href: "/insurance", label: "Insurance", icon: Shield }, { href: "/loans", label: "VRT Loans", icon: Briefcase },
                   ...(isAdmin ? [{ href: "/admin", label: "Admin Panel", icon: LockKeyhole }] : [])].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-lg mx-1 transition-colors"

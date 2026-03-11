@@ -16,7 +16,6 @@ import {
   Gavel,
   Lock,
   ScrollText,
-  ShieldCheck,
   Trophy,
   Vote,
   Wallet,
@@ -37,7 +36,6 @@ const FEATURES: BentoCardData[] = [
   { icon: <BadgeCheck className="w-7 h-7" />, label: "Trust", title: "Verified Reviews", description: "On-chain reviews tied to real completed jobs — impossible to fake, permanent on the blockchain." },
   { icon: <Trophy className="w-7 h-7" />, label: "Quick Tasks", title: "Bounty Board", description: "Post open bounties for quick tasks. Multiple submissions, approve the best one." },
   { icon: <Vote className="w-7 h-7" />, label: "DAO", title: "Governance", description: "VRT holders propose and vote on platform changes. True decentralized decision-making." },
-  { icon: <ShieldCheck className="w-7 h-7" />, label: "Protection", title: "Insurance Pool", description: `Stake ${NATIVE_SYMBOL} premiums for 3x coverage. Protect yourself against dispute losses.` },
   { icon: <ScrollText className="w-7 h-7" />, label: "Delegation", title: "Sub-Contracting", description: "Freelancers can delegate parts of jobs to sub-contractors with on-chain accountability." },
 ];
 

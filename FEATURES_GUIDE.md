@@ -18,14 +18,12 @@
 9. [Sub-Contracting](#9-sub-contracting)
 10. [Governance & Proposals](#10-governance--proposals)
 11. [Crowdfunding](#11-crowdfunding)
-12. [Insurance Pool](#12-insurance-pool)
-13. [VRT Reputation Loans](#13-vrt-reputation-loans)
-14. [User Profile, Reviews & Achievements](#14-user-profile-reviews--achievements)
-15. [Chat & Task Board](#15-chat--task-board)
-16. [VRT Token & Tier System](#16-vrt-token--tier-system)
-17. [Admin Panel](#17-admin-panel)
-18. [Notifications](#18-notifications)
-19. [Quick-Reference: All Features Table](#19-quick-reference-all-features-table)
+12. [User Profile, Reviews & Achievements](#12-user-profile-reviews--achievements)
+13. [Chat & Task Board](#13-chat--task-board)
+14. [VRT Token & Tier System](#14-vrt-token--tier-system)
+15. [Admin Panel](#15-admin-panel)
+16. [Notifications](#16-notifications)
+17. [Quick-Reference: All Features Table](#17-quick-reference-all-features-table)
 
 ---
 
@@ -34,7 +32,7 @@
 **Verity** is a decentralized freelance marketplace on Ethereum. Clients post jobs, freelancers bid, payments are held in smart contract escrow, and disputes are resolved by community voting. Everything (payments, reputation, reviews) lives on-chain — no middleman.
 
 **Key Concepts:**
-- **ETH** = real money (Ether cryptocurrency) used for payments, bounties, insurance, crowdfunding
+- **ETH** = real money (Ether cryptocurrency) used for payments, bounties, crowdfunding
 - **VRT (Verity Reputation Token)** = soulbound (non-transferable) reputation points earned by working on the platform
 - **Escrow** = a smart contract that holds the client's ETH safely until work is complete
 - **On-chain** = stored permanently on the blockchain, visible to everyone, cannot be edited or deleted
@@ -506,86 +504,7 @@ Community members can create crowdfunding campaigns for projects.
 
 ---
 
-## 12. Insurance Pool
-
-Freelancers can buy insurance to protect themselves in case of payment disputes.
-
-### How It Works
-
-1. Freelancer pays a **premium** (ETH) to buy an insurance policy
-2. The policy gives **coverage** = premium × 3 (multiplier)
-3. If a dispute is resolved in the freelancer's favor (client at fault), the admin/dispute system can **file a claim** → freelancer gets paid from the pool
-4. If no claim is filed, freelancer can **withdraw their premium** back after the policy expires (90 days)
-
-### Buying Insurance
-
-| Field | Required | Description | Example |
-|---|---|---|---|
-| **Premium** | Yes | ETH to stake (minimum 0.01 ETH) | 0.1 |
-
-| Output | Details |
-|---|---|
-| **Coverage** | Premium × 3. So 0.1 ETH premium = 0.3 ETH coverage |
-| **Duration** | 90 days |
-| **Cost** | Premium ETH + gas fee |
-
-### Policy Actions
-
-| Action | Who | When | What Happens |
-|---|---|---|---|
-| **File Claim** | Admin or Dispute contract | During active policy period | Freelancer receives coverage amount (or pool balance if pool is low) |
-| **Withdraw Premium** | Freelancer (policy owner) | After policy expires AND no claim was filed | Premium returned to freelancer |
-| **Fund Pool** | Anyone | Anytime | Add ETH to strengthen the insurance pool |
-
-### Policy Statuses
-
-| Status | Meaning |
-|---|---|
-| **Active** | Policy is valid, can be claimed |
-| **Claimed** | Claim has been paid out |
-| **Withdrawn** | Premium has been returned |
-| **Expired** | Policy period ended (can now withdraw premium) |
-
----
-
-## 13. VRT Reputation Loans
-
-If you need VRT tokens (e.g., to meet a minimum bid requirement) but haven't earned enough yet, you can borrow them.
-
-### Taking a Loan
-
-| Field | Required | Description | Example |
-|---|---|---|---|
-| **Amount** | Yes | VRT to borrow (max 50 VRT) | 20 |
-
-| What You Send | ETH collateral. Calculated as: (amount ÷ 10, rounded up) × 0.005 ETH. Minimum: 0.005 ETH |
-|---|---|
-| **Example** | Borrow 20 VRT → collateral = 2 × 0.005 = 0.01 ETH |
-| **Output** | VRT minted to your wallet. Loan appears in your loan dashboard. |
-
-### Loan Rules
-
-| Rule | Details |
-|---|---|
-| **Max loan** | 50 VRT |
-| **Duration** | 30 days to repay |
-| **One at a time** | You can only have one active loan |
-| **Repayment** | Earn VRT by completing jobs, then use it to repay. Repayment burns the VRT from your wallet. |
-| **Full repayment** | When loan fully repaid → collateral ETH returned to you |
-| **Default** | If 30 days pass and loan not repaid → anyone can mark you as "Defaulted" |
-| **Default consequence** | Collateral forfeited permanently. You can NEVER take another loan. "Defaulted" status shown on your dashboard. |
-
-### Loan Statuses
-
-| Status | Meaning |
-|---|---|
-| **Active** | Loan is ongoing, timer running |
-| **Settled** | Fully repaid, collateral returned |
-| **Defaulted** | Time expired, collateral lost, permanently flagged |
-
----
-
-## 14. User Profile, Reviews & Achievements
+## 12. User Profile, Reviews & Achievements
 
 ### Profile Stats
 
@@ -649,7 +568,7 @@ Achievements are unlocked automatically based on your activity:
 
 ---
 
-## 15. Chat & Task Board
+## 13. Chat & Task Board
 
 ### Job Chat
 
@@ -677,7 +596,7 @@ Achievements are unlocked automatically based on your activity:
 
 ---
 
-## 16. VRT Token & Tier System
+## 14. VRT Token & Tier System
 
 VRT (Verity Reputation Token) is a **soulbound** token — it CANNOT be transferred to another person. You can only earn it by working on the platform.
 
@@ -688,7 +607,6 @@ VRT (Verity Reputation Token) is a **soulbound** token — it CANNOT be transfer
 | Complete a job (as client or freelancer) | 10 VRT each |
 | Win a bounty submission | 5 VRT |
 | Vote on a dispute (winning side) | 2 VRT |
-| VRT Loan (temporary, must repay) | Up to 50 VRT |
 
 ### Tier System
 
@@ -714,7 +632,7 @@ Your tier is based on **total VRT ever earned** (not current balance — burning
 
 ---
 
-## 17. Admin Panel
+## 15. Admin Panel
 
 The Admin Panel is only accessible to the account that has the `ADMIN_ROLE` on the smart contracts (typically the deployer).
 
@@ -739,12 +657,6 @@ The Admin Panel is only accessible to the account that has the `ADMIN_ROLE` on t
 | **Governance** | Voting Period | 5 days | Proposal voting duration |
 | **Governance** | Min Quorum | 1000 BPS (10%) | Minimum % of total VRT supply that must vote |
 | **Governance** | Min VRT to Crowdfund | 5 VRT | Minimum VRT to create crowdfunding projects |
-| **Insurance** | Coverage Multiplier | 3× | Coverage = premium × this number |
-| **Insurance** | Policy Duration | 90 days | How long a policy is active |
-| **Insurance** | Min Premium | 0.01 ETH | Minimum insurance premium |
-| **Loans** | Max Loan Amount | 50 VRT | Maximum borrowable VRT |
-| **Loans** | Loan Duration | 30 days | Time to repay a loan |
-| **Loans** | Collateral per 10 VRT | 0.005 ETH | ETH collateral required per 10 VRT borrowed |
 | **Bounties** | Bounty VRT Reward | 5 VRT | VRT minted per approved bounty submission |
 
 ### Admin-Only Actions
@@ -755,7 +667,6 @@ The Admin Panel is only accessible to the account that has the `ADMIN_ROLE` on t
 | **Withdraw Escrow Fees** | Collect accumulated platform fees |
 | **Withdraw Treasury** | Withdraw ETH from governance treasury |
 | **Execute Passed Proposals** | Execute proposals that have been voted and passed |
-| **Withdraw Forfeited Loan Collateral** | Collect ETH from defaulted loans |
 | **Mint VRT** | Mint VRT to any address (for testing/rewards) |
 | **Burn VRT** | Burn VRT from any address |
 | **Set Tier Thresholds** | Change Silver/Gold/Platinum VRT requirements |
@@ -763,7 +674,7 @@ The Admin Panel is only accessible to the account that has the `ADMIN_ROLE` on t
 
 ---
 
-## 18. Notifications
+## 16. Notifications
 
 The bell icon in the navbar shows notification count. Notifications are generated automatically:
 
@@ -778,7 +689,7 @@ Click the bell to see all notifications. Click a notification to go to the relev
 
 ---
 
-## 19. Quick-Reference: All Features Table
+## 17. Quick-Reference: All Features Table
 
 | # | Feature | Page | What It Does | Key Inputs | Key Outputs | Who Can Use |
 |---|---|---|---|---|---|---|
@@ -810,16 +721,12 @@ Click the bell to see all notifications. Click a notification to go to the relev
 | 26 | **Vote on Proposal** | Governance | Vote For or Against | For / Against | Vote recorded (VRT-weighted) | Any VRT holder |
 | 27 | **Create Crowdfund** | Crowdfunding | Start a fundraiser | Title, Description, Category, Proof Link, Goal (ETH), Duration (days) | Campaign listed as "Active" | Users with ≥5 VRT |
 | 28 | **Contribute to Crowdfund** | Crowdfunding | Fund a project | ETH amount | Progress bar updates. Auto-"Funded" when goal met. | Anyone (not creator) |
-| 29 | **Buy Insurance** | Insurance | Protect against non-payment | Premium (ETH, min 0.01) | Policy created: coverage = premium × 3, valid 90 days | Any freelancer |
-| 30 | **Withdraw Insurance Premium** | Insurance | Get premium back | None | Premium ETH returned | Policy owner (if expired + unclaimed) |
-| 31 | **Take VRT Loan** | Loans | Borrow temporary VRT | VRT amount (max 50) + ETH collateral | VRT minted to wallet, 30-day timer | Anyone without active loan |
-| 32 | **Repay Loan** | Loans | Return borrowed VRT | VRT amount to repay | VRT burned. Full repay → collateral returned | Loan borrower |
-| 33 | **Create Profile** | Profile | Set up identity | Name, Bio, Skills | Profile visible on-chain | Any connected wallet |
-| 34 | **Write Review** | Jobs/Profile | Rate the other party | Stars (1-5), Comment | Review on reviewee's profile (permanent) | After job completion |
-| 35 | **Endorse Skill** | Profile | Vouch for someone's skill | Skill name, optional Job ID | Endorsement on their profile | Any user (not self) |
-| 36 | **Add Portfolio** | Profile | Showcase work | Title, IPFS link, optional Job ID | Portfolio item on your profile | Profile owner |
-| 37 | **Chat** | Chat | Message the other party | Text message, optional file (≤1MB) | Chat bubbles with timestamps | Client + Freelancer |
-| 38 | **Task Board** | Jobs (detail) | Track sub-tasks | Task name | Kanban board: To Do / In Progress / Done | Freelancer (edit), Client (view) |
+| 29 | **Create Profile** | Profile | Set up identity | Name, Bio, Skills | Profile visible on-chain | Any connected wallet |
+| 30 | **Write Review** | Jobs/Profile | Rate the other party | Stars (1-5), Comment | Review on reviewee's profile (permanent) | After job completion |
+| 31 | **Endorse Skill** | Profile | Vouch for someone's skill | Skill name, optional Job ID | Endorsement on their profile | Any user (not self) |
+| 32 | **Add Portfolio** | Profile | Showcase work | Title, IPFS link, optional Job ID | Portfolio item on your profile | Profile owner |
+| 33 | **Chat** | Chat | Message the other party | Text message, optional file (≤1MB) | Chat bubbles with timestamps | Client + Freelancer |
+| 34 | **Task Board** | Jobs (detail) | Track sub-tasks | Task name | Kanban board: To Do / In Progress / Done | Freelancer (edit), Client (view) |
 
 ---
 

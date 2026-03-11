@@ -121,28 +121,7 @@ async function main() {
 
   console.log("  SubContracting: deployed (standalone)");
 
-  // ── 10. ReputationLoans ───────────────────────────────────────────────
-  console.log("Deploying ReputationLoans...");
-  const RL = await ethers.getContractFactory("ReputationLoans");
-  const repLoans = await RL.deploy();
-  await repLoans.waitForDeployment();
-  const rlAddr = await repLoans.getAddress();
-  console.log("  ReputationLoans:", rlAddr);
 
-  await repLoans.setVRTToken(vrtAddr);
-  await vrt.grantRole(MINTER_ROLE, rlAddr);
-  console.log("  ReputationLoans: linked VRT, MINTER_ROLE granted");
-
-  // ── 11. InsurancePool ─────────────────────────────────────────────────
-  console.log("Deploying InsurancePool...");
-  const IP = await ethers.getContractFactory("InsurancePool");
-  const insurancePool = await IP.deploy();
-  await insurancePool.waitForDeployment();
-  const ipAddr = await insurancePool.getAddress();
-  console.log("  InsurancePool:", ipAddr);
-
-  await insurancePool.setDisputeResolutionContract(disputeAddr);
-  console.log("  InsurancePool: linked DisputeResolution");
 
   // ═══════════════════════════════════════════════════════════════════════
   //  Summary
@@ -158,8 +137,6 @@ async function main() {
   console.log("Governance:        ", govAddr);
   console.log("BountyBoard:       ", bbAddr);
   console.log("SubContracting:    ", scAddr);
-  console.log("ReputationLoans:   ", rlAddr);
-  console.log("InsurancePool:     ", ipAddr);
 
   // Write .env.local for frontend
   const envPath = path.resolve(__dirname, "../../frontend/.env.local");
@@ -200,8 +177,6 @@ NEXT_PUBLIC_USER_PROFILE=${upAddr}
 NEXT_PUBLIC_GOVERNANCE=${govAddr}
 NEXT_PUBLIC_BOUNTY_BOARD=${bbAddr}
 NEXT_PUBLIC_SUB_CONTRACTING=${scAddr}
-NEXT_PUBLIC_REPUTATION_LOANS=${rlAddr}
-NEXT_PUBLIC_INSURANCE_POOL=${ipAddr}
 
 # ═══ IPFS / Pinata (add your keys here or they are preserved from previous) ═══
 ${existingExtra}`;

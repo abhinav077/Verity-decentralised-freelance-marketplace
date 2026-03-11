@@ -10,7 +10,6 @@ import {
   Governance,
   BountyBoard,
   SubContracting,
-  ReputationLoans,
 } from "../typechain-types";
 
 describe("New Features Tests", function () {
@@ -22,7 +21,6 @@ describe("New Features Tests", function () {
   let governance: Governance;
   let bountyBoard: BountyBoard;
   let subContracting: SubContracting;
-  let repLoans: ReputationLoans;
 
   let owner: any;
   let client: any;
@@ -58,9 +56,6 @@ describe("New Features Tests", function () {
     subContracting = await (
       await ethers.getContractFactory("SubContracting")
     ).deploy();
-    repLoans = await (
-      await ethers.getContractFactory("ReputationLoans")
-    ).deploy();
 
     await Promise.all([
       vrt.waitForDeployment(),
@@ -71,10 +66,9 @@ describe("New Features Tests", function () {
       governance.waitForDeployment(),
       bountyBoard.waitForDeployment(),
       subContracting.waitForDeployment(),
-      repLoans.waitForDeployment(),
     ]);
 
-    const [vrtA, jmA, esA, drA, upA, govA, bbA, scA, rlA] = await Promise.all(
+    const [vrtA, jmA, esA, drA, upA, govA, bbA, scA] = await Promise.all(
       [
         vrt.getAddress(),
         jobMarket.getAddress(),
@@ -84,7 +78,6 @@ describe("New Features Tests", function () {
         governance.getAddress(),
         bountyBoard.getAddress(),
         subContracting.getAddress(),
-        repLoans.getAddress(),
       ]
     );
 
@@ -92,7 +85,6 @@ describe("New Features Tests", function () {
     await vrt.grantRole(MINTER, jmA);
     await vrt.grantRole(MINTER, drA);
     await vrt.grantRole(MINTER, bbA);
-    await vrt.grantRole(MINTER, rlA);
 
     await jobMarket.setVRTToken(vrtA);
     await jobMarket.setEscrowContract(esA);
@@ -113,7 +105,6 @@ describe("New Features Tests", function () {
 
     await bountyBoard.setVRTToken(vrtA);
     // SubContracting is standalone — no wiring needed
-    await repLoans.setVRTToken(vrtA);
   });
 
   // =========================================================================
@@ -773,76 +764,6 @@ describe("New Features Tests", function () {
         });
       const scs = await subContracting.getJobSubContracts(1);
       expect(scs.length).to.equal(2);
-    });
-  });
-
-  // =========================================================================
-  // ReputationLoans
-  // =========================================================================
-  describe("ReputationLoans", () => {
-    it("takes a loan and receives VRT", async () => {
-      await repLoans
-        .connect(freelancer)
-        .takeLoan(ETH("20"), { value: ETH("0.01") });
-      expect(await vrt.balanceOf(freelancer.address)).to.equal(ETH("20"));
-      const loan = await repLoans.getLoan(1);
-      expect(loan.borrower).to.equal(freelancer.address);
-      expect(loan.amount).to.equal(ETH("20"));
-    });
-
-    it("rejects loan above max", async () => {
-      await expect(
-        repLoans.connect(freelancer).takeLoan(ETH("100"), { value: ETH("1") })
-      ).to.be.revertedWith("Bad amount");
-    });
-
-    it("rejects second active loan", async () => {
-      await repLoans
-        .connect(freelancer)
-        .takeLoan(ETH("20"), { value: ETH("0.01") });
-      await expect(
-        repLoans
-          .connect(freelancer)
-          .takeLoan(ETH("10"), { value: ETH("0.01") })
-      ).to.be.revertedWith("Active loan exists");
-    });
-
-    it("repays loan and gets collateral back", async () => {
-      await repLoans
-        .connect(freelancer)
-        .takeLoan(ETH("20"), { value: ETH("0.01") });
-      await vrt.mint(freelancer.address, ETH("20"));
-      const bal0 = await ethers.provider.getBalance(freelancer.address);
-      const tx = await repLoans.connect(freelancer).repayLoan(ETH("20"));
-      const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * receipt!.gasPrice;
-      const bal1 = await ethers.provider.getBalance(freelancer.address);
-      expect(bal1 + gasCost - bal0).to.be.closeTo(ETH("0.01"), ETH("0.001"));
-      expect(await vrt.balanceOf(freelancer.address)).to.equal(ETH("20"));
-    });
-
-    it("marks default after expiry", async () => {
-      await repLoans
-        .connect(freelancer)
-        .takeLoan(ETH("20"), { value: ETH("0.01") });
-      await time.increase(31 * 24 * 60 * 60);
-      await repLoans.markDefault(1);
-      const loan = await repLoans.getLoan(1);
-      expect(loan.defaulted).to.equal(true);
-      expect(await repLoans.hasDefaulted(freelancer.address)).to.equal(true);
-    });
-
-    it("defaulted user cannot take new loan", async () => {
-      await repLoans
-        .connect(freelancer)
-        .takeLoan(ETH("20"), { value: ETH("0.01") });
-      await time.increase(31 * 24 * 60 * 60);
-      await repLoans.markDefault(1);
-      await expect(
-        repLoans
-          .connect(freelancer)
-          .takeLoan(ETH("10"), { value: ETH("0.01") })
-      ).to.be.revertedWith("Previously defaulted");
     });
   });
 

@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
-  getEscrow, getDisputeResolution, getGovernance, getReputationLoans,
-  getInsurancePool, getVRTToken, getJobMarket,
+  getEscrow, getDisputeResolution, getGovernance,
+  getVRTToken, getJobMarket,
   getBountyBoard, getProvider,
   formatEth, formatVrt, shortenAddress,
   DISPUTE_STATUS, disputeStatusStyle, NATIVE_SYMBOL,
@@ -21,14 +21,12 @@ import {
   Gavel,
   Landmark,
   LockKeyhole,
-  Shield,
   Siren,
   Target,
   Vote,
   Wallet,
   Hourglass,
   ClipboardList,
-  HandCoins,
   RefreshCw,
 } from "lucide-react";
 
@@ -131,26 +129,6 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   {
-    title: "Insurance Pool",
-    icon: <Shield className="w-4 h-4" />,
-    contractKey: "insurance",
-    params: [
-      { key: "in_coverMult", label: "Coverage Multiplier", display: "raw", inputUnit: "×", getter: "COVERAGE_MULTIPLIER", setter: "setCoverageMultiplier" },
-      { key: "in_duration", label: "Policy Duration", display: "duration", inputUnit: "days", getter: "POLICY_DURATION", setter: "setPolicyDuration", inputMultiplier: 86400 },
-      { key: "in_minPremium", label: "Min Premium", display: "eth", inputUnit: NATIVE_SYMBOL, getter: "MIN_PREMIUM", setter: "setMinPremium", parseEther: true },
-    ],
-  },
-  {
-    title: "Reputation Loans",
-    icon: <Building2 className="w-4 h-4" />,
-    contractKey: "loans",
-    params: [
-      { key: "ln_maxAmount", label: "Max Loan Amount", display: "vrt", inputUnit: "VRT", getter: "MAX_LOAN_AMOUNT", setter: "setMaxLoanAmount", parseEther: true },
-      { key: "ln_duration", label: "Loan Duration", display: "duration", inputUnit: "days", getter: "LOAN_DURATION", setter: "setLoanDuration", inputMultiplier: 86400 },
-      { key: "ln_collateral", label: "Collateral per 10 VRT", display: "eth", inputUnit: NATIVE_SYMBOL, getter: "COLLATERAL_PER_10_VRT", setter: "setCollateralPer10Vrt", parseEther: true },
-    ],
-  },
-  {
     title: "Bounties",
     icon: <Target className="w-4 h-4" />,
     contractKey: "bounty",
@@ -229,8 +207,6 @@ export default function AdminPage() {
       escrow: getEscrow,
       disputes: getDisputeResolution,
       governance: getGovernance,
-      insurance: getInsurancePool,
-      loans: getReputationLoans,
       bounty: getBountyBoard,
     };
     return map[key]?.(sp);
@@ -498,21 +474,6 @@ export default function AdminPage() {
       setTierDiscountInputs(prev => prev.map((v, i) => i === tier ? "" : v));
       window.dispatchEvent(new Event("dfm:tx"));
       loadAll();
-    } catch (err: any) {
-      updateLog(lid, { status: "error", error: err?.reason || err?.message || "Failed" });
-    } finally { setBusy(false); }
-  }
-
-  // ── Withdraw forfeited collateral ──
-  async function withdrawForfeited() {
-    setBusy(true);
-    const lid = addLog("Withdraw Forfeited Collateral");
-    try {
-      const signer = await (await getProvider()).getSigner();
-      const tx = await getReputationLoans(signer).withdrawForfeitedCollateral();
-      await tx.wait();
-      updateLog(lid, { status: "success", hash: tx.hash });
-      window.dispatchEvent(new Event("dfm:tx"));
     } catch (err: any) {
       updateLog(lid, { status: "error", error: err?.reason || err?.message || "Failed" });
     } finally { setBusy(false); }
@@ -856,17 +817,6 @@ export default function AdminPage() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* ── Loans: Withdraw forfeited collateral ── */}
-          <div style={cardStyle} className="card-hover">
-            <div style={sectionTitle}><HandCoins className="w-4 h-4" /> Forfeited Loan Collateral</div>
-            <p style={{ color: colors.mutedFg, fontSize: 14, marginBottom: 12 }}>
-              Withdraw any forfeited collateral from defaulted loans to the admin wallet.
-            </p>
-            <button className="btn-hover" style={btnPrimary} disabled={busy} onClick={withdrawForfeited}>
-              Withdraw Forfeited Collateral
-            </button>
           </div>
 
           {/* ── Transaction Log ── */}

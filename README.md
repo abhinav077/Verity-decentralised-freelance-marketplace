@@ -23,7 +23,6 @@ The platform is designed to be self-sustaining: a 1–2 % fee on every transacti
 ### Reputation System
 - **VRT (Verity Reputation Token)** — Soulbound (non-transferable) ERC-20 token earned by completing jobs and contributing to the platform. It can never be bought, only earned.
 - **Tiers** — Bronze → Silver (50 VRT) → Gold (200 VRT) → Platinum (500 VRT), unlocking fee discounts, governance weight, and jury eligibility.
-- **Reputation Loans** — Users can borrow up to 50 VRT against ETH collateral to meet minimum thresholds, repayable through future earnings.
 
 ### User Profiles
 - On-chain profiles with name, bio, profile photo (IPFS), and skills.
@@ -43,11 +42,6 @@ The platform is designed to be self-sustaining: a 1–2 % fee on every transacti
 
 ### Sub-Contracting
 - Accepted freelancers can bring in sub-contractors and split payment at the smart-contract level.
-
-### Insurance Pool
-- Freelancers stake ETH as a premium to purchase coverage.
-- If a dispute is resolved against the client (client at fault), the freelancer is compensated from the pool.
-- Premiums are returned if no claims are filed.
 
 ### DAO Governance & Treasury
 - VRT-weighted on-chain proposals and voting.
@@ -107,8 +101,6 @@ DFM/
 | `DisputeResolution.sol` | Peer jury + admin arbitration system |
 | `BountyBoard.sol` | Open bounties with multi-winner support |
 | `SubContracting.sol` | On-chain sub-contractor management |
-| `InsurancePool.sol` | Freelancer insurance with ETH collateral |
-| `ReputationLoans.sol` | Temporary VRT loans against ETH collateral |
 | `Governance.sol` | DAO proposals, voting, treasury, and crowdfunding |
 
 ---
