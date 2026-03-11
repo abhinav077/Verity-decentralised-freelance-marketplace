@@ -248,7 +248,7 @@ function SubContractsInner() {
       2: { bg: colors.warningBg || "#fef3c7", fg: colors.warningText || "#92400e" },
       3: { bg: colors.successBg, fg: colors.successText },
       4: { bg: colors.dangerBg, fg: colors.dangerText },
-      5: { bg: colors.mutedBg || colors.inputBg, fg: colors.muted },
+      5: { bg: colors.surfaceBg || colors.inputBg, fg: colors.muted },
     };
     const s = map[status] || map[5];
     return (
