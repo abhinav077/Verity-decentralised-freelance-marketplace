@@ -1,14 +1,14 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { ethers, JsonRpcSigner } from "ethers";
-import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, JOB_STATUS, chatKey, chatReadKey, timeRemaining, NATIVE_SYMBOL } from "@/lib/contracts";
+import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, JOB_STATUS, chatKey, chatReadKey, timeRemaining, NATIVE_SYMBOL, timeAgo } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import ReviewModal from "@/components/ReviewModal";
 import TaskBoard from "@/components/TaskBoard";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
-import { Star, ClipboardList, Package, Heart, MessageCircle, Video, Handshake, Users, Lock, AlertTriangle, PenLine, Pencil, Clock } from "lucide-react";
+import { Star, ClipboardList, Package, Heart, MessageCircle, Video, Handshake, Users, Lock, AlertTriangle, PenLine, Pencil, Clock, Briefcase, Calendar, X, Trash2 } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -33,9 +33,10 @@ interface Props {
   currentAddress: string | null;
   onClose: () => void;
   onRefresh: () => void;
+  initialShowBid?: boolean;
 }
 
-export default function JobDetailModal({ job, signer, currentAddress, onClose, onRefresh }: Props) {
+export default function JobDetailModal({ job, signer, currentAddress, onClose, onRefresh, initialShowBid }: Props) {
   const { colors } = useTheme();
   const [bids, setBids] = useState<Bid[]>([]);
   const [loadingBids, setLoadingBids] = useState(true);
@@ -43,7 +44,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const [bidDays, setBidDays] = useState("");
   const [bidProposal, setBidProposal] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
-  const [showBidForm, setShowBidForm] = useState(false);
+  const [showBidForm, setShowBidForm] = useState(initialShowBid ?? false);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [txLoading, setTxLoading] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
@@ -312,32 +313,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col"
         style={{ background: colors.cardBg }}>
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 gap-4" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-          <div>
-            <span className="text-xs font-medium px-2 py-1 rounded-full"
-              style={{ background: colors.primaryLight, color: colors.primaryFg }}>{job.category}</span>
-            {job.sealedBidding && <span className="text-xs font-medium px-2 py-1 rounded-full ml-1"
-              style={{ background: colors.warningBg, color: colors.warningText }}><Lock size={12} className="inline" /> Sealed</span>}
-            <h2 className="text-xl font-bold mt-2" style={{ color: colors.pageFg }}>{job.title}</h2>
-            {(() => {
-              const accepted = bids.find(b => b.id === job.acceptedBidId);
-              return (
-                <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>
-                  {JOB_STATUS[liveStatus]}
-                  {accepted ? (
-                    <> · Price: <strong>{formatEth(accepted.amount)} {NATIVE_SYMBOL}</strong>
-                      {Number(accepted.completionDays) > 0 && <> · {Number(accepted.completionDays)} days</>}
-                      <span className="text-xs ml-1">(budget: {formatEth(job.budget)})</span>
-                    </>
-                  ) : (
-                    <> · Budget: <strong>{formatEth(job.budget)} {NATIVE_SYMBOL}</strong></>
-                  )}
-                  {" · Deadline: "}{formatDate(job.deadline)}
-                  {!accepted && Number(job.expectedDays) > 0 && <> · Expected: {Number(job.expectedDays)} days</>}
-                </p>
-              );
-            })()}
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: colors.primary }}>
+              <Briefcase size={16} style={{ color: colors.primaryText }} />
+            </span>
+            <span className="text-sm font-semibold" style={{ color: colors.pageFg }}>Job Details</span>
           </div>
           {showReview ? (
             <div className="flex items-center gap-2 shrink-0">
@@ -346,17 +328,55 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <Star size={14} className="inline" /> Review required
               </span>
               <button disabled title="Submit your review first"
-                className="text-2xl leading-none shrink-0 cursor-not-allowed" style={{ color: colors.mutedFg }}>&times;</button>
+                className="shrink-0 cursor-not-allowed p-1" style={{ color: colors.mutedFg }}><X size={18} /></button>
             </div>
           ) : (
-            <button onClick={onClose} className="text-2xl leading-none shrink-0" style={{ color: colors.mutedFg }}>&times;</button>
+            <button onClick={onClose} className="shrink-0 p-1 rounded-md transition-colors hover:bg-black/5" style={{ color: colors.mutedFg }}><X size={18} /></button>
           )}
         </div>
 
         <div className="overflow-y-auto flex-1 p-6 space-y-6">
-          {/* Description */}
+          {/* Title */}
           <div>
-            <h3 className="text-sm font-semibold mb-2" style={{ color: colors.mutedFg }}>Description</h3>
+            <h2 className="text-2xl font-bold" style={{ color: colors.pageFg }}>{job.title}</h2>
+          </div>
+
+          {/* Info cards row */}
+          <div className="grid grid-cols-3 gap-3">
+            {(() => {
+              const accepted = bids.find(b => b.id === job.acceptedBidId);
+              const displayAmount = accepted ? formatEth(accepted.amount) : formatEth(job.budget);
+              return (
+                <div className="rounded-xl px-4 py-3" style={{ background: colors.primary }}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: colors.primaryText, opacity: 0.85 }}>
+                    <Briefcase size={10} /> {accepted ? "Accepted Price" : "Reward Amount"}
+                  </p>
+                  <p className="text-lg font-bold mt-1" style={{ color: colors.primaryText }}>{displayAmount} {NATIVE_SYMBOL}</p>
+                </div>
+              );
+            })()}
+            <div className="rounded-xl px-4 py-3 border" style={{ borderColor: colors.cardBorder }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: colors.mutedFg }}>
+                <Calendar size={10} /> Application Deadline
+              </p>
+              <p className="text-lg font-bold mt-1" style={{ color: colors.pageFg }}>{formatDate(job.deadline)}</p>
+            </div>
+            <div className="rounded-xl px-4 py-3 border" style={{ borderColor: colors.cardBorder }}>
+              <p className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: colors.mutedFg }}>
+                <Clock size={10} /> Expected Days to Complete
+              </p>
+              <p className="text-lg font-bold mt-1" style={{ color: colors.pageFg }}>
+                {Number(job.expectedDays) > 0 ? `${Number(job.expectedDays)} Days` : "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Job Description */}
+          <div>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: colors.pageFg }}>
+              <span className="w-1 h-4 rounded-full inline-block" style={{ background: colors.primary }} />
+              Job Description
+            </h3>
             <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{job.description}</p>
             <p className="text-xs mt-2" style={{ color: colors.mutedFg }}>
               Posted by{" "}
@@ -393,30 +413,50 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
 
               {!isClient && !hasAlreadyBid && (
                 showBidForm ? (
-                  <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
-                    <h4 className="font-semibold" style={{ color: colors.pageFg }}>Place a Bid</h4>
-                    <Input type="number" step="0.001" placeholder={`Your bid in ${NATIVE_SYMBOL} (can be above budget)`}
-                      containerClassName="w-full"
-                      value={bidAmount} onChange={e => setBidAmount(e.target.value)} />
-                    <Input type="number" min="1" placeholder="Completion days (how many days you need)"
-                      containerClassName="w-full"
-                      value={bidDays} onChange={e => setBidDays(e.target.value)} />
-                    <textarea rows={3} placeholder="Your proposal…"
-                      className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
-                      value={bidProposal} onChange={e => setBidProposal(e.target.value)} />
-                    <div className="flex gap-2">
+                  <div className="rounded-xl p-5 space-y-4 border" style={{ borderColor: colors.cardBorder }}>
+                    <h4 className="font-semibold flex items-center gap-2" style={{ color: colors.pageFg }}>
+                      <span className="w-1 h-4 rounded-full inline-block" style={{ background: colors.primary }} />
+                      Place a Bid
+                    </h4>
+                    <div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider">Your Bid ({NATIVE_SYMBOL})</Label>
+                          <div className="relative">
+                            <Input type="number" step="0.001" placeholder="0.0000"
+                              containerClassName="w-full"
+                              value={bidAmount} onChange={e => setBidAmount(e.target.value)} />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium" style={{ color: colors.mutedFg }}>{NATIVE_SYMBOL}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider">Completion Days</Label>
+                          <Input type="number" min="1" placeholder="e.g. 5"
+                            containerClassName="w-full"
+                            value={bidDays} onChange={e => setBidDays(e.target.value)} />
+                          <p className="text-[10px] mt-0.5" style={{ color: colors.mutedFg }}>(how many days you need)</p>
+                        </div>
+                      </div>
+                      <p className="text-xs mt-1.5" style={{ color: colors.primaryFg }}>
+                        The client&apos;s budget is {formatEth(job.budget)} {NATIVE_SYMBOL}.
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider">Bid Details / Proposal</Label>
+                      <textarea rows={4} placeholder="Explain your proposal and why you're the best candidate..."
+                        className="w-full border rounded-lg px-3 py-2.5 text-sm outline-none resize-none" style={inputStyle}
+                        value={bidProposal} onChange={e => setBidProposal(e.target.value)} />
+                    </div>
+                    <div className="flex gap-2 justify-end">
                       <button onClick={() => setShowBidForm(false)}
-                        className="flex-1 border rounded-lg py-2 text-sm" style={btnOutline}>Cancel</button>
+                        className="px-5 border rounded-lg py-2 text-sm font-medium" style={btnOutline}>Cancel</button>
                       <button onClick={placeBid} disabled={!!txLoading || !bidAmount || !bidProposal}
-                        className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover" style={btnPrimary}>
+                        className="px-5 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover" style={btnPrimary}>
                         {txLoading === "Placing bid…" ? "Placing…" : "Submit Bid"}
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <button onClick={() => setShowBidForm(true)}
-                    className="w-full rounded-lg py-2.5 text-sm font-medium btn-hover" style={btnPrimary}>Place a Bid</button>
-                )
+                ) : null
               )}
               {!isClient && hasAlreadyBid && (
                 <div className="rounded-lg p-3 text-sm border" style={{ background: colors.successBg, borderColor: colors.successText + "44", color: colors.successText }}>
@@ -910,10 +950,11 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
 
           {/* ─── Bids section ──────────────────────────────────── */}
           <div>
-            <h3 className="text-sm font-semibold mb-3" style={{ color: colors.mutedFg }}>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: colors.pageFg }}>
+              <span className="w-1 h-4 rounded-full inline-block" style={{ background: colors.primary }} />
               Bids {!loadingBids && `(${bids.length})`}
               {job.sealedBidding && !isClient && (
-                <span className="text-xs font-normal ml-2" style={{ color: colors.mutedFg }}>
+                <span className="text-xs font-normal ml-1" style={{ color: colors.mutedFg }}>
                   (sealed — only your bid is visible)
                 </span>
               )}
@@ -921,7 +962,10 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
             {loadingBids ? (
               <p className="text-sm" style={{ color: colors.mutedFg }}>Loading bids…</p>
             ) : bids.length === 0 ? (
-              <p className="text-sm" style={{ color: colors.mutedFg }}>No bids yet.</p>
+              <div className="rounded-xl border py-8 flex flex-col items-center justify-center" style={{ borderColor: colors.cardBorder }}>
+                <Users size={28} style={{ color: colors.muted }} />
+                <p className="text-sm mt-2" style={{ color: colors.mutedFg }}>No bids yet.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {bids.map(bid => (
@@ -931,47 +975,65 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       background: bid.id === job.acceptedBidId ? colors.successBg : "transparent",
                     }}>
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: colors.primaryFg }}>
-                          {formatEth(bid.amount)} {NATIVE_SYMBOL}
-                          {bid.amount > job.budget && (
-                            <span className="text-xs ml-1" style={{ color: colors.warningText }}>above budget</span>
-                          )}
-                        </p>
-                        <p className="text-xs font-mono mt-0.5" style={{ color: colors.mutedFg }}>
-                          {bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() ? "You" : shortenAddress(bid.freelancer)}
-                          {Number(bid.completionDays) > 0 && (
-                            <span className="ml-2 font-sans"><Clock size={12} className="inline mr-0.5" />{Number(bid.completionDays)} days</span>
-                          )}
-                          {bid.id === job.acceptedBidId && (
-                            <span className="ml-2 font-medium" style={{ color: colors.successText }}>✓ Accepted</span>
-                          )}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: colors.inputBg, color: colors.mutedFg }}>
+                          <Users size={14} />
+                        </span>
+                        <span className="text-sm font-medium" style={{ color: colors.pageFg }}>
+                          {bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() ? "you" : shortenAddress(bid.freelancer)}
+                        </span>
                       </div>
-                      <div className="flex gap-1.5 shrink-0">
-                        {isClient && liveStatus === 0 && bid.isActive && (
-                          <button onClick={() => acceptBid(bid)} disabled={!!txLoading}
-                            className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-60"
-                            style={btnPrimary}>
-                            {txLoading === "Accepting bid…" ? "…" : "Accept"}
-                          </button>
-                        )}
-                        {!isClient && bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() && liveStatus === 0 && bid.isActive && (
-                          <button onClick={() => withdrawBid(bid.id)} disabled={!!txLoading}
-                            className="text-xs px-3 py-1.5 rounded-lg border disabled:opacity-60"
-                            style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
-                            {txLoading === "Withdrawing bid…" ? "…" : "Withdraw"}
-                          </button>
+                      <div className="text-right">
+                        <p className="text-sm font-bold" style={{ color: colors.primaryFg }}>
+                          {formatEth(bid.amount)} {NATIVE_SYMBOL}
+                        </p>
+                        {Number(bid.completionDays) > 0 && (
+                          <p className="text-[11px]" style={{ color: colors.mutedFg }}>Expected: {Number(bid.completionDays)} days</p>
                         )}
                       </div>
                     </div>
-                    <p className="text-sm mt-2 leading-relaxed" style={{ color: colors.pageFg }}>{bid.proposal}</p>
+                    {bid.proposal && (
+                      <p className="text-sm mt-2 leading-relaxed" style={{ color: colors.pageFg }}>{bid.proposal}</p>
+                    )}
+                    <div className="flex items-center justify-end gap-1.5 mt-2">
+                      {bid.id === job.acceptedBidId && (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ color: colors.successText, background: colors.successBg }}>✓ Accepted</span>
+                      )}
+                      {isClient && liveStatus === 0 && bid.isActive && (
+                        <button onClick={() => acceptBid(bid)} disabled={!!txLoading}
+                          className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-60 btn-hover"
+                          style={btnPrimary}>
+                          {txLoading === "Accepting bid…" ? "…" : "Accept"}
+                        </button>
+                      )}
+                      {!isClient && bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() && liveStatus === 0 && bid.isActive && (
+                        <button onClick={() => withdrawBid(bid.id)} disabled={!!txLoading}
+                          className="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-60"
+                          style={{ color: colors.dangerText }}>
+                          <Trash2 size={12} />{txLoading === "Withdrawing bid…" ? "…" : "Withdraw"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
         </div>
+
+        {/* Footer */}
+        {liveStatus === 0 && signer && !isClient && !hasAlreadyBid && (
+          <div className="flex items-center justify-end gap-2 px-6 py-4" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium" style={{ color: colors.mutedFg }}>Close</button>
+            <button onClick={() => setShowBidForm(true)}
+              className="px-5 py-2 text-sm font-medium rounded-lg btn-hover" style={btnPrimary}>Place a Bid</button>
+          </div>
+        )}
+        {(liveStatus !== 0 || isClient || hasAlreadyBid || !signer) && (
+          <div className="flex items-center justify-end gap-2 px-6 py-4" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium" style={{ color: colors.mutedFg }}>Close</button>
+          </div>
+        )}
       </div>
     </div>
 

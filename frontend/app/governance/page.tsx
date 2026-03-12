@@ -10,7 +10,7 @@ import { ethers } from "ethers";
 import Link from "next/link";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
-import { Landmark } from "lucide-react";
+import { Landmark, SlidersHorizontal } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -30,6 +30,7 @@ export default function GovernancePage() {
   const [minVrtToPropose, setMinVrtToPropose] = useState("100");
   const [govVotingDays, setGovVotingDays] = useState(5);
   const [quorumBps, setQuorumBps] = useState(1000);
+  const [proposalFilter, setProposalFilter] = useState<"all" | "active" | "passed" | "executed">("all");
   const configured = CONTRACT_ADDRESSES.Governance !== "";
 
   // Form
@@ -123,65 +124,82 @@ export default function GovernancePage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: colors.pageBg }}>
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-black" style={{ color: colors.pageFg }}>Governance</h1>
-            <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>
-              VRT-weighted proposals — vote on platform decisions
-            </p>
+    <main className="max-w-6xl mx-auto px-4 py-8" style={{ color: colors.pageFg }}>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold" style={{ color: colors.pageFg }}>Governance</h1>
+        <p className="mt-2 leading-relaxed" style={{ color: colors.mutedFg }}>
+          VRT-weighted proposals — vote on platform decisions and shape the future.
+        </p>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
+        {[
+          { label: "Treasury", value: `${formatEth(treasuryBal)} ${NATIVE_SYMBOL}`, accent: true },
+          { label: "Your VRT", value: formatVrt(vrtBalance), accent: true },
+          { label: "Total Proposals", value: proposals.length.toString() },
+          { label: "Min VRT to Propose", value: minVrtToPropose },
+          { label: "Voting Period", value: `${Number.isInteger(govVotingDays) ? govVotingDays : govVotingDays.toFixed(1)}d` },
+          { label: "Quorum", value: `${(quorumBps / 100).toFixed(0)}%` },
+        ].map((s, i) => (
+          <div key={i} className="rounded-xl border p-4 stat-hover"
+            style={{ background: s.accent ? colors.primaryLight : colors.cardBg, borderColor: colors.cardBorder }}>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>{s.label}</p>
+            <p className="text-lg font-bold font-mono mt-0.5" style={{ color: s.accent ? colors.primaryFg : colors.pageFg }}>{s.value}</p>
           </div>
-          {address && (
-            <button onClick={() => setShowCreate(true)}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold btn-hover"
-              style={{ background: colors.primary, color: colors.primaryText }}>
-              + New Proposal
+        ))}
+      </div>
+
+      {/* Tabs + Create button */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex gap-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
+          {([
+            { key: "all", label: "All Proposals" },
+            { key: "active", label: "Active" },
+            { key: "passed", label: "Passed" },
+            { key: "executed", label: "Executed" },
+          ] as const).map((t) => (
+            <button key={t.key} onClick={() => setProposalFilter(t.key)}
+              className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
+              style={proposalFilter === t.key
+                ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
+                : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
+              {t.label}
             </button>
-          )}
+          ))}
         </div>
+        {address && (
+          <button onClick={() => setShowCreate(true)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold btn-hover"
+            style={{ background: colors.primary, color: colors.primaryText }}>
+            + New Proposal
+          </button>
+        )}
+      </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Treasury</p>
-            <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatEth(treasuryBal)} {NATIVE_SYMBOL}</p>
-          </div>
-          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Your VRT</p>
-            <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatVrt(vrtBalance)}</p>
-          </div>
-          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Total Proposals</p>
-            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{proposals.length}</p>
-          </div>
-          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Min VRT to Propose</p>
-            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{minVrtToPropose}</p>
-          </div>
-          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Voting Period</p>
-            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{Number.isInteger(govVotingDays) ? govVotingDays : govVotingDays.toFixed(1)}d</p>
-          </div>
-          <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Quorum</p>
-            <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{(quorumBps / 100).toFixed(0)}%</p>
-          </div>
+      {/* Proposals list */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="rounded-xl h-40 animate-pulse" style={{ background: colors.inputBg }} />)}
         </div>
-
-        {/* Proposals list */}
-        {loading ? (
-          <div className="text-center py-16" style={{ color: colors.mutedFg }}>Loading proposals…</div>
-        ) : proposals.length === 0 ? (
-          <div className="text-center py-16 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-4xl mb-3"><Landmark size={40} className="mx-auto block" /></p>
-            <p className="font-semibold text-lg" style={{ color: colors.pageFg }}>No proposals yet</p>
-            <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create the first governance proposal</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {proposals.map((p) => {
+      ) : proposals.length === 0 ? (
+        <div className="text-center py-20 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+          <Landmark size={40} className="mx-auto mb-3" style={{ color: colors.mutedFg }} />
+          <p className="font-semibold text-lg" style={{ color: colors.pageFg }}>No proposals yet</p>
+          <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create the first governance proposal</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {proposals
+            .filter((p) => {
+              const s = Number(p.status);
+              if (proposalFilter === "active") return s === 0;
+              if (proposalFilter === "passed") return s === 1;
+              if (proposalFilter === "executed") return s === 3;
+              return true;
+            })
+            .map((p) => {
               const status = Number(p.status);
               const forV = Number(ethers.formatEther(p.forVotes));
               const againstV = Number(ethers.formatEther(p.againstVotes));
@@ -189,8 +207,8 @@ export default function GovernancePage() {
               const pct = total > 0 ? Math.round((forV / total) * 100) : 0;
               const expired = Number(p.deadline) * 1000 < Date.now();
               return (
-                <div key={p.id.toString()}
-                  className="rounded-2xl border p-5 card-hover"
+                  <div key={p.id.toString()}
+                  className="rounded-xl border p-5 card-hover"
                   style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
@@ -259,16 +277,22 @@ export default function GovernancePage() {
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
-          <div className="w-full max-w-lg rounded-2xl shadow-2xl p-6" style={{ background: colors.cardBg }} onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: colors.pageFg }}>New Proposal</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
+          <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: colors.cardBg }} onClick={e => e.stopPropagation()}>
+            {/* Modal header bar */}
+            <div className="flex items-center justify-between px-6 py-4" style={{ background: colors.primary }}>
+              <div className="flex items-center gap-2 text-white">
+                <Landmark size={18} />
+                <span className="font-semibold text-sm">New Proposal</span>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="text-white/70 hover:text-white text-lg">&times;</button>
+            </div>
+            <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
                 <Label className="mb-1 block text-xs font-medium">Title</Label>
                 <Input value={title} onChange={e => setTitle(e.target.value)} required />
@@ -293,6 +317,6 @@ export default function GovernancePage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

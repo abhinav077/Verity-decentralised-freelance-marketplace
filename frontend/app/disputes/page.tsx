@@ -773,10 +773,10 @@ export default function DisputesPage() {
   });
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold" style={{ color: colors.pageFg }}>Disputes</h1>
-        <p className="mt-1" style={{ color: colors.mutedFg }}>Vote on disputes using your VRT tokens. Winners earn rewards.</p>
+    <main className="max-w-6xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold" style={{ color: colors.pageFg }}>Dispute Resolution</h1>
+        <p className="mt-2 leading-relaxed" style={{ color: colors.mutedFg }}>Vote on disputes using your VRT tokens. Winners earn rewards.<br />Fair, transparent, community-driven conflict resolution.</p>
       </div>
 
       <div className="border rounded-xl p-4 mb-6 text-sm" style={{ background: colors.primaryLight, borderColor: colors.primaryFg + "22" }}>
@@ -796,14 +796,14 @@ export default function DisputesPage() {
 
       {address && contractsConfigured && (
         <>
-          <div className="flex gap-1 p-1 rounded-lg w-fit mb-5" style={{ background: colors.inputBg }}>
+          <div className="flex gap-6 mb-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
             {(["active", "resolved", "mine", "all"] as const).map((f) => (
               <button key={f} onClick={() => setFilter(f)}
-                className="px-3 py-1.5 text-sm rounded-md font-medium capitalize"
+                className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
                 style={filter === f
-                  ? { background: colors.cardBg, color: colors.primaryFg, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }
-                  : { color: colors.mutedFg }}>
-                {f === "mine" ? "My Disputes" : f}
+                  ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
+                  : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
+                {f === "mine" ? "My Disputes" : f === "active" ? "Active" : f === "resolved" ? "Resolved" : "All"}
               </button>
             ))}
           </div>

@@ -9,7 +9,7 @@ import JobCard from "@/components/JobCard";
 import CreateJobModal from "@/components/CreateJobModal";
 import JobDetailModal from "@/components/JobDetailModal";
 import ReviewModal from "@/components/ReviewModal";
-import { Star, AlertTriangle, Settings } from "lucide-react";
+import { Star, AlertTriangle, Settings, SlidersHorizontal } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -51,6 +51,8 @@ function JobsInner() {
   const [disputeAlerts, setDisputeAlerts] = useState<{ job: Job; disputeId: bigint }[]>([]);
   const [reviewAlerts, setReviewAlerts] = useState<Job[]>([]);
   const [reviewJob, setReviewJob] = useState<Job | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [openBidOnSelect, setOpenBidOnSelect] = useState(false);
 
   useEffect(() => {
     if (tabParam === "mine") setFilter("mine");
@@ -163,8 +165,8 @@ function JobsInner() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-8" style={{ color: colors.pageFg }}>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: colors.pageFg }}>Job Marketplace</h1>
-        <p className="mt-1" style={{ color: colors.mutedFg }}>Find work or hire talent — powered by smart contracts.</p>
+        <h1 className="text-3xl font-extrabold" style={{ color: colors.pageFg }}>Discover Opportunities</h1>
+        <p className="mt-2 leading-relaxed" style={{ color: colors.mutedFg }}>Secure and transparent freelance opportunities powered by smart contracts.<br />Earn crypto for your skills.</p>
       </div>
 
       {/* Dispute alert banners */}
@@ -230,13 +232,13 @@ function JobsInner() {
 
       {contractsConfigured && (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div className="flex gap-1 p-1 rounded-lg" style={{ background: colors.inputBg }}>
+          <div className="flex gap-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
             {(["all", "mine", "working"] as const).map((f) => (
               <button key={f} onClick={() => setFilter(f)}
-                className="relative px-3 py-1.5 text-sm rounded-md font-medium transition-colors"
+                className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
                 style={filter === f
-                  ? { background: colors.cardBg, color: colors.primaryFg, boxShadow: "0 1px 3px rgba(0,0,0,.1)" }
-                  : { color: colors.mutedFg }}>
+                  ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
+                  : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
                 {f === "all" ? "Open Jobs" : f === "mine" ? "My Jobs" : "My Work"}
                 {f === "working" && myWorkDisputeCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] text-[9px] font-bold rounded-full flex items-center justify-center px-0.5"
@@ -245,6 +247,11 @@ function JobsInner() {
               </button>
             ))}
           </div>
+          <button onClick={() => setShowFilter(!showFilter)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors"
+            style={{ borderColor: colors.cardBorder, color: colors.pageFg, background: colors.cardBg }}>
+            <SlidersHorizontal size={14} /> Filter
+          </button>
         </div>
       )}
 
@@ -287,7 +294,9 @@ function JobsInner() {
       {address && !loading && !error && displayJobs.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayJobs.map((job) => (
-            <JobCard key={job.id.toString()} job={job} currentAddress={address} onClick={() => setSelectedJob(job)} />
+            <JobCard key={job.id.toString()} job={job} currentAddress={address}
+              onClick={() => setSelectedJob(job)}
+              onPlaceBid={() => { setOpenBidOnSelect(true); setSelectedJob(job); }} />
           ))}
         </div>
       )}
@@ -297,7 +306,9 @@ function JobsInner() {
       )}
       {selectedJob && (
         <JobDetailModal job={selectedJob} signer={signer} currentAddress={address}
-          onClose={() => setSelectedJob(null)} onRefresh={loadJobs} />
+          onClose={() => { setSelectedJob(null); setOpenBidOnSelect(false); }}
+          onRefresh={loadJobs}
+          initialShowBid={openBidOnSelect} />
       )}
       {reviewJob && signer && address && (
         <ReviewModal jobId={reviewJob.id}

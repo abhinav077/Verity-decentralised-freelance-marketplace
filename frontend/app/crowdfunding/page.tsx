@@ -5,7 +5,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getGovernance, CONTRACT_ADDRESSES, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
 import { Input } from "@/components/reactbits/Input";
-import { Paperclip, Wallet, Link as LinkIcon } from "lucide-react";
+import { Paperclip, Wallet, Link as LinkIcon, X, Heart } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -30,6 +30,7 @@ export default function CrowdfundingPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [expandedId, setExpandedId] = useState<bigint | null>(null);
+  const [crowdFilter, setCrowdFilter] = useState<"all" | "active" | "funded" | "failed">("all");
   const [updates, setUpdates] = useState<Record<string, CrowdfundUpdate[]>>({});
   const [myContributions, setMyContributions] = useState<Record<string, bigint>>({});
   const [txLoading, setTxLoading] = useState<string | null>(null);
@@ -185,54 +186,83 @@ export default function CrowdfundingPage() {
 
   const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
 
+  const filteredProjects = projects.filter((p) => {
+    if (crowdFilter === "active") return p.status === 0;
+    if (crowdFilter === "funded") return p.status === 1;
+    if (crowdFilter === "failed") return p.status === 2 || p.status === 3;
+    return true;
+  });
+
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8" style={{ color: colors.pageFg }}>
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Crowdfunding</h1>
-          <p className="mt-1" style={{ color: colors.mutedFg }}>Fund community projects with transparent on-chain tracking.</p>
-        </div>
-        {address && configured && (
-          <button onClick={() => setShowCreate(!showCreate)}
-            className="px-4 py-2 rounded-lg text-sm font-medium btn-hover"
-            style={{ background: colors.primary, color: colors.primaryText }}>
-            {showCreate ? "Cancel" : "+ New Project"}
-          </button>
-        )}
+    <main className="max-w-6xl mx-auto px-4 py-8" style={{ color: colors.pageFg }}>
+      <div className="mb-8">
+        <h1 className="text-3xl font-extrabold" style={{ color: colors.pageFg }}>Community Crowdfunding</h1>
+        <p className="mt-2 leading-relaxed" style={{ color: colors.mutedFg }}>Fund community projects with transparent on-chain tracking.<br />Support builders, track progress, earn recognition.</p>
       </div>
 
       {txError && <div className="text-sm rounded-lg p-3 mb-4" style={{ background: colors.dangerBg, color: colors.dangerText }}>{txError}</div>}
 
-      {/* Create form */}
-      {showCreate && signer && (
-        <form onSubmit={createProject} className="border rounded-xl p-5 mb-6 space-y-4" style={{ borderColor: colors.cardBorder, background: colors.cardBg }}>
-          <h3 className="font-semibold" style={{ color: colors.pageFg }}>Create a Crowdfund Project</h3>
-          <p className="text-xs" style={{ color: colors.mutedFg }}>You need ≥{minVrtToCrowdfund} VRT to create a project.</p>
-          <Input placeholder="Project title" required
-            value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-          <textarea rows={3} placeholder="Describe the project…" required
-            className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
-            value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-          <div className="grid grid-cols-2 gap-3">
-            <select className="border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
-              value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-              {["Product", "Tool", "Research", "Community", "Education", "Other"].map(c => <option key={c}>{c}</option>)}
-            </select>
-            <Input placeholder="Proof/docs link (optional)"
-              value={form.proofLink} onChange={e => setForm(f => ({ ...f, proofLink: e.target.value }))} />
+      {address && configured && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex gap-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
+            {(["all", "active", "funded", "failed"] as const).map((f) => (
+              <button key={f} onClick={() => setCrowdFilter(f)}
+                className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
+                style={crowdFilter === f
+                  ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
+                  : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
+                {f === "all" ? "All Projects" : f === "active" ? "Active" : f === "funded" ? "Funded" : "Failed"}
+              </button>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Input type="number" step="0.01" min="0.01" placeholder={`Goal (${NATIVE_SYMBOL})`} required
-              value={form.goalAmount} onChange={e => setForm(f => ({ ...f, goalAmount: e.target.value }))} />
-            <Input type="number" min="1" max="365" placeholder="Duration (days)"
-              value={form.durationDays} onChange={e => setForm(f => ({ ...f, durationDays: e.target.value }))} />
-          </div>
-          <button type="submit" disabled={!!txLoading}
-            className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
+          <button onClick={() => setShowCreate(true)}
+            className="px-4 py-2 rounded-lg text-sm font-medium btn-hover"
             style={{ background: colors.primary, color: colors.primaryText }}>
-            {txLoading === "create" ? "Creating…" : "Launch Project"}
+            + New Project
           </button>
-        </form>
+        </div>
+      )}
+
+      {/* Create modal */}
+      {showCreate && signer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
+          <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ background: colors.cardBg }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 rounded-t-2xl" style={{ background: colors.primary }}>
+              <div className="flex items-center gap-2.5 text-white">
+                <Heart size={18} />
+                <h2 className="text-lg font-bold">Launch a Crowdfund Project</h2>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="text-white/80 hover:text-white"><X size={20} /></button>
+            </div>
+            <form onSubmit={createProject} className="p-6 space-y-4 overflow-y-auto">
+              <p className="text-xs" style={{ color: colors.mutedFg }}>You need ≥{minVrtToCrowdfund} VRT to create a project.</p>
+              <Input placeholder="Project title" required
+                value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+              <textarea rows={3} placeholder="Describe the project…" required
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
+                value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <select className="border rounded-lg px-3 py-2 text-sm outline-none" style={inputStyle}
+                  value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                  {["Product", "Tool", "Research", "Community", "Education", "Other"].map(c => <option key={c}>{c}</option>)}
+                </select>
+                <Input placeholder="Proof/docs link (optional)"
+                  value={form.proofLink} onChange={e => setForm(f => ({ ...f, proofLink: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Input type="number" step="0.01" min="0.01" placeholder={`Goal (${NATIVE_SYMBOL})`} required
+                  value={form.goalAmount} onChange={e => setForm(f => ({ ...f, goalAmount: e.target.value }))} />
+                <Input type="number" min="1" max="365" placeholder="Duration (days)"
+                  value={form.durationDays} onChange={e => setForm(f => ({ ...f, durationDays: e.target.value }))} />
+              </div>
+              <button type="submit" disabled={!!txLoading}
+                className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
+                style={{ background: colors.primary, color: colors.primaryText }}>
+                {txLoading === "create" ? "Creating…" : "Launch Project"}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
 
       {!address && <p className="text-center py-20" style={{ color: colors.mutedFg }}>Connect your wallet to see crowdfunding projects.</p>}
@@ -243,15 +273,15 @@ export default function CrowdfundingPage() {
         </div>
       )}
 
-      {!loading && address && projects.length === 0 && (
+      {!loading && address && filteredProjects.length === 0 && (
         <div className="text-center py-20" style={{ color: colors.mutedFg }}>
-          <p className="text-lg">No crowdfunding projects yet. Be the first to create one!</p>
+          <p className="text-lg">{crowdFilter === "all" ? "No crowdfunding projects yet. Be the first to create one!" : `No ${crowdFilter} projects.`}</p>
         </div>
       )}
 
-      {!loading && address && projects.length > 0 && (
-        <div className="space-y-4">
-          {projects.map((p) => {
+      {!loading && address && filteredProjects.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredProjects.map((p) => {
             const pid = p.id.toString();
             const isCreator = address?.toLowerCase() === p.creator.toLowerCase();
             const pctFunded = p.goalAmount > 0n ? Number((p.totalRaised * 100n) / p.goalAmount) : 0;

@@ -11,7 +11,7 @@ import LinkifyText from "@/components/LinkifyText";
 import IpfsFileUpload from "@/components/IpfsFileUpload";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
-import { Trophy, AlertTriangle, Wallet } from "lucide-react";
+import { Trophy, AlertTriangle, Wallet, Star as StarIcon, Briefcase, Award, FolderOpen, Users, ArrowLeft, Edit3 } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -206,344 +206,352 @@ export default function ProfilePage() {
   const skillList = profile?.skills ?? [];
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-      <Link href="/" className="text-sm hover:underline" style={{ color: colors.primaryFg }}>← Back to Jobs</Link>
+    <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <Link href="/" className="inline-flex items-center gap-1.5 text-sm hover:underline" style={{ color: colors.primaryFg }}><ArrowLeft size={14} /> Back to Jobs</Link>
 
       {loading ? (
-        <div className="rounded-2xl p-8 text-center animate-pulse" style={{ background: colors.cardBg, color: colors.mutedFg }}>Loading profile…</div>
+        <div className="rounded-xl p-8 text-center animate-pulse" style={{ background: colors.cardBg, color: colors.mutedFg }}>Loading profile…</div>
       ) : loadError ? (
-        <div className="rounded-2xl p-8 text-center space-y-2" style={{ background: colors.cardBg }}>
+        <div className="rounded-xl p-8 text-center space-y-2" style={{ background: colors.cardBg }}>
           <p className="text-2xl"><AlertTriangle size={28} /></p>
           <p className="font-medium" style={{ color: colors.pageFg }}>{loadError}</p>
           <button onClick={loadProfile} className="mt-2 text-sm hover:underline" style={{ color: colors.primaryFg }}>Try again</button>
         </div>
       ) : (
-        <div className="rounded-2xl shadow-sm border overflow-hidden" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-          {/* Profile header */}
-          <div className="px-6 py-8 flex items-center gap-5" style={{ background: colors.primary }}>
-            {profile?.ipfsAvatar ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={resolveIpfsUrl(profile.ipfsAvatar)}
-                alt="Profile Photo" className="w-[72px] h-[72px] rounded-full object-cover border-2 border-white/30 shrink-0"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-            ) : (
-              <Avatar address={targetAddress} size={72} />
-            )}
-            <div className="text-white">
-              <h1 className="text-2xl font-bold">
-                {profileExists && profile?.name ? profile.name : shortenAddress(targetAddress)}
-              </h1>
-              <p className="text-sm font-mono mt-0.5" style={{ opacity: 0.7 }}>{targetAddress}</p>
-              {avgRating > 0 && (
-                <div className="flex items-center gap-1.5 mt-2">
-                  <StarRating rating={Math.round(avgRating)} color="rgba(255,255,255,0.3)" />
-                  <span className="text-sm" style={{ opacity: 0.85 }}>{avgRating.toFixed(1)} / 5 ({reviews.length} review{reviews.length !== 1 ? "s" : ""})</span>
-                </div>
+        <>
+          {/* Hero Card */}
+          <div className="rounded-2xl shadow-sm border overflow-hidden" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            {/* Banner */}
+            <div className="relative h-32" style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.primary}cc)` }}>
+              <div className="absolute -bottom-12 left-6">
+                {profile?.ipfsAvatar ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={resolveIpfsUrl(profile.ipfsAvatar)}
+                    alt="Profile Photo" className="w-24 h-24 rounded-2xl object-cover border-4 shadow-lg"
+                    style={{ borderColor: colors.cardBg }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <div className="border-4 rounded-2xl shadow-lg" style={{ borderColor: colors.cardBg }}>
+                    <Avatar address={targetAddress} size={88} />
+                  </div>
+                )}
+              </div>
+              {isOwnProfile && !editing && (
+                <button onClick={() => { setEditing(true); setAvatarIpfs(profile?.ipfsAvatar || ""); }}
+                  className="absolute top-4 right-4 flex items-center gap-1.5 text-white text-sm px-3 py-1.5 rounded-lg"
+                  style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)" }}>
+                  <Edit3 size={14} />
+                  {profileExists ? "Edit Profile" : "Set Up Profile"}
+                </button>
               )}
             </div>
-            {isOwnProfile && !editing && (
-              <button onClick={() => { setEditing(true); setAvatarIpfs(profile?.ipfsAvatar || ""); }}
-                className="ml-auto text-white text-sm px-3 py-1.5 rounded-lg"
-                style={{ background: "rgba(255,255,255,0.2)" }}>
-                {profileExists ? "Edit Profile" : "Set Up Profile"}
-              </button>
-            )}
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* Edit form */}
-            {editing && isOwnProfile && (
-              <div className="border rounded-xl p-5 space-y-3" style={{ background: colors.primaryLight, borderColor: colors.primary + "33" }}>
-                <h3 className="font-semibold" style={{ color: colors.pageFg }}>{profileExists ? "Edit Profile" : "Set Up Profile"}</h3>
-                {saveError && <p className="text-sm" style={{ color: colors.dangerText }}>{saveError}</p>}
-                <div>
-                  <Label className="text-xs font-medium">Profile Photo</Label>
-                  <div className="mt-1 flex items-center gap-4">
-                    {avatarIpfs ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={resolveIpfsUrl(avatarIpfs)}
-                        alt="Preview" className="w-16 h-16 rounded-full object-cover border"
-                        style={{ borderColor: colors.cardBorder }}
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    ) : (
-                      <Avatar address={targetAddress} size={64} />
-                    )}
-                    <div className="flex-1 space-y-2">
-                      <IpfsFileUpload
-                        accept="image/*"
-                        label="Upload Photo"
-                        existingCid={avatarIpfs || undefined}
-                        onUpload={(cid) => setAvatarIpfs(cid)}
-                      />
-                      <Input value={avatarIpfs} onChange={e => setAvatarIpfs(e.target.value)}
-                        placeholder="Or paste IPFS hash / URL"
-                        className="text-xs" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Name</Label>
-                  <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="e.g. Alice Dev"
-                    className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Bio</Label>
-                  <textarea value={editBio} onChange={e => setEditBio(e.target.value)} rows={2}
-                    placeholder="Short introduction…"
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
-                    style={{ background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg }} />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium">Skills (comma-separated)</Label>
-                  <Input value={editSkills} onChange={e => setEditSkills(e.target.value)} placeholder="e.g. Solidity, React"
-                    className="mt-1" />
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => setEditing(false)}
-                    className="flex-1 border rounded-lg py-2 text-sm"
-                    style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
-                  <button onClick={saveProfile} disabled={saving || !editName}
-                    className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60"
-                    style={{ background: colors.primary, color: colors.primaryText }}>
-                    {saving ? "Saving…" : "Save Profile"}
-                  </button>
-                </div>
-                <p className="text-xs text-center" style={{ color: colors.warningText }}>
-                  <Wallet size={14} className="inline mr-1" />Profile is stored on-chain — one wallet transaction saves your info{avatarIpfs.trim() && avatarIpfs.trim() !== (profile?.ipfsAvatar || "") ? " (+ a second for your photo)" : ""}
-                </p>
-              </div>
-            )}
-
-            {/* Bio & skills */}
-            {profileExists && !editing && (
-              <div className="space-y-3">
-                {profile?.bio && <LinkifyText text={profile.bio} className="text-sm leading-relaxed" style={{ color: colors.pageFg }} />}
-                {skillList.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {skillList.map(s => (
-                      <span key={s} className="text-xs px-2.5 py-1 rounded-full font-medium"
-                        style={{ background: colors.primaryLight, color: colors.primaryFg }}>{s}</span>
-                    ))}
+            {/* Name & info */}
+            <div className="pt-16 pb-6 px-6">
+              <h1 className="text-2xl font-extrabold" style={{ color: colors.pageFg }}>
+                {profileExists && profile?.name ? profile.name : shortenAddress(targetAddress)}
+              </h1>
+              <p className="text-sm font-mono mt-1" style={{ color: colors.mutedFg }}>{targetAddress}</p>
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                {avgRating > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <StarRating rating={Math.round(avgRating)} color={colors.inputBorder} />
+                    <span className="text-sm font-medium" style={{ color: colors.pageFg }}>{avgRating.toFixed(1)}</span>
+                    <span className="text-xs" style={{ color: colors.mutedFg }}>({reviews.length} review{reviews.length !== 1 ? "s" : ""})</span>
                   </div>
                 )}
                 {profile?.createdAt && Number(profile.createdAt) > 0 && (
-                  <p className="text-xs" style={{ color: colors.mutedFg }}>Member since {formatDate(profile.createdAt)}</p>
+                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: colors.surfaceBg, color: colors.mutedFg }}>
+                    Member since {formatDate(profile.createdAt)}
+                  </span>
                 )}
               </div>
-            )}
-
-            {!profileExists && !editing && (
-              <p className="text-sm italic" style={{ color: colors.mutedFg }}>
-                {isOwnProfile
-                  ? "You haven't set up your profile yet. Click 'Set Up Profile' to add your details."
-                  : "This user hasn't set up their profile yet."}
-              </p>
-            )}
-
-            {/* Stats */}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: colors.surfaceBg }}>
-                <p className="text-2xl font-bold" style={{ color: colors.pageFg }}>
-                  {stats ? Number(stats.jobsCompleted).toString() : "—"}
+              {/* Bio & skills */}
+              {profileExists && !editing && (
+                <div className="mt-4 space-y-3">
+                  {profile?.bio && <LinkifyText text={profile.bio} className="text-sm leading-relaxed" style={{ color: colors.pageFg }} />}
+                  {skillList.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {skillList.map(s => (
+                        <span key={s} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                          style={{ background: colors.primaryLight, color: colors.primaryFg }}>{s}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {!profileExists && !editing && (
+                <p className="text-sm italic mt-3" style={{ color: colors.mutedFg }}>
+                  {isOwnProfile
+                    ? "You haven't set up your profile yet. Click 'Edit Profile' to add your details."
+                    : "This user hasn't set up their profile yet."}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>Jobs Done</p>
-              </div>
-              <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: colors.primaryLight }}>
-                <p className="text-2xl font-bold" style={{ color: colors.primaryFg }}>{vrtBalance}</p>
-                <p className="text-xs mt-0.5" style={{ color: colors.primaryFg, opacity: 0.7 }}>VRT Tokens</p>
-              </div>
-              {stats && Number(stats.totalEarned) > 0 && (
-                <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: colors.successBg }}>
-                  <p className="text-2xl font-bold" style={{ color: colors.successText }}>
-                    {parseFloat(ethers.formatEther(stats.totalEarned)).toFixed(2)}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: colors.successText }}>{NATIVE_SYMBOL} Earned</p>
-                </div>
-              )}
-              {stats && Number(stats.totalSpent) > 0 && (
-                <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: colors.warningBg }}>
-                  <p className="text-2xl font-bold" style={{ color: colors.warningText }}>
-                    {parseFloat(ethers.formatEther(stats.totalSpent)).toFixed(2)}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: colors.warningText }}>{NATIVE_SYMBOL} Spent</p>
-                </div>
-              )}
-              <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: "#fef9c3" }}>
-                <p className="text-2xl font-bold" style={{ color: "#a16207" }}>
-                  {reviews.length > 0 ? avgRating.toFixed(1) : "—"}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: "#a16207" }}>Avg Rating</p>
-              </div>
-            </div>
-
-            {/* Reviews */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: colors.mutedFg }}>
-                Reviews ({reviews.length})
-              </h3>
-              {reviews.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.mutedFg }}>No reviews yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {[...reviews].reverse().map((r, i) => (
-                    <div key={i} className="border rounded-xl p-4" style={{ borderColor: colors.cardBorder }}>
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <Avatar address={r.reviewer} size={24} />
-                          <Link href={`/profile/${r.reviewer}`}
-                            className="text-xs font-medium hover:underline" style={{ color: colors.primaryFg }}>
-                            {shortenAddress(r.reviewer)}
-                          </Link>
-                        </div>
-                        <StarRating rating={r.rating} color={colors.inputBorder} />
-                      </div>
-                      <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{r.comment}</p>
-                      <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
-                        Job #{r.jobId.toString()} · {new Date(Number(r.timestamp) * 1000).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* B10: Endorsements */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: colors.mutedFg }}>
-                Skill Endorsements ({endorsements.length})
-              </h3>
-              {endorsements.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.mutedFg }}>No endorsements yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {/* Group by skill */}
-                  {Object.entries(endorsements.reduce<Record<string, typeof endorsements>>((acc, e) => {
-                    (acc[e.skill] = acc[e.skill] || []).push(e); return acc;
-                  }, {})).map(([skill, ends]) => (
-                    <div key={skill} className="border rounded-xl px-3 py-2" style={{ borderColor: colors.cardBorder }}>
-                      <span className="text-xs font-semibold" style={{ color: colors.primaryFg }}>{skill}</span>
-                      <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded-full" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
-                        {ends.length}
-                      </span>
-                      <div className="flex gap-1 mt-1">
-                        {ends.slice(0, 5).map((e, i) => (
-                          <Link key={i} href={`/profile/${e.endorser}`} title={e.endorser}>
-                            <Avatar address={e.endorser} size={20} />
-                          </Link>
-                        ))}
-                        {ends.length > 5 && <span className="text-xs" style={{ color: colors.mutedFg }}>+{ends.length - 5}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!isOwnProfile && signer && profileExists && (
-                <div className="flex gap-2">
-                  <Input value={endorseSkill} onChange={e => setEndorseSkill(e.target.value)}
-                    placeholder="Skill to endorse (e.g. Solidity)"
-                    containerClassName="flex-1" />
-                  <Input value={endorseJobId} onChange={e => setEndorseJobId(e.target.value)}
-                    placeholder="Job ID (opt)"
-                    containerClassName="w-24" />
-                  <button onClick={handleEndorseSkill} disabled={endorsing || !endorseSkill.trim()}
-                    className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60"
-                    style={{ background: colors.primary, color: colors.primaryText }}>
-                    {endorsing ? "…" : "Endorse"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* B11: Portfolio */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold" style={{ color: colors.mutedFg }}>
-                  Portfolio ({portfolio.length})
-                </h3>
-                {isOwnProfile && (
-                  <button onClick={() => setShowPortfolioForm(!showPortfolioForm)}
-                    className="text-xs px-2 py-1 rounded-lg" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
-                    {showPortfolioForm ? "Cancel" : "+ Add Item"}
-                  </button>
-                )}
-              </div>
-              {showPortfolioForm && isOwnProfile && (
-                <div className="border rounded-xl p-4 mb-3 space-y-2" style={{ borderColor: colors.primary + "33", background: colors.primaryLight }}>
-                  <Input value={portfolioTitle} onChange={e => setPortfolioTitle(e.target.value)}
-                    placeholder="Portfolio item title"
-                    className="w-full" />
-                  <IpfsFileUpload
-                    label="Upload Portfolio File"
-                    existingCid={portfolioIpfs || undefined}
-                    onUpload={(cid) => setPortfolioIpfs(cid)}
-                  />
-                  <p className="text-xs" style={{ color: colors.mutedFg }}>Or paste a link / IPFS hash:</p>
-                  <Input value={portfolioIpfs} onChange={e => setPortfolioIpfs(e.target.value)}
-                    placeholder="https://github.com/… or IPFS hash"
-                    className="w-full" />
-                  <Input value={portfolioJobId} onChange={e => setPortfolioJobId(e.target.value)}
-                    placeholder="Related Job ID (optional)"
-                    className="w-full" />
-                  <button onClick={handleAddPortfolio} disabled={addingPortfolio || !portfolioTitle.trim() || !portfolioIpfs.trim()}
-                    className="w-full rounded-lg py-2 text-sm font-medium disabled:opacity-60"
-                    style={{ background: colors.primary, color: colors.primaryText }}>
-                    {addingPortfolio ? "Adding…" : "Add Portfolio Item"}
-                  </button>
-                </div>
-              )}
-              {portfolio.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.mutedFg }}>No portfolio items yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {[...portfolio].reverse().map((item, i) => (
-                    <div key={i} className="border rounded-xl p-3 flex items-center justify-between" style={{ borderColor: colors.cardBorder }}>
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{item.title}</p>
-                        <a href={resolveIpfsUrl(item.ipfsHash)}
-                          target="_blank" rel="noopener noreferrer"
-                          className="text-xs hover:underline" style={{ color: colors.primaryFg }}>
-                          {isIpfsReference(item.ipfsHash) ? "View on IPFS ↗" : "View Link ↗"}
-                        </a>
-                      </div>
-                      <div className="text-right">
-                        {Number(item.jobId) > 0 && <span className="text-xs" style={{ color: colors.mutedFg }}>Job #{item.jobId.toString()}</span>}
-                        <p className="text-xs" style={{ color: colors.mutedFg }}>
-                          {new Date(Number(item.timestamp) * 1000).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* B13: Achievements */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3" style={{ color: colors.mutedFg }}>
-                Achievements ({achievements.length})
-              </h3>
-              {achievements.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.mutedFg }}>No achievements unlocked yet.</p>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {achievements.map((a, i) => (
-                    <div key={i} className="border rounded-xl p-3 text-center" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
-                      <Trophy size={28} style={{ color: colors.primary }} />
-                      <p className="text-sm font-semibold mt-1" style={{ color: colors.pageFg }}>{a.name}</p>
-                      <p className="text-xs" style={{ color: colors.mutedFg }}>{a.description}</p>
-                      {Number(a.unlockedAt) > 0 && (
-                        <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
-                          {new Date(Number(a.unlockedAt) * 1000).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
           </div>
-        </div>
+
+          {/* Edit Profile Form */}
+          {editing && isOwnProfile && (
+            <div className="rounded-xl border overflow-hidden" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+              <div className="flex items-center justify-between px-5 py-3" style={{ background: colors.primary }}>
+                <div className="flex items-center gap-2 text-white font-semibold text-sm">
+                  <Edit3 size={16} />
+                  {profileExists ? "Edit Profile" : "Create Profile"}
+                </div>
+                <button onClick={() => setEditing(false)} className="text-white/80 hover:text-white text-lg leading-none">&times;</button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <Label>Display Name</Label>
+                  <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Your name" className="w-full mt-1" />
+                </div>
+                <div>
+                  <Label>Bio</Label>
+                  <Input value={editBio} onChange={e => setEditBio(e.target.value)} placeholder="Tell us about yourself…" className="w-full mt-1" />
+                </div>
+                <div>
+                  <Label>Skills (comma-separated)</Label>
+                  <Input value={editSkills} onChange={e => setEditSkills(e.target.value)} placeholder="Solidity, React, Design…" className="w-full mt-1" />
+                </div>
+                <div>
+                  <Label>Avatar</Label>
+                  <IpfsFileUpload
+                    label="Upload Avatar"
+                    existingCid={avatarIpfs || profile?.ipfsAvatar || undefined}
+                    onUpload={(cid) => setAvatarIpfs(cid)}
+                  />
+                </div>
+                {saveError && <p className="text-sm rounded-lg px-3 py-2" style={{ background: colors.dangerBg, color: colors.dangerText }}>{saveError}</p>}
+                <button onClick={saveProfile} disabled={saving}
+                  className="w-full rounded-lg py-2.5 text-sm font-semibold btn-hover disabled:opacity-60"
+                  style={{ background: colors.primary, color: colors.primaryText }}>
+                  {saving ? "Saving…" : profileExists ? "Save Changes" : "Create Profile"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="rounded-xl p-4 text-center" style={{ background: colors.surfaceBg }}>
+              <Briefcase size={18} className="mx-auto mb-1" style={{ color: colors.mutedFg }} />
+              <p className="text-2xl font-bold" style={{ color: colors.pageFg }}>
+                {stats ? Number(stats.jobsCompleted).toString() : "—"}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>Jobs Done</p>
+            </div>
+            <div className="rounded-xl p-4 text-center" style={{ background: colors.primaryLight }}>
+              <Wallet size={18} className="mx-auto mb-1" style={{ color: colors.primaryFg }} />
+              <p className="text-2xl font-bold" style={{ color: colors.primaryFg }}>{vrtBalance}</p>
+              <p className="text-xs mt-0.5" style={{ color: colors.primaryFg, opacity: 0.7 }}>VRT Tokens</p>
+            </div>
+            {stats && Number(stats.totalEarned) > 0 && (
+              <div className="rounded-xl p-4 text-center" style={{ background: colors.successBg }}>
+                <p className="text-2xl font-bold" style={{ color: colors.successText }}>
+                  {parseFloat(ethers.formatEther(stats.totalEarned)).toFixed(2)}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: colors.successText }}>{NATIVE_SYMBOL} Earned</p>
+              </div>
+            )}
+            {stats && Number(stats.totalSpent) > 0 && (
+              <div className="rounded-xl p-4 text-center" style={{ background: colors.warningBg }}>
+                <p className="text-2xl font-bold" style={{ color: colors.warningText }}>
+                  {parseFloat(ethers.formatEther(stats.totalSpent)).toFixed(2)}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: colors.warningText }}>{NATIVE_SYMBOL} Spent</p>
+              </div>
+            )}
+            <div className="rounded-xl p-4 text-center" style={{ background: "#fef9c3" }}>
+              <StarIcon size={18} className="mx-auto mb-1" style={{ color: "#a16207" }} />
+              <p className="text-2xl font-bold" style={{ color: "#a16207" }}>
+                {reviews.length > 0 ? avgRating.toFixed(1) : "—"}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "#a16207" }}>Avg Rating</p>
+            </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="rounded-xl border p-5" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <div className="flex items-center gap-2 mb-4">
+              <StarIcon size={18} style={{ color: colors.primary }} />
+              <h3 className="text-base font-bold" style={{ color: colors.pageFg }}>Reviews</h3>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
+                {reviews.length}
+              </span>
+            </div>
+            {reviews.length === 0 ? (
+              <p className="text-sm" style={{ color: colors.mutedFg }}>No reviews yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {[...reviews].reverse().map((r, i) => (
+                  <div key={i} className="border rounded-xl p-4 card-hover" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <Avatar address={r.reviewer} size={24} />
+                        <Link href={`/profile/${r.reviewer}`}
+                          className="text-xs font-medium hover:underline" style={{ color: colors.primaryFg }}>
+                          {shortenAddress(r.reviewer)}
+                        </Link>
+                      </div>
+                      <StarRating rating={r.rating} color={colors.inputBorder} />
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{r.comment}</p>
+                    <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
+                      Job #{r.jobId.toString()} · {new Date(Number(r.timestamp) * 1000).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Endorsements Section */}
+          <div className="rounded-xl border p-5" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Users size={18} style={{ color: colors.primary }} />
+              <h3 className="text-base font-bold" style={{ color: colors.pageFg }}>Skill Endorsements</h3>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
+                {endorsements.length}
+              </span>
+            </div>
+            {endorsements.length === 0 ? (
+              <p className="text-sm" style={{ color: colors.mutedFg }}>No endorsements yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {Object.entries(endorsements.reduce<Record<string, typeof endorsements>>((acc, e) => {
+                  (acc[e.skill] = acc[e.skill] || []).push(e); return acc;
+                }, {})).map(([skill, ends]) => (
+                  <div key={skill} className="border rounded-xl px-3 py-2 card-hover" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
+                    <span className="text-xs font-semibold" style={{ color: colors.primaryFg }}>{skill}</span>
+                    <span className="text-xs ml-1.5 px-1.5 py-0.5 rounded-full" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
+                      {ends.length}
+                    </span>
+                    <div className="flex gap-1 mt-1">
+                      {ends.slice(0, 5).map((e, i) => (
+                        <Link key={i} href={`/profile/${e.endorser}`} title={e.endorser}>
+                          <Avatar address={e.endorser} size={20} />
+                        </Link>
+                      ))}
+                      {ends.length > 5 && <span className="text-xs" style={{ color: colors.mutedFg }}>+{ends.length - 5}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {!isOwnProfile && signer && profileExists && (
+              <div className="flex gap-2 mt-3 pt-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
+                <Input value={endorseSkill} onChange={e => setEndorseSkill(e.target.value)}
+                  placeholder="Skill to endorse (e.g. Solidity)"
+                  containerClassName="flex-1" />
+                <Input value={endorseJobId} onChange={e => setEndorseJobId(e.target.value)}
+                  placeholder="Job ID (opt)"
+                  containerClassName="w-24" />
+                <button onClick={handleEndorseSkill} disabled={endorsing || !endorseSkill.trim()}
+                  className="px-4 py-2 rounded-lg text-sm font-medium btn-hover disabled:opacity-60"
+                  style={{ background: colors.primary, color: colors.primaryText }}>
+                  {endorsing ? "…" : "Endorse"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Portfolio Section */}
+          <div className="rounded-xl border p-5" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FolderOpen size={18} style={{ color: colors.primary }} />
+                <h3 className="text-base font-bold" style={{ color: colors.pageFg }}>Portfolio</h3>
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
+                  {portfolio.length}
+                </span>
+              </div>
+              {isOwnProfile && (
+                <button onClick={() => setShowPortfolioForm(!showPortfolioForm)}
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium btn-hover"
+                  style={{ background: colors.primaryLight, color: colors.primaryFg }}>
+                  {showPortfolioForm ? "Cancel" : "+ Add Item"}
+                </button>
+              )}
+            </div>
+            {showPortfolioForm && isOwnProfile && (
+              <div className="border rounded-xl p-4 mb-4 space-y-2" style={{ borderColor: colors.primary + "33", background: colors.primaryLight }}>
+                <Input value={portfolioTitle} onChange={e => setPortfolioTitle(e.target.value)}
+                  placeholder="Portfolio item title"
+                  className="w-full" />
+                <IpfsFileUpload
+                  label="Upload Portfolio File"
+                  existingCid={portfolioIpfs || undefined}
+                  onUpload={(cid) => setPortfolioIpfs(cid)}
+                />
+                <p className="text-xs" style={{ color: colors.mutedFg }}>Or paste a link / IPFS hash:</p>
+                <Input value={portfolioIpfs} onChange={e => setPortfolioIpfs(e.target.value)}
+                  placeholder="https://github.com/… or IPFS hash"
+                  className="w-full" />
+                <Input value={portfolioJobId} onChange={e => setPortfolioJobId(e.target.value)}
+                  placeholder="Related Job ID (optional)"
+                  className="w-full" />
+                <button onClick={handleAddPortfolio} disabled={addingPortfolio || !portfolioTitle.trim() || !portfolioIpfs.trim()}
+                  className="w-full rounded-lg py-2 text-sm font-medium btn-hover disabled:opacity-60"
+                  style={{ background: colors.primary, color: colors.primaryText }}>
+                  {addingPortfolio ? "Adding…" : "Add Portfolio Item"}
+                </button>
+              </div>
+            )}
+            {portfolio.length === 0 ? (
+              <p className="text-sm" style={{ color: colors.mutedFg }}>No portfolio items yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {[...portfolio].reverse().map((item, i) => (
+                  <div key={i} className="border rounded-xl p-3 flex items-center justify-between card-hover" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{item.title}</p>
+                      <a href={resolveIpfsUrl(item.ipfsHash)}
+                        target="_blank" rel="noopener noreferrer"
+                        className="text-xs hover:underline" style={{ color: colors.primaryFg }}>
+                        {isIpfsReference(item.ipfsHash) ? "View on IPFS ↗" : "View Link ↗"}
+                      </a>
+                    </div>
+                    <div className="text-right">
+                      {Number(item.jobId) > 0 && <span className="text-xs" style={{ color: colors.mutedFg }}>Job #{item.jobId.toString()}</span>}
+                      <p className="text-xs" style={{ color: colors.mutedFg }}>
+                        {new Date(Number(item.timestamp) * 1000).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Achievements Section */}
+          <div className="rounded-xl border p-5" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+            <div className="flex items-center gap-2 mb-4">
+              <Award size={18} style={{ color: colors.primary }} />
+              <h3 className="text-base font-bold" style={{ color: colors.pageFg }}>Achievements</h3>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: colors.primaryLight, color: colors.primaryFg }}>
+                {achievements.length}
+              </span>
+            </div>
+            {achievements.length === 0 ? (
+              <p className="text-sm" style={{ color: colors.mutedFg }}>No achievements unlocked yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {achievements.map((a, i) => (
+                  <div key={i} className="border rounded-xl p-4 text-center card-hover" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
+                    <Trophy size={28} className="mx-auto" style={{ color: colors.primary }} />
+                    <p className="text-sm font-semibold mt-2" style={{ color: colors.pageFg }}>{a.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>{a.description}</p>
+                    {Number(a.unlockedAt) > 0 && (
+                      <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
+                        {new Date(Number(a.unlockedAt) * 1000).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </main>
   );

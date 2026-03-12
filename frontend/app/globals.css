@@ -171,6 +171,7 @@ body {
 
 .btn-hover {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 .btn-hover:hover {
   filter: brightness(1.08);
@@ -183,6 +184,7 @@ body {
 
 .btn-outline-hover {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 .btn-outline-hover:hover {
   background: rgba(128, 128, 128, 0.08);
@@ -190,4 +192,9 @@ body {
 }
 .btn-outline-hover:active {
   transform: scale(0.97);
+}
+
+/* Global cursor for interactive elements */
+button, [role="button"], a {
+  cursor: pointer;
 }

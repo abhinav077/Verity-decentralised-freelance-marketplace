@@ -32,6 +32,7 @@ function SubContractsInner() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [createEntryError, setCreateEntryError] = useState<string | null>(null);
 
   // Bids & settlements loaded per card
   const [scBids, setScBids] = useState<Record<string, any[]>>({});
@@ -71,6 +72,21 @@ function SubContractsInner() {
 
   // Auto-release period
   const [autoReleasePeriod, setAutoReleasePeriod] = useState(14 * 86400);
+
+  const validateParentJobAccess = useCallback(async (jobId: string): Promise<void> => {
+    const jid = Number(jobId);
+    if (!Number.isInteger(jid) || jid <= 0) throw new Error("Invalid parent job id.");
+    const reader = signer || provider;
+    if (!reader || !address) throw new Error("Connect wallet to create a sub-contract.");
+
+    const job = await getJobMarket(reader).getJob(jid);
+    if (Number(job.status) !== 1) {
+      throw new Error("Sub-contracts can only be created from in-progress jobs.");
+    }
+    if ((job.selectedFreelancer as string).toLowerCase() !== address.toLowerCase()) {
+      throw new Error("Only the assigned freelancer can create a sub-contract for this job.");
+    }
+  }, [address, provider, signer]);
 
   /* ── Load data ──────────────────────────────────────────────────────── */
 
@@ -136,8 +152,18 @@ function SubContractsInner() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    if (searchParams.get("jobId") && address) setShowCreate(true);
-  }, [searchParams, address]);
+    const incomingJobId = searchParams.get("jobId");
+    if (!incomingJobId || !address) return;
+
+    setParentJob(incomingJobId);
+    setCreateEntryError(null);
+    validateParentJobAccess(incomingJobId)
+      .then(() => setShowCreate(true))
+      .catch((err: any) => {
+        setShowCreate(false);
+        setCreateEntryError(err?.message || "You cannot create a sub-contract for this job.");
+      });
+  }, [searchParams, address, validateParentJobAccess]);
 
   /* ── Transaction wrapper ────────────────────────────────────────────── */
 
@@ -153,6 +179,7 @@ function SubContractsInner() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     run("creating", async () => {
+      await validateParentJobAccess(parentJob);
       const sc = getSubContracting(signer!);
       const sub = subAddr.trim() || ethers.ZeroAddress;
       // Encode extra fields into description
@@ -295,19 +322,18 @@ function SubContractsInner() {
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
+              {cardCategory && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: colors.primaryLight, color: colors.primaryFg }}>{cardCategory}</span>}
               {statusBadge(status)}
-              <span className="text-xs" style={{ color: colors.mutedFg }}>
-                SC #{scKey} — {jobTitles[s.parentJobId.toString()] || `Job #${s.parentJobId.toString()}`}
-              </span>
               {status === 2 && daysUntilRelease > 0 && (
                 <span className="text-xs flex items-center gap-1" style={{ color: colors.warningText || "#92400e" }}>
                   <Clock size={12} /> Auto-release in {daysUntilRelease}d
                 </span>
               )}
             </div>
-            <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{s.description}</p>
-            <p className="text-xs mt-2" style={{ color: colors.mutedFg }}>
-              Posted by{" "}
+            <h3 className="text-base font-bold mt-1" style={{ color: colors.pageFg }}>{cardTitle}</h3>
+            <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
+              SC #{scKey} — {jobTitles[s.parentJobId.toString()] || `Job #${s.parentJobId.toString()}`}
+              {" · "}Posted by{" "}
               <Link href={`/profile/${s.primaryFreelancer}`} style={{ color: colors.primaryFg }} className="hover:underline">
                 {isPrimary ? "You" : shortenAddress(s.primaryFreelancer)}
               </Link>
@@ -321,10 +347,12 @@ function SubContractsInner() {
             </p>
           </div>
           <div className="text-right shrink-0 ml-3">
-            <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(s.payment)} {NATIVE_SYMBOL}</p>
+            <p className="font-mono font-bold" style={{ color: colors.successText }}>{formatEth(s.payment)} {NATIVE_SYMBOL}</p>
             <p className="text-xs" style={{ color: colors.mutedFg }}>{formatDate(s.createdAt)}</p>
           </div>
         </div>
+
+            {cardDesc && <p className="text-sm mb-3 leading-relaxed" style={{ color: colors.pageFg }}>{cardDesc}</p>}
 
         {/* Actions area */}
         <div className="space-y-2 pt-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
@@ -631,29 +659,35 @@ function SubContractsInner() {
 
   return (
     <div className="min-h-screen" style={{ background: colors.pageBg }}>
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-black" style={{ color: colors.pageFg }}>Sub-Contracts</h1>
-            <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>
-              Delegate work to other freelancers — bid, deliver, settle
-            </p>
-          </div>
-
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold" style={{ color: colors.pageFg }}>Sub-Contracts</h1>
+          <p className="mt-2 leading-relaxed" style={{ color: colors.mutedFg }}>
+            Delegate work to other freelancers — bid, deliver, settle.<br />Transparent sub-contracting powered by smart contracts.
+          </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 rounded-xl p-1" style={{ background: colors.inputBg }}>
-          {(["open", "mine"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
-              style={tab === t
-                ? { background: colors.cardBg, color: colors.pageFg, boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
-                : { color: colors.mutedFg }}>
-              {t === "open" ? `Open Listings (${openSubs.length})` : `My Sub-Contracts (${mySubs.length})`}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex gap-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
+            {(["open", "mine"] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
+                style={tab === t
+                  ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
+                  : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
+                {t === "open" ? `Open Listings (${openSubs.length})` : `My Sub-Contracts (${mySubs.length})`}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {createEntryError && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-sm"
+            style={{ background: colors.dangerBg, borderColor: colors.dangerText + "44", color: colors.dangerText }}>
+            {createEntryError}
+          </div>
+        )}
 
         {!address ? (
           <p className="text-sm py-12 text-center" style={{ color: colors.mutedFg }}>Connect wallet to view sub-contracts</p>
@@ -663,10 +697,10 @@ function SubContractsInner() {
           <>
             {tab === "open" && (
               openSubs.length === 0 ? (
-                <div className="text-center py-12 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+                <div className="text-center py-12 rounded-xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
                   <LinkIcon size={32} className="mb-3 mx-auto" style={{ color: colors.mutedFg }} />
                   <p className="font-semibold" style={{ color: colors.pageFg }}>No open sub-contract listings</p>
-                  <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Post one to delegate work to other freelancers</p>
+                  <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create one from an in-progress job as the assigned freelancer</p>
                 </div>
               ) : (
                 <div className="space-y-3">{openSubs.map(s => renderCard(s))}</div>
@@ -674,7 +708,7 @@ function SubContractsInner() {
             )}
             {tab === "mine" && (
               mySubs.length === 0 ? (
-                <div className="text-center py-12 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
+                <div className="text-center py-12 rounded-xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
                   <ClipboardList size={32} className="mb-3 mx-auto" style={{ color: colors.mutedFg }} />
                   <p className="font-semibold" style={{ color: colors.pageFg }}>No sub-contracts yet</p>
                   <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create or bid on one to get started</p>
@@ -690,8 +724,15 @@ function SubContractsInner() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
-          <div className="w-full max-w-lg rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ background: colors.cardBg }} onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-1" style={{ color: colors.pageFg }}>Post a Sub-Contract</h2>
+          <div className="w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col" style={{ background: colors.cardBg }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 rounded-t-2xl" style={{ background: colors.primary }}>
+              <div className="flex items-center gap-2.5 text-white">
+                <Package size={18} />
+                <h2 className="text-lg font-bold">Post a Sub-Contract</h2>
+              </div>
+              <button onClick={() => setShowCreate(false)} className="text-white/80 hover:text-white"><X size={20} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto">
             <p className="text-xs mb-4" style={{ color: colors.mutedFg }}>
               Leave &quot;Sub-Contractor Address&quot; empty to create an open listing that freelancers can bid on.
             </p>
@@ -699,7 +740,11 @@ function SubContractsInner() {
               <div>
                 <Label className="mb-1 block text-xs font-medium">Parent Job ID *</Label>
                 <Input type="number" min="1" value={parentJob} onChange={e => setParentJob(e.target.value)} required
+                  readOnly
                   className="font-mono" />
+                <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
+                  Must be an in-progress job where you are the assigned freelancer.
+                </p>
               </div>
               <div>
                 <Label className="mb-1 block text-xs font-medium">Title *</Label>
@@ -756,6 +801,7 @@ function SubContractsInner() {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}

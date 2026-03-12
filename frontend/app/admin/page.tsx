@@ -602,22 +602,22 @@ export default function AdminPage() {
   // ── Main render ──
   return (
     <div style={{ minHeight: "100vh", background: colors.pageBg, color: colors.pageFg }}>
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "32px 16px" }}>
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-            <LockKeyhole className="w-6 h-6" /> Admin Panel
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold flex items-center gap-2" style={{ color: colors.pageFg }}>
+            <LockKeyhole className="w-7 h-7" /> Admin Panel
           </h1>
-          <p style={{ color: colors.mutedFg, fontSize: 14 }}>
+          <p className="mt-2 leading-relaxed" style={{ color: colors.mutedFg }}>
             Platform configuration &amp; management — connected as <strong style={{ color: colors.primaryFg }}>{shortenAddress(address)}</strong>
           </p>
           <button
-            className="btn-outline-hover"
-            style={{ ...btnOutline, marginTop: 12 }}
+            className="mt-3 btn-outline-hover flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border"
+            style={{ borderColor: colors.primary, color: colors.primaryFg }}
             onClick={loadAll}
             disabled={busy}
           >
-            <span className="inline-flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5" />Refresh All Values</span>
+            <RefreshCw className="w-3.5 h-3.5" />Refresh All Values
           </button>
         </div>
 

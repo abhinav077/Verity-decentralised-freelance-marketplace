@@ -1,7 +1,7 @@
 "use client";
-import { JOB_STATUS, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
+import { JOB_STATUS, formatEth, formatDate, NATIVE_SYMBOL, timeAgo } from "@/lib/contracts";
 import { useTheme } from "@/context/ThemeContext";
-import { Lock } from "lucide-react";
+import { Lock, Clock, Calendar } from "lucide-react";
 
 interface Job {
   id: bigint; client: string; title: string; description: string; category: string;
@@ -14,46 +14,76 @@ interface Props {
   job: Job;
   currentAddress: string | null;
   onClick: () => void;
+  onPlaceBid?: () => void;
 }
 
-export default function JobCard({ job, currentAddress, onClick }: Props) {
+export default function JobCard({ job, currentAddress, onClick, onPlaceBid }: Props) {
   const { colors } = useTheme();
   const isOwner = currentAddress?.toLowerCase() === job.client.toLowerCase();
 
-  const statusBg: Record<number, string> = {
-    0: colors.successBg, 1: colors.infoBg, 2: colors.cardBg, 3: colors.dangerBg,
-    4: colors.warningBg, 5: colors.badgeBg,
-  };
-  const statusFg: Record<number, string> = {
-    0: colors.successText, 1: colors.infoText, 2: colors.mutedFg, 3: colors.dangerText,
-    4: colors.warningText, 5: colors.badgeText,
+  const statusDotColor: Record<number, string> = {
+    0: "#16A34A", 1: "#3B82F6", 2: "#64748B", 3: "#DC2626",
+    4: "#D97706", 5: "#7C3AED",
   };
 
   return (
-    <div onClick={onClick}
-      className="rounded-xl p-5 cursor-pointer card-hover border"
+    <div
+      className="rounded-xl p-5 cursor-pointer border flex flex-col justify-between transition-shadow hover:shadow-lg"
       style={{ background: colors.cardBg, borderColor: colors.cardBorder }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = colors.primary; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = colors.cardBorder; }}>
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-semibold text-lg leading-tight line-clamp-2" style={{ color: colors.pageFg }}>{job.title}</h3>
-        <span className="text-xs font-medium px-2 py-1 rounded-full shrink-0"
-          style={{ background: statusBg[job.status] || colors.cardBg, color: statusFg[job.status] || colors.mutedFg }}>
-          {JOB_STATUS[job.status]}{job.sealedBidding ? <> <Lock size={12} className="inline" /></> : ""}
-        </span>
+      {/* Top row: category + status | budget */}
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+              style={{ background: colors.primary, color: colors.primaryText }}>
+              {job.category}
+            </span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: statusDotColor[job.status] || colors.mutedFg }}>
+              <span className="w-2 h-2 rounded-full inline-block" style={{ background: statusDotColor[job.status] || colors.mutedFg }} />
+              {JOB_STATUS[job.status]}
+              {job.sealedBidding && <Lock size={10} className="inline ml-0.5" />}
+            </span>
+          </div>
+          <span className="text-base font-bold shrink-0" style={{ color: colors.successText }}>
+            {formatEth(job.budget)} {NATIVE_SYMBOL}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-semibold text-lg leading-tight line-clamp-2 mb-4" style={{ color: colors.pageFg }}>
+          {job.title}
+        </h3>
       </div>
 
-      <p className="text-sm line-clamp-2 mb-4" style={{ color: colors.mutedFg }}>{job.description}</p>
-
-      <div className="flex flex-wrap gap-3 text-sm">
-        <span className="px-2 py-1 rounded-md" style={{ background: colors.inputBg, color: colors.mutedFg }}>{job.category}</span>
-        <span className="font-semibold" style={{ color: colors.primaryFg }}>{formatEth(job.budget)} {NATIVE_SYMBOL}</span>
-        <span style={{ color: colors.mutedFg }}>Deadline: {formatDate(job.deadline)}</span>
-      </div>
-
-      <div className="mt-3 pt-3 flex items-center justify-between text-xs" style={{ borderTop: `1px solid ${colors.cardBorder}`, color: colors.mutedFg }}>
-        <span>By {isOwner ? "you" : shortenAddress(job.client)}</span>
-        <span>Posted {formatDate(job.createdAt)}</span>
+      {/* Bottom row: meta + buttons */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-3 text-xs" style={{ color: colors.mutedFg }}>
+          <span className="flex items-center gap-1">
+            <Clock size={12} /> Posted {timeAgo(job.createdAt)}
+          </span>
+          <span className="flex items-center gap-1">
+            <Calendar size={12} /> Deadline: {formatDate(job.deadline)}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isOwner && job.status === 0 && (
+            <button
+              onClick={e => { e.stopPropagation(); onPlaceBid?.(); }}
+              className="px-4 py-1.5 text-xs font-semibold rounded-lg btn-hover"
+              style={{ background: colors.primary, color: colors.primaryText }}>
+              Place a Bid
+            </button>
+          )}
+          <button
+            onClick={e => { e.stopPropagation(); onClick(); }}
+            className="px-4 py-1.5 text-xs font-semibold rounded-lg btn-hover"
+            style={{ background: colors.pageFg, color: colors.pageBg }}>
+            View Details
+          </button>
+        </div>
       </div>
     </div>
   );
