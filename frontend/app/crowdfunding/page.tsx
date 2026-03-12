@@ -190,7 +190,7 @@ export default function CrowdfundingPage() {
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Crowdfunding</h1>
-          <p className="mt-1" style={{ color: colors.muted }}>Fund community projects with transparent on-chain tracking.</p>
+          <p className="mt-1" style={{ color: colors.mutedFg }}>Fund community projects with transparent on-chain tracking.</p>
         </div>
         {address && configured && (
           <button onClick={() => setShowCreate(!showCreate)}
@@ -207,7 +207,7 @@ export default function CrowdfundingPage() {
       {showCreate && signer && (
         <form onSubmit={createProject} className="border rounded-xl p-5 mb-6 space-y-4" style={{ borderColor: colors.cardBorder, background: colors.cardBg }}>
           <h3 className="font-semibold" style={{ color: colors.pageFg }}>Create a Crowdfund Project</h3>
-          <p className="text-xs" style={{ color: colors.muted }}>You need ≥{minVrtToCrowdfund} VRT to create a project.</p>
+          <p className="text-xs" style={{ color: colors.mutedFg }}>You need ≥{minVrtToCrowdfund} VRT to create a project.</p>
           <Input placeholder="Project title" required
             value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           <textarea rows={3} placeholder="Describe the project…" required
@@ -235,7 +235,7 @@ export default function CrowdfundingPage() {
         </form>
       )}
 
-      {!address && <p className="text-center py-20" style={{ color: colors.muted }}>Connect your wallet to see crowdfunding projects.</p>}
+      {!address && <p className="text-center py-20" style={{ color: colors.mutedFg }}>Connect your wallet to see crowdfunding projects.</p>}
 
       {loading && address && (
         <div className="space-y-4">
@@ -244,7 +244,7 @@ export default function CrowdfundingPage() {
       )}
 
       {!loading && address && projects.length === 0 && (
-        <div className="text-center py-20" style={{ color: colors.muted }}>
+        <div className="text-center py-20" style={{ color: colors.mutedFg }}>
           <p className="text-lg">No crowdfunding projects yet. Be the first to create one!</p>
         </div>
       )}
@@ -273,11 +273,11 @@ export default function CrowdfundingPage() {
                       <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: colors.primaryLight, color: colors.primaryFg }}>{p.category}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full" style={{
                         background: isActive ? colors.successBg : isFunded ? colors.infoBg : colors.inputBg,
-                        color: isActive ? colors.successText : isFunded ? colors.infoText : colors.muted,
+                        color: isActive ? colors.successText : isFunded ? colors.infoText : colors.mutedFg,
                       }}>{STATUS_LABELS[p.status]}</span>
                     </div>
                     <h3 className="text-lg font-bold mt-1" style={{ color: colors.pageFg }}>{p.title}</h3>
-                    <p className="text-xs mt-0.5" style={{ color: colors.muted }}>
+                    <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>
                       by {isCreator ? "You" : shortenAddress(p.creator)} · {Number(p.contributorCount)} contributors · Deadline: {formatDate(p.deadline)}
                     </p>
                   </div>
@@ -292,7 +292,7 @@ export default function CrowdfundingPage() {
 
                 {/* Progress bar */}
                 <div className="mb-3">
-                  <div className="flex justify-between text-xs mb-1" style={{ color: colors.muted }}>
+                  <div className="flex justify-between text-xs mb-1" style={{ color: colors.mutedFg }}>
                     <span>{formatEth(p.totalRaised)} / {formatEth(p.goalAmount)} {NATIVE_SYMBOL}</span>
                     <span>{Math.min(pctFunded, 100)}%</span>
                   </div>
@@ -376,7 +376,7 @@ export default function CrowdfundingPage() {
                   <div className="mt-4 pt-4 space-y-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
                     <h4 className="text-sm font-semibold" style={{ color: colors.mutedFg }}>Updates</h4>
                     {(updates[pid] || []).length === 0 ? (
-                      <p className="text-xs" style={{ color: colors.muted }}>No updates yet.</p>
+                      <p className="text-xs" style={{ color: colors.mutedFg }}>No updates yet.</p>
                     ) : (
                       <div className="space-y-2">
                         {(updates[pid] || []).map((u, i) => (
@@ -388,7 +388,7 @@ export default function CrowdfundingPage() {
                                 <LinkIcon size={12} className="inline mr-1" />{u.link}
                               </a>
                             )}
-                            <p className="text-[10px] mt-1" style={{ color: colors.muted }}>{formatDate(u.timestamp)}</p>
+                            <p className="text-[10px] mt-1" style={{ color: colors.mutedFg }}>{formatDate(u.timestamp)}</p>
                           </div>
                         ))}
                       </div>

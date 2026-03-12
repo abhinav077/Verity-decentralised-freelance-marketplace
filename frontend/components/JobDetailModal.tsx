@@ -323,7 +323,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
             {(() => {
               const accepted = bids.find(b => b.id === job.acceptedBidId);
               return (
-                <p className="text-sm mt-1" style={{ color: colors.muted }}>
+                <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>
                   {JOB_STATUS[liveStatus]}
                   {accepted ? (
                     <> · Price: <strong>{formatEth(accepted.amount)} {NATIVE_SYMBOL}</strong>
@@ -346,10 +346,10 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <Star size={14} className="inline" /> Review required
               </span>
               <button disabled title="Submit your review first"
-                className="text-2xl leading-none shrink-0 cursor-not-allowed" style={{ color: colors.muted }}>&times;</button>
+                className="text-2xl leading-none shrink-0 cursor-not-allowed" style={{ color: colors.mutedFg }}>&times;</button>
             </div>
           ) : (
-            <button onClick={onClose} className="text-2xl leading-none shrink-0" style={{ color: colors.muted }}>&times;</button>
+            <button onClick={onClose} className="text-2xl leading-none shrink-0" style={{ color: colors.mutedFg }}>&times;</button>
           )}
         </div>
 
@@ -358,7 +358,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
           <div>
             <h3 className="text-sm font-semibold mb-2" style={{ color: colors.mutedFg }}>Description</h3>
             <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{job.description}</p>
-            <p className="text-xs mt-2" style={{ color: colors.muted }}>
+            <p className="text-xs mt-2" style={{ color: colors.mutedFg }}>
               Posted by{" "}
               <Link href={`/profile/${job.client}`} style={{ color: colors.primaryFg }} className="hover:underline">
                 {isClient ? "You" : shortenAddress(job.client)}
@@ -469,13 +469,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <h4 className="text-sm font-semibold" style={{ color: colors.mutedFg }}>Milestones</h4>
                   {milestones.map((ms, idx) => {
                     const msStatus = ms.status === 0 ? "Pending" : ms.status === 1 ? "Submitted" : "Approved";
-                    const msColor = ms.status === 0 ? colors.muted : ms.status === 1 ? colors.warningText : colors.successText;
+                    const msColor = ms.status === 0 ? colors.mutedFg : ms.status === 1 ? colors.warningText : colors.successText;
                     return (
                       <div key={idx} className="flex items-center justify-between rounded-lg px-3 py-2 border"
                         style={{ borderColor: colors.cardBorder }}>
                         <div>
                           <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{ms.title || `Milestone ${idx + 1}`}</p>
-                          <p className="text-xs" style={{ color: colors.muted }}>{formatEth(ms.amount)} {NATIVE_SYMBOL} · <span style={{ color: msColor }}>{msStatus}</span></p>
+                          <p className="text-xs" style={{ color: colors.mutedFg }}>{formatEth(ms.amount)} {NATIVE_SYMBOL} · <span style={{ color: msColor }}>{msStatus}</span></p>
                         </div>
                         {ms.status === 0 && isFreelancer && (
                           <button onClick={() => submitMilestone(idx)} disabled={!!txLoading}
@@ -517,7 +517,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {showSettlementForm && (
                 <div className="rounded-xl p-4 space-y-3 border" style={{ background: colors.infoBg, borderColor: colors.infoText + "33" }}>
                   <h4 className="font-semibold" style={{ color: colors.pageFg }}>Propose a Settlement</h4>
-                  <p className="text-xs" style={{ color: colors.muted }}>Suggest partial payment to end the job amicably.</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>Suggest partial payment to end the job amicably.</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="mb-1 block text-xs">% Complete</Label>
@@ -595,7 +595,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {showDisputeForm && (
                 <div className="rounded-xl p-4 space-y-3 border" style={{ background: colors.warningBg, borderColor: colors.warningText + "33" }}>
                   <h4 className="font-semibold" style={{ color: colors.pageFg }}>Raise a Dispute</h4>
-                  <p className="text-xs" style={{ color: colors.muted }}>The other party will have {responsePeriodDays != null ? (Number.isInteger(responsePeriodDays) ? responsePeriodDays : responsePeriodDays.toFixed(1)) : "…"} day{responsePeriodDays !== 1 ? "s" : ""} to submit their side.</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>The other party will have {responsePeriodDays != null ? (Number.isInteger(responsePeriodDays) ? responsePeriodDays : responsePeriodDays.toFixed(1)) : "…"} day{responsePeriodDays !== 1 ? "s" : ""} to submit their side.</p>
                   <textarea rows={3} placeholder="Describe your reason…"
                     className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                     value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
@@ -690,7 +690,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {showSettlementForm && (
                 <div className="rounded-xl p-4 space-y-3 border" style={{ background: colors.infoBg, borderColor: colors.infoText + "33" }}>
                   <h4 className="font-semibold" style={{ color: colors.pageFg }}>Propose a Settlement</h4>
-                  <p className="text-xs" style={{ color: colors.muted }}>Suggest partial payment to end the job amicably.</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>Suggest partial payment to end the job amicably.</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="mb-1 block text-xs">% Complete</Label>
@@ -746,7 +746,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               {showDisputeForm && (
                 <div className="rounded-xl p-4 space-y-3 border" style={{ background: colors.warningBg, borderColor: colors.warningText + "33" }}>
                   <h4 className="font-semibold" style={{ color: colors.pageFg }}>Raise a Dispute</h4>
-                  <p className="text-xs" style={{ color: colors.muted }}>The other party will have {responsePeriodDays != null ? (Number.isInteger(responsePeriodDays) ? responsePeriodDays : responsePeriodDays.toFixed(1)) : "…"} day{responsePeriodDays !== 1 ? "s" : ""} to submit their side.</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>The other party will have {responsePeriodDays != null ? (Number.isInteger(responsePeriodDays) ? responsePeriodDays : responsePeriodDays.toFixed(1)) : "…"} day{responsePeriodDays !== 1 ? "s" : ""} to submit their side.</p>
                   <textarea rows={3} placeholder="Describe the issue…"
                     className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                     value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
@@ -818,7 +818,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     {txLoading === "Cancelling dispute…" ? "Cancelling…" : "↩ Cancel Dispute"}
                   </button>
                 ) : (
-                  <div className="rounded-lg p-3 text-xs border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.muted }}>
+                  <div className="rounded-lg p-3 text-xs border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.mutedFg }}>
                     <Lock size={14} className="inline mr-1" />Cancellation window closed.
                   </div>
                 );
@@ -875,7 +875,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 showTipForm ? (
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
                     <h4 className="font-semibold flex items-center gap-1.5" style={{ color: colors.pageFg }}><Heart size={16} /> Send a Tip</h4>
-                    <p className="text-xs" style={{ color: colors.muted }}>Show your appreciation with an extra payment.</p>
+                    <p className="text-xs" style={{ color: colors.mutedFg }}>Show your appreciation with an extra payment.</p>
                     <Input type="number" step="0.001" min="0.001" placeholder={`Tip amount in ${NATIVE_SYMBOL}`}
                       containerClassName="w-full"
                       value={tipAmount} onChange={e => setTipAmount(e.target.value)} />
@@ -903,8 +903,8 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
           {/* ─── Cancelled job ──────────────────────────────────── */}
           {liveStatus === 3 && (
             <div className="rounded-xl p-4 border" style={{ background: colors.inputBg, borderColor: colors.cardBorder }}>
-              <p className="font-semibold text-sm" style={{ color: colors.muted }}>Job Cancelled</p>
-              <p className="text-xs mt-1" style={{ color: colors.muted }}>This job has been cancelled.</p>
+              <p className="font-semibold text-sm" style={{ color: colors.mutedFg }}>Job Cancelled</p>
+              <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>This job has been cancelled.</p>
             </div>
           )}
 
@@ -913,15 +913,15 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
             <h3 className="text-sm font-semibold mb-3" style={{ color: colors.mutedFg }}>
               Bids {!loadingBids && `(${bids.length})`}
               {job.sealedBidding && !isClient && (
-                <span className="text-xs font-normal ml-2" style={{ color: colors.muted }}>
+                <span className="text-xs font-normal ml-2" style={{ color: colors.mutedFg }}>
                   (sealed — only your bid is visible)
                 </span>
               )}
             </h3>
             {loadingBids ? (
-              <p className="text-sm" style={{ color: colors.muted }}>Loading bids…</p>
+              <p className="text-sm" style={{ color: colors.mutedFg }}>Loading bids…</p>
             ) : bids.length === 0 ? (
-              <p className="text-sm" style={{ color: colors.muted }}>No bids yet.</p>
+              <p className="text-sm" style={{ color: colors.mutedFg }}>No bids yet.</p>
             ) : (
               <div className="space-y-3">
                 {bids.map(bid => (
@@ -938,7 +938,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                             <span className="text-xs ml-1" style={{ color: colors.warningText }}>above budget</span>
                           )}
                         </p>
-                        <p className="text-xs font-mono mt-0.5" style={{ color: colors.muted }}>
+                        <p className="text-xs font-mono mt-0.5" style={{ color: colors.mutedFg }}>
                           {bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() ? "You" : shortenAddress(bid.freelancer)}
                           {Number(bid.completionDays) > 0 && (
                             <span className="ml-2 font-sans"><Clock size={12} className="inline mr-0.5" />{Number(bid.completionDays)} days</span>

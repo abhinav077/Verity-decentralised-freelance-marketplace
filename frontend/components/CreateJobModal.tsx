@@ -82,7 +82,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
       <div className="rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col" style={{ background: colors.cardBg }}>
         <div className="flex items-center justify-between p-6" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
           <h2 className="text-xl font-bold" style={{ color: colors.pageFg }}>Post a New Job</h2>
-          <button onClick={onClose} className="text-2xl leading-none" style={{ color: colors.muted }}>&times;</button>
+          <button onClick={onClose} className="text-2xl leading-none" style={{ color: colors.mutedFg }}>&times;</button>
         </div>
 
         <form onSubmit={submit} className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -141,7 +141,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
           </div>
 
           {form.sealedBidding && (
-            <p className="text-xs px-1" style={{ color: colors.muted }}>
+            <p className="text-xs px-1" style={{ color: colors.mutedFg }}>
               Client can see all bids. Freelancers only see their own bid. All bids are on-chain but the UI enforces privacy.
             </p>
           )}
@@ -168,7 +168,7 @@ export default function CreateJobModal({ signer, onClose, onSuccess }: Props) {
                     <button type="button" onClick={() => removeMilestone(i)} className="text-lg" style={{ color: colors.dangerText }}>×</button>
                   </div>
                 ))}
-                <p className="text-xs" style={{ color: msTotal > 0 && form.budget && msTotal > parseFloat(form.budget) ? colors.dangerText : colors.muted }}>
+                <p className="text-xs" style={{ color: msTotal > 0 && form.budget && msTotal > parseFloat(form.budget) ? colors.dangerText : colors.mutedFg }}>
                   Milestone total: {msTotal.toFixed(3)} {NATIVE_SYMBOL} {form.budget ? `/ ${form.budget} ${NATIVE_SYMBOL} budget` : ""}
                 </p>
               </div>

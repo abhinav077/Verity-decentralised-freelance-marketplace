@@ -210,7 +210,7 @@ export default function ProfilePage() {
       <Link href="/" className="text-sm hover:underline" style={{ color: colors.primaryFg }}>← Back to Jobs</Link>
 
       {loading ? (
-        <div className="rounded-2xl p-8 text-center animate-pulse" style={{ background: colors.cardBg, color: colors.muted }}>Loading profile…</div>
+        <div className="rounded-2xl p-8 text-center animate-pulse" style={{ background: colors.cardBg, color: colors.mutedFg }}>Loading profile…</div>
       ) : loadError ? (
         <div className="rounded-2xl p-8 text-center space-y-2" style={{ background: colors.cardBg }}>
           <p className="text-2xl"><AlertTriangle size={28} /></p>
@@ -328,13 +328,13 @@ export default function ProfilePage() {
                   </div>
                 )}
                 {profile?.createdAt && Number(profile.createdAt) > 0 && (
-                  <p className="text-xs" style={{ color: colors.muted }}>Member since {formatDate(profile.createdAt)}</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>Member since {formatDate(profile.createdAt)}</p>
                 )}
               </div>
             )}
 
             {!profileExists && !editing && (
-              <p className="text-sm italic" style={{ color: colors.muted }}>
+              <p className="text-sm italic" style={{ color: colors.mutedFg }}>
                 {isOwnProfile
                   ? "You haven't set up your profile yet. Click 'Set Up Profile' to add your details."
                   : "This user hasn't set up their profile yet."}
@@ -347,7 +347,7 @@ export default function ProfilePage() {
                 <p className="text-2xl font-bold" style={{ color: colors.pageFg }}>
                   {stats ? Number(stats.jobsCompleted).toString() : "—"}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: colors.muted }}>Jobs Done</p>
+                <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>Jobs Done</p>
               </div>
               <div className="flex-1 min-w-[90px] rounded-xl p-3 text-center" style={{ background: colors.primaryLight }}>
                 <p className="text-2xl font-bold" style={{ color: colors.primaryFg }}>{vrtBalance}</p>
@@ -383,7 +383,7 @@ export default function ProfilePage() {
                 Reviews ({reviews.length})
               </h3>
               {reviews.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.muted }}>No reviews yet.</p>
+                <p className="text-sm" style={{ color: colors.mutedFg }}>No reviews yet.</p>
               ) : (
                 <div className="space-y-3">
                   {[...reviews].reverse().map((r, i) => (
@@ -399,7 +399,7 @@ export default function ProfilePage() {
                         <StarRating rating={r.rating} color={colors.inputBorder} />
                       </div>
                       <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{r.comment}</p>
-                      <p className="text-xs mt-1" style={{ color: colors.muted }}>
+                      <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
                         Job #{r.jobId.toString()} · {new Date(Number(r.timestamp) * 1000).toLocaleDateString()}
                       </p>
                     </div>
@@ -414,7 +414,7 @@ export default function ProfilePage() {
                 Skill Endorsements ({endorsements.length})
               </h3>
               {endorsements.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.muted }}>No endorsements yet.</p>
+                <p className="text-sm" style={{ color: colors.mutedFg }}>No endorsements yet.</p>
               ) : (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {/* Group by skill */}
@@ -432,7 +432,7 @@ export default function ProfilePage() {
                             <Avatar address={e.endorser} size={20} />
                           </Link>
                         ))}
-                        {ends.length > 5 && <span className="text-xs" style={{ color: colors.muted }}>+{ends.length - 5}</span>}
+                        {ends.length > 5 && <span className="text-xs" style={{ color: colors.mutedFg }}>+{ends.length - 5}</span>}
                       </div>
                     </div>
                   ))}
@@ -478,7 +478,7 @@ export default function ProfilePage() {
                     existingCid={portfolioIpfs || undefined}
                     onUpload={(cid) => setPortfolioIpfs(cid)}
                   />
-                  <p className="text-xs" style={{ color: colors.muted }}>Or paste a link / IPFS hash:</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>Or paste a link / IPFS hash:</p>
                   <Input value={portfolioIpfs} onChange={e => setPortfolioIpfs(e.target.value)}
                     placeholder="https://github.com/… or IPFS hash"
                     className="w-full" />
@@ -493,7 +493,7 @@ export default function ProfilePage() {
                 </div>
               )}
               {portfolio.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.muted }}>No portfolio items yet.</p>
+                <p className="text-sm" style={{ color: colors.mutedFg }}>No portfolio items yet.</p>
               ) : (
                 <div className="space-y-2">
                   {[...portfolio].reverse().map((item, i) => (
@@ -507,8 +507,8 @@ export default function ProfilePage() {
                         </a>
                       </div>
                       <div className="text-right">
-                        {Number(item.jobId) > 0 && <span className="text-xs" style={{ color: colors.muted }}>Job #{item.jobId.toString()}</span>}
-                        <p className="text-xs" style={{ color: colors.muted }}>
+                        {Number(item.jobId) > 0 && <span className="text-xs" style={{ color: colors.mutedFg }}>Job #{item.jobId.toString()}</span>}
+                        <p className="text-xs" style={{ color: colors.mutedFg }}>
                           {new Date(Number(item.timestamp) * 1000).toLocaleDateString()}
                         </p>
                       </div>
@@ -524,16 +524,16 @@ export default function ProfilePage() {
                 Achievements ({achievements.length})
               </h3>
               {achievements.length === 0 ? (
-                <p className="text-sm" style={{ color: colors.muted }}>No achievements unlocked yet.</p>
+                <p className="text-sm" style={{ color: colors.mutedFg }}>No achievements unlocked yet.</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {achievements.map((a, i) => (
                     <div key={i} className="border rounded-xl p-3 text-center" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
                       <Trophy size={28} style={{ color: colors.primary }} />
                       <p className="text-sm font-semibold mt-1" style={{ color: colors.pageFg }}>{a.name}</p>
-                      <p className="text-xs" style={{ color: colors.muted }}>{a.description}</p>
+                      <p className="text-xs" style={{ color: colors.mutedFg }}>{a.description}</p>
                       {Number(a.unlockedAt) > 0 && (
-                        <p className="text-xs mt-1" style={{ color: colors.muted }}>
+                        <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
                           {new Date(Number(a.unlockedAt) * 1000).toLocaleDateString()}
                         </p>
                       )}

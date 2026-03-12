@@ -340,7 +340,7 @@ export default function Navbar() {
               {themeOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden py-2 z-50" style={dropdown}>
                   <div className="px-4 py-2 border-b mb-1" style={{ borderColor: colors.divider }}>
-                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: colors.muted }}>Theme</p>
+                    <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: colors.mutedFg }}>Theme</p>
                   </div>
                   {THEME_NAMES.map(t => (
                     <button key={t}
@@ -394,7 +394,7 @@ export default function Navbar() {
                       )}
                     </div>
                     {notifications.length === 0 ? (
-                      <div className="px-4 py-8 text-center text-sm" style={{ color: colors.muted }}>
+                      <div className="px-4 py-8 text-center text-sm" style={{ color: colors.mutedFg }}>
                         You&apos;re all caught up!
                       </div>
                     ) : (
@@ -433,7 +433,7 @@ export default function Navbar() {
                             <button
                               onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
                               className="shrink-0 p-2 mt-1 transition-colors"
-                              style={{ color: colors.muted }}
+                              style={{ color: colors.mutedFg }}
                               aria-label="Dismiss notification"
                             >
                               &times;

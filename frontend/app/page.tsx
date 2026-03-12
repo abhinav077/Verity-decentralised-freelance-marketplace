@@ -140,7 +140,7 @@ export default function Home() {
   }, [loadStats]);
 
   return (
-    <div className="min-h-screen -mt-16">
+    <div className="min-h-screen -mt-24">
 
       {/* ── Hero ── */}
       <section

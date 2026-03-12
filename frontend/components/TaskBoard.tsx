@@ -76,7 +76,7 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
         {/* Header */}
         <div className="flex items-center justify-between p-5" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
           <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: colors.pageFg }}><ClipboardList size={20} /> Task Board — Job #{jobId}</h2>
-          <button onClick={onClose} className="text-2xl leading-none" style={{ color: colors.muted }}>&times;</button>
+          <button onClick={onClose} className="text-2xl leading-none" style={{ color: colors.mutedFg }}>&times;</button>
         </div>
 
         {/* Add task */}
@@ -126,7 +126,7 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
                         {col.key !== "todo" && (
                           <button onClick={() => moveTask(task.id, col.key === "done" ? "progress" : "todo")}
                             className="text-[10px] px-1.5 py-0.5 rounded border"
-                            style={{ borderColor: colors.cardBorder, color: colors.muted }}>← Back</button>
+                            style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>← Back</button>
                         )}
                         {col.key !== "done" && (
                           <button onClick={() => moveTask(task.id, col.key === "todo" ? "progress" : "done")}
@@ -137,7 +137,7 @@ export default function TaskBoard({ jobId, onClose, readOnly = false }: { jobId:
                     </div>
                   ))}
                   {tasks.filter(t => t.column === col.key).length === 0 && (
-                    <p className="text-xs text-center py-4" style={{ color: colors.muted }}>
+                    <p className="text-xs text-center py-4" style={{ color: colors.mutedFg }}>
                       {col.key === "todo" ? "No tasks yet" : col.key === "progress" ? "Drag tasks here" : "Complete tasks appear here"}
                     </p>
                   )}

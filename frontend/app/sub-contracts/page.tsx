@@ -248,7 +248,7 @@ function SubContractsInner() {
       2: { bg: colors.warningBg || "#fef3c7", fg: colors.warningText || "#92400e" },
       3: { bg: colors.successBg, fg: colors.successText },
       4: { bg: colors.dangerBg, fg: colors.dangerText },
-      5: { bg: colors.surfaceBg || colors.inputBg, fg: colors.muted },
+      5: { bg: colors.surfaceBg || colors.inputBg, fg: colors.mutedFg },
     };
     const s = map[status] || map[5];
     return (
@@ -262,7 +262,7 @@ function SubContractsInner() {
 
   if (!configured) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.muted }}>
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.mutedFg }}>
         <p className="text-lg font-semibold">SubContracting contract not configured</p>
       </div>
     );
@@ -296,7 +296,7 @@ function SubContractsInner() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               {statusBadge(status)}
-              <span className="text-xs" style={{ color: colors.muted }}>
+              <span className="text-xs" style={{ color: colors.mutedFg }}>
                 SC #{scKey} — {jobTitles[s.parentJobId.toString()] || `Job #${s.parentJobId.toString()}`}
               </span>
               {status === 2 && daysUntilRelease > 0 && (
@@ -306,7 +306,7 @@ function SubContractsInner() {
               )}
             </div>
             <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{s.description}</p>
-            <p className="text-xs mt-2" style={{ color: colors.muted }}>
+            <p className="text-xs mt-2" style={{ color: colors.mutedFg }}>
               Posted by{" "}
               <Link href={`/profile/${s.primaryFreelancer}`} style={{ color: colors.primaryFg }} className="hover:underline">
                 {isPrimary ? "You" : shortenAddress(s.primaryFreelancer)}
@@ -322,7 +322,7 @@ function SubContractsInner() {
           </div>
           <div className="text-right shrink-0 ml-3">
             <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(s.payment)} {NATIVE_SYMBOL}</p>
-            <p className="text-xs" style={{ color: colors.muted }}>{formatDate(s.createdAt)}</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>{formatDate(s.createdAt)}</p>
           </div>
         </div>
 
@@ -347,8 +347,8 @@ function SubContractsInner() {
                           <span className="text-xs ml-2 font-semibold" style={{ color: colors.pageFg }}>
                             {formatEth(b.amount)} {NATIVE_SYMBOL}
                           </span>
-                          <span className="text-xs ml-2" style={{ color: colors.muted }}>{Number(b.completionDays)}d</span>
-                          {b.proposal && <p className="text-xs mt-0.5 truncate max-w-xs" style={{ color: colors.muted }}>{b.proposal}</p>}
+                          <span className="text-xs ml-2" style={{ color: colors.mutedFg }}>{Number(b.completionDays)}d</span>
+                          {b.proposal && <p className="text-xs mt-0.5 truncate max-w-xs" style={{ color: colors.mutedFg }}>{b.proposal}</p>}
                         </div>
                         <button onClick={() => handleAcceptBid(b.id)} disabled={!!busy}
                           className="text-xs px-3 py-1 rounded-lg font-medium disabled:opacity-50 btn-hover"
@@ -361,7 +361,7 @@ function SubContractsInner() {
                 </div>
               )}
               {isPrimary && activeBids.length === 0 && (
-                <p className="text-xs" style={{ color: colors.muted }}>No bids yet — waiting for freelancers to bid</p>
+                <p className="text-xs" style={{ color: colors.mutedFg }}>No bids yet — waiting for freelancers to bid</p>
               )}
 
               {/* Place bid (non-owners) */}
@@ -448,7 +448,7 @@ function SubContractsInner() {
                     <Handshake size={14} className="inline mr-1" />
                     Settlement proposed by {settlement.proposer.toLowerCase() === address?.toLowerCase() ? "you" : shortenAddress(settlement.proposer)}
                   </p>
-                  <p className="text-xs" style={{ color: colors.muted }}>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>
                     Sub-contractor gets {Number(settlement.freelancerPercent)}% — Primary gets {100 - Number(settlement.freelancerPercent)}%
                   </p>
                   {settlement.proposer.toLowerCase() !== address?.toLowerCase() && (
@@ -467,7 +467,7 @@ function SubContractsInner() {
                   <Label className="text-xs block">Sub-contractor receives (%)</Label>
                   <Input type="number" min="0" max="100" value={settlementPct}
                     onChange={e => setSettlementPct(e.target.value)} className="font-mono text-sm" />
-                  <p className="text-xs" style={{ color: colors.muted }}>Primary keeps {100 - (Number(settlementPct) || 0)}%</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>Primary keeps {100 - (Number(settlementPct) || 0)}%</p>
                   <div className="flex gap-2">
                     <button onClick={() => setSettlementOpen(null)}
                       className="flex-1 border rounded-lg py-2 text-sm" style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
@@ -535,7 +535,7 @@ function SubContractsInner() {
                     <Handshake size={14} className="inline mr-1" />
                     Settlement proposed by {settlement.proposer.toLowerCase() === address?.toLowerCase() ? "you" : shortenAddress(settlement.proposer)}
                   </p>
-                  <p className="text-xs" style={{ color: colors.muted }}>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>
                     Sub-contractor gets {Number(settlement.freelancerPercent)}% — Primary gets {100 - Number(settlement.freelancerPercent)}%
                   </p>
                   {settlement.proposer.toLowerCase() !== address?.toLowerCase() && (
@@ -554,7 +554,7 @@ function SubContractsInner() {
                   <Label className="text-xs block">Sub-contractor receives (%)</Label>
                   <Input type="number" min="0" max="100" value={settlementPct}
                     onChange={e => setSettlementPct(e.target.value)} className="font-mono text-sm" />
-                  <p className="text-xs" style={{ color: colors.muted }}>Primary keeps {100 - (Number(settlementPct) || 0)}%</p>
+                  <p className="text-xs" style={{ color: colors.mutedFg }}>Primary keeps {100 - (Number(settlementPct) || 0)}%</p>
                   <div className="flex gap-2">
                     <button onClick={() => setSettlementOpen(null)}
                       className="flex-1 border rounded-lg py-2 text-sm" style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
@@ -656,17 +656,17 @@ function SubContractsInner() {
         </div>
 
         {!address ? (
-          <p className="text-sm py-12 text-center" style={{ color: colors.muted }}>Connect wallet to view sub-contracts</p>
+          <p className="text-sm py-12 text-center" style={{ color: colors.mutedFg }}>Connect wallet to view sub-contracts</p>
         ) : loading ? (
-          <p className="text-sm py-12 text-center animate-pulse" style={{ color: colors.muted }}>Loading...</p>
+          <p className="text-sm py-12 text-center animate-pulse" style={{ color: colors.mutedFg }}>Loading...</p>
         ) : (
           <>
             {tab === "open" && (
               openSubs.length === 0 ? (
                 <div className="text-center py-12 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-                  <LinkIcon size={32} className="mb-3 mx-auto" style={{ color: colors.muted }} />
+                  <LinkIcon size={32} className="mb-3 mx-auto" style={{ color: colors.mutedFg }} />
                   <p className="font-semibold" style={{ color: colors.pageFg }}>No open sub-contract listings</p>
-                  <p className="text-sm mt-1" style={{ color: colors.muted }}>Post one to delegate work to other freelancers</p>
+                  <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Post one to delegate work to other freelancers</p>
                 </div>
               ) : (
                 <div className="space-y-3">{openSubs.map(s => renderCard(s))}</div>
@@ -675,9 +675,9 @@ function SubContractsInner() {
             {tab === "mine" && (
               mySubs.length === 0 ? (
                 <div className="text-center py-12 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-                  <ClipboardList size={32} className="mb-3 mx-auto" style={{ color: colors.muted }} />
+                  <ClipboardList size={32} className="mb-3 mx-auto" style={{ color: colors.mutedFg }} />
                   <p className="font-semibold" style={{ color: colors.pageFg }}>No sub-contracts yet</p>
-                  <p className="text-sm mt-1" style={{ color: colors.muted }}>Create or bid on one to get started</p>
+                  <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create or bid on one to get started</p>
                 </div>
               ) : (
                 <div className="space-y-3">{mySubs.map(s => renderCard(s))}</div>
@@ -692,7 +692,7 @@ function SubContractsInner() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowCreate(false)}>
           <div className="w-full max-w-lg rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ background: colors.cardBg }} onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-1" style={{ color: colors.pageFg }}>Post a Sub-Contract</h2>
-            <p className="text-xs mb-4" style={{ color: colors.muted }}>
+            <p className="text-xs mb-4" style={{ color: colors.mutedFg }}>
               Leave &quot;Sub-Contractor Address&quot; empty to create an open listing that freelancers can bid on.
             </p>
             <form onSubmit={handleCreate} className="space-y-4">

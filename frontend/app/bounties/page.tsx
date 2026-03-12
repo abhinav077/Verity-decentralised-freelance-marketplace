@@ -149,7 +149,7 @@ export default function BountiesPage() {
 
   if (!configured) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.muted }}>
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.mutedFg }}>
         <p className="text-lg font-semibold">BountyBoard contract not configured</p>
         <p className="text-sm mt-2">Deploy contracts and set <code>NEXT_PUBLIC_BOUNTY_BOARD</code> in .env.local</p>
       </div>
@@ -179,12 +179,12 @@ export default function BountiesPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-16" style={{ color: colors.muted }}>Loading bounties…</div>
+          <div className="text-center py-16" style={{ color: colors.mutedFg }}>Loading bounties…</div>
         ) : bounties.length === 0 ? (
           <div className="text-center py-16 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <Target size={40} className="mb-3 mx-auto" style={{ color: colors.muted }} />
+            <Target size={40} className="mb-3 mx-auto" style={{ color: colors.mutedFg }} />
             <p className="font-semibold text-lg" style={{ color: colors.pageFg }}>No bounties yet</p>
-            <p className="text-sm mt-1" style={{ color: colors.muted }}>Be the first to post a bounty!</p>
+            <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Be the first to post a bounty!</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -205,7 +205,7 @@ export default function BountiesPage() {
                       }}>
                       {BOUNTY_STATUS[status] || "Unknown"}
                     </span>
-                    <span className="text-xs" style={{ color: colors.muted }}>{timeRemaining(b.deadline)}</span>
+                    <span className="text-xs" style={{ color: colors.mutedFg }}>{timeRemaining(b.deadline)}</span>
                   </div>
                   <h3 className="font-bold text-base mb-1 line-clamp-1" style={{ color: colors.pageFg }}>{b.title}</h3>
                   <p className="text-xs mb-3 line-clamp-2" style={{ color: colors.mutedFg }}>{b.description}</p>
@@ -213,7 +213,7 @@ export default function BountiesPage() {
                     <span className="font-mono font-bold text-sm" style={{ color: colors.primaryFg }}>
                       {formatEth(b.reward)} {NATIVE_SYMBOL}
                     </span>
-                    <span className="text-xs" style={{ color: colors.muted }}>
+                    <span className="text-xs" style={{ color: colors.mutedFg }}>
                       {Number(b.approvedCount)}/{Number(b.maxWinners)} winners
                     </span>
                   </div>
@@ -296,25 +296,25 @@ export default function BountiesPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold" style={{ color: colors.pageFg }}>{selectedBounty.title}</h2>
-                <p className="text-xs mt-1" style={{ color: colors.muted }}>
+                <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
                   Posted by <Link href={`/profile/${selectedBounty.poster}`} className="underline">{shortenAddress(selectedBounty.poster)}</Link>
                   {" · "}{formatDate(selectedBounty.createdAt)} · {timeRemaining(selectedBounty.deadline)}
                 </p>
               </div>
-              <button onClick={() => setSelectedBounty(null)} className="text-xl" style={{ color: colors.muted }}>&times;</button>
+              <button onClick={() => setSelectedBounty(null)} className="text-xl" style={{ color: colors.mutedFg }}>&times;</button>
             </div>
             <p className="text-sm mb-4 whitespace-pre-wrap" style={{ color: colors.pageFg }}>{selectedBounty.description}</p>
             <div className="flex gap-4 mb-6">
               <div className="rounded-xl px-4 py-2" style={{ background: colors.primaryLight }}>
-                <p className="text-xs" style={{ color: colors.muted }}>Reward</p>
+                <p className="text-xs" style={{ color: colors.mutedFg }}>Reward</p>
                 <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(selectedBounty.reward)} {NATIVE_SYMBOL}</p>
               </div>
               <div className="rounded-xl px-4 py-2" style={{ background: colors.surfaceBg }}>
-                <p className="text-xs" style={{ color: colors.muted }}>Winners</p>
+                <p className="text-xs" style={{ color: colors.mutedFg }}>Winners</p>
                 <p className="font-bold" style={{ color: colors.pageFg }}>{Number(selectedBounty.approvedCount)}/{Number(selectedBounty.maxWinners)}</p>
               </div>
               <div className="rounded-xl px-4 py-2" style={{ background: colors.surfaceBg }}>
-                <p className="text-xs" style={{ color: colors.muted }}>Status</p>
+                <p className="text-xs" style={{ color: colors.mutedFg }}>Status</p>
                 <p className="font-bold" style={{ color: colors.pageFg }}>{BOUNTY_STATUS[Number(selectedBounty.status)]}</p>
               </div>
             </div>
@@ -356,7 +356,7 @@ export default function BountiesPage() {
               Submissions ({submissions.length})
             </h3>
             {submissions.length === 0 ? (
-              <p className="text-sm py-4 text-center" style={{ color: colors.muted }}>No submissions yet</p>
+              <p className="text-sm py-4 text-center" style={{ color: colors.mutedFg }}>No submissions yet</p>
             ) : (
               <div className="space-y-2">
                 {submissions.map((s, i) => {

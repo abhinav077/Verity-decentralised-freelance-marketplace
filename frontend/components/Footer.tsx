@@ -79,7 +79,7 @@ export default function Footer() {
           {/* Nav groups */}
           {NAV_GROUPS.map((g) => (
             <div key={g.title}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: colors.muted, fontFamily: "var(--font-mono-alt)" }}>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: colors.mutedFg, fontFamily: "var(--font-mono-alt)" }}>
                 {g.title}
               </p>
               <ul className="space-y-2">
@@ -102,7 +102,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div
           className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-6 border-t text-xs"
-          style={{ borderColor: colors.divider, color: colors.muted }}
+          style={{ borderColor: colors.divider, color: colors.mutedFg }}
         >
           <p>&copy; {new Date().getFullYear()} Verity. Open-source, on-chain, unstoppable.</p>
           <p>Built with <Heart size={14} className="inline text-red-500" /> on Ethereum</p>

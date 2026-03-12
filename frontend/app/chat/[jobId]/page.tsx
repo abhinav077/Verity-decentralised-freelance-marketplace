@@ -190,7 +190,7 @@ export default function ChatPage() {
   if (!address) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-xl" style={{ color: colors.muted }}>Connect your wallet to access chat.</p>
+        <p className="text-xl" style={{ color: colors.mutedFg }}>Connect your wallet to access chat.</p>
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function ChatPage() {
   if (loadingJob) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse" style={{ color: colors.muted }}>Loading job info…</div>
+        <div className="animate-pulse" style={{ color: colors.mutedFg }}>Loading job info…</div>
       </div>
     );
   }
@@ -207,7 +207,7 @@ export default function ChatPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <p className="mb-4" style={{ color: colors.muted }}>{isSubContract ? "Sub-contract" : "Job"} not found.</p>
+          <p className="mb-4" style={{ color: colors.mutedFg }}>{isSubContract ? "Sub-contract" : "Job"} not found.</p>
           <Link href={isSubContract ? "/sub-contracts" : "/jobs"} className="hover:underline" style={{ color: colors.primaryFg }}>
             Back to {isSubContract ? "Sub-Contracts" : "Jobs"}
           </Link>
@@ -221,7 +221,7 @@ export default function ChatPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
           <p className="text-2xl mb-2" style={{ color: colors.dangerText }}>Access Denied</p>
-          <p className="mb-4" style={{ color: colors.muted }}>Only the {isSubContract ? "primary freelancer and sub-contractor" : "client and assigned freelancer"} can view this chat.</p>
+          <p className="mb-4" style={{ color: colors.mutedFg }}>Only the {isSubContract ? "primary freelancer and sub-contractor" : "client and assigned freelancer"} can view this chat.</p>
           <Link href={isSubContract ? "/sub-contracts" : "/jobs"} className="hover:underline" style={{ color: colors.primaryFg }}>
             Back to {isSubContract ? "Sub-Contracts" : "Jobs"}
           </Link>
@@ -265,14 +265,14 @@ export default function ChatPage() {
                     : job.status === 5 ? colors.warningText
                     : colors.mutedFg,
                 }}>{statusLabel}</span>
-              <span className="text-xs" style={{ color: colors.muted }}>
+              <span className="text-xs" style={{ color: colors.mutedFg }}>
                 Budget: {parseFloat(ethers.formatEther(job.budget)).toFixed(1)} {NATIVE_SYMBOL}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <div className="text-right hidden sm:block">
-              <p className="text-xs" style={{ color: colors.muted }}>{otherRole}</p>
+              <p className="text-xs" style={{ color: colors.mutedFg }}>{otherRole}</p>
               <Link href={`/profile/${otherParty}`}
                 className="text-xs font-mono hover:underline" style={{ color: colors.primaryFg }}>
                 {shortenAddress(otherParty)}
@@ -286,7 +286,7 @@ export default function ChatPage() {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12" style={{ color: colors.muted }}>
+          <div className="flex flex-col items-center justify-center h-full text-center py-12" style={{ color: colors.mutedFg }}>
             <MessageCircle size={40} className="mb-3" />
             <p className="font-medium">No messages yet</p>
             <p className="text-sm mt-1">Start the conversation below.</p>
@@ -300,7 +300,7 @@ export default function ChatPage() {
               <Avatar address={msg.sender} size={28} />
               <div className={`max-w-[72%] space-y-1 ${isMine ? "items-end" : "items-start"} flex flex-col`}>
                 <div className={`flex items-center gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
-                  <span className="text-xs font-mono" style={{ color: colors.muted }}>
+                  <span className="text-xs font-mono" style={{ color: colors.mutedFg }}>
                     {isMine ? "You" : shortenAddress(msg.sender)}
                   </span>
                   <span className="text-xs" style={{ color: colors.inputBorder }}>
@@ -333,7 +333,7 @@ export default function ChatPage() {
           <Paperclip size={18} style={{ color: colors.primaryFg }} />
           <span className="text-sm truncate flex-1" style={{ color: colors.primaryFg }}>{attachment.name}</span>
           <button onClick={() => setAttachment(null)}
-            className="text-lg leading-none" style={{ color: colors.muted }}>&times;</button>
+            className="text-lg leading-none" style={{ color: colors.mutedFg }}>&times;</button>
         </div>
       )}
 
@@ -341,7 +341,7 @@ export default function ChatPage() {
       {job.status >= 2 ? (
         <div className="rounded-2xl shadow-sm p-4 text-center border"
           style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-          <p className="text-sm" style={{ color: colors.muted }}>
+          <p className="text-sm" style={{ color: colors.mutedFg }}>
             This chat is read-only — the job is {statusLabel.toLowerCase()}.
           </p>
         </div>
@@ -351,7 +351,7 @@ export default function ChatPage() {
         <button
           onClick={() => fileRef.current?.click()}
           className="p-2 rounded-xl shrink-0 transition-colors"
-          style={{ color: colors.muted }}
+          style={{ color: colors.mutedFg }}
           title="Attach file"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">

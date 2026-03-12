@@ -49,7 +49,7 @@ export default function RootLayout({
           <WalletProvider>
             <NotificationsProvider>
               <Navbar />
-              <main className="flex-1 pt-16">{children}</main>
+              <main className="flex-1 pt-24 min-h-screen">{children}</main>
               <Footer />
             </NotificationsProvider>
           </WalletProvider>

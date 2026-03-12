@@ -164,7 +164,7 @@ function JobsInner() {
     <main className="max-w-6xl mx-auto px-4 py-8" style={{ color: colors.pageFg }}>
       <div className="mb-8">
         <h1 className="text-3xl font-bold" style={{ color: colors.pageFg }}>Job Marketplace</h1>
-        <p className="mt-1" style={{ color: colors.muted }}>Find work or hire talent — powered by smart contracts.</p>
+        <p className="mt-1" style={{ color: colors.mutedFg }}>Find work or hire talent — powered by smart contracts.</p>
       </div>
 
       {/* Dispute alert banners */}
@@ -249,7 +249,7 @@ function JobsInner() {
       )}
 
       {!address && contractsConfigured && (
-        <div className="text-center py-20" style={{ color: colors.muted }}>
+        <div className="text-center py-20" style={{ color: colors.mutedFg }}>
           <p className="text-lg">Connect your wallet to interact with the marketplace.</p>
         </div>
       )}
@@ -270,7 +270,7 @@ function JobsInner() {
       )}
 
       {address && !loading && !error && displayJobs.length === 0 && (
-        <div className="text-center py-20" style={{ color: colors.muted }}>
+        <div className="text-center py-20" style={{ color: colors.mutedFg }}>
           <p className="text-lg">
             {filter === "all" ? "No open jobs yet. Be the first to post one!" :
              filter === "mine" ? "You haven't posted any jobs yet." :

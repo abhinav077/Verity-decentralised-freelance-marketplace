@@ -53,7 +53,7 @@ export default function ReviewModal({ jobId, revieweeAddress, revieweeLabel, job
         <div>
           <p className="text-xs font-medium uppercase tracking-wide" style={{ color: colors.primaryFg }}>Leave a Review</p>
           <h2 className="text-xl font-bold mt-1" style={{ color: colors.pageFg }}>Rate the {revieweeLabel}</h2>
-          <p className="text-sm mt-0.5" style={{ color: colors.muted }}>Job: <strong>{jobTitle}</strong></p>
+          <p className="text-sm mt-0.5" style={{ color: colors.mutedFg }}>Job: <strong>{jobTitle}</strong></p>
         </div>
 
         <div className="flex flex-col items-center gap-2">
@@ -64,7 +64,7 @@ export default function ReviewModal({ jobId, revieweeAddress, revieweeLabel, job
                 style={{ color: s <= displayRating ? "#facc15" : colors.inputBorder }}>★</button>
             ))}
           </div>
-          <p className="text-sm font-medium" style={{ color: displayRating > 0 ? "#ca8a04" : colors.muted }}>
+          <p className="text-sm font-medium" style={{ color: displayRating > 0 ? "#ca8a04" : colors.mutedFg }}>
             {displayRating > 0 ? LABELS[displayRating] : "Select a rating"}
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function ReviewModal({ jobId, revieweeAddress, revieweeLabel, job
             {loading ? "Submitting…" : "Submit Review"}
           </button>
         </div>
-        <p className="text-xs text-center" style={{ color: colors.muted }}>
+        <p className="text-xs text-center" style={{ color: colors.mutedFg }}>
           Reviews are stored on-chain and cannot be edited.
         </p>
       </div>

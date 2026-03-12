@@ -115,7 +115,7 @@ export default function GovernancePage() {
 
   if (!configured) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.muted }}>
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center" style={{ color: colors.mutedFg }}>
         <p className="text-lg font-semibold">Governance contract not configured</p>
         <p className="text-sm mt-2">Deploy contracts and set <code>NEXT_PUBLIC_GOVERNANCE</code> in .env.local</p>
       </div>
@@ -145,39 +145,39 @@ export default function GovernancePage() {
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.muted }}>Treasury</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Treasury</p>
             <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatEth(treasuryBal)} {NATIVE_SYMBOL}</p>
           </div>
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.muted }}>Your VRT</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Your VRT</p>
             <p className="text-xl font-bold font-mono" style={{ color: colors.primaryFg }}>{formatVrt(vrtBalance)}</p>
           </div>
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.muted }}>Total Proposals</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Total Proposals</p>
             <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{proposals.length}</p>
           </div>
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.muted }}>Min VRT to Propose</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Min VRT to Propose</p>
             <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{minVrtToPropose}</p>
           </div>
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.muted }}>Voting Period</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Voting Period</p>
             <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{Number.isInteger(govVotingDays) ? govVotingDays : govVotingDays.toFixed(1)}d</p>
           </div>
           <div className="rounded-xl border p-4 stat-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-xs" style={{ color: colors.muted }}>Quorum</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Quorum</p>
             <p className="text-xl font-bold" style={{ color: colors.pageFg }}>{(quorumBps / 100).toFixed(0)}%</p>
           </div>
         </div>
 
         {/* Proposals list */}
         {loading ? (
-          <div className="text-center py-16" style={{ color: colors.muted }}>Loading proposals…</div>
+          <div className="text-center py-16" style={{ color: colors.mutedFg }}>Loading proposals…</div>
         ) : proposals.length === 0 ? (
           <div className="text-center py-16 rounded-2xl border" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-            <p className="text-4xl mb-3"><Landmark size={40} /></p>
+            <p className="text-4xl mb-3"><Landmark size={40} className="mx-auto block" /></p>
             <p className="font-semibold text-lg" style={{ color: colors.pageFg }}>No proposals yet</p>
-            <p className="text-sm mt-1" style={{ color: colors.muted }}>Create the first governance proposal</p>
+            <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create the first governance proposal</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -202,12 +202,12 @@ export default function GovernancePage() {
                           }}>
                           {PROPOSAL_STATUS[status] || "Unknown"}
                         </span>
-                        <span className="text-xs" style={{ color: colors.muted }}>#{p.id.toString()}</span>
+                        <span className="text-xs" style={{ color: colors.mutedFg }}>#{p.id.toString()}</span>
                       </div>
                       <h3 className="font-bold text-base" style={{ color: colors.pageFg }}>{p.title}</h3>
                       <p className="text-xs mt-1 line-clamp-2" style={{ color: colors.mutedFg }}>{p.description}</p>
                     </div>
-                    <span className="text-xs shrink-0 ml-4" style={{ color: colors.muted }}>
+                    <span className="text-xs shrink-0 ml-4" style={{ color: colors.mutedFg }}>
                       {expired ? "Ended" : timeRemaining(p.deadline)}
                     </span>
                   </div>
@@ -252,7 +252,7 @@ export default function GovernancePage() {
                       Execute Proposal
                     </button>
                   )}
-                  <p className="text-xs mt-2" style={{ color: colors.muted }}>
+                  <p className="text-xs mt-2" style={{ color: colors.mutedFg }}>
                     Proposed by <Link href={`/profile/${p.proposer}`} className="underline">{shortenAddress(p.proposer)}</Link>
                     {" · "}{formatDate(p.createdAt)}
                   </p>

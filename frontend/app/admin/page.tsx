@@ -531,7 +531,7 @@ export default function AdminPage() {
 
   const currentValStyle: React.CSSProperties = {
     fontSize: 12,
-    color: colors.muted,
+    color: colors.mutedFg,
   };
 
   // ── Access gate ──

@@ -62,7 +62,7 @@ function VoteBar3({ clientVotes, freelancerVotes, reProportionVotes, colors }: {
   const rPct = total === 0n ? 34 : 100 - cPct - fPct;
   return (
     <div className="mt-3">
-      <div className="flex justify-between text-xs mb-1" style={{ color: colors.muted }}>
+      <div className="flex justify-between text-xs mb-1" style={{ color: colors.mutedFg }}>
         <span>Client {cPct}%</span>
         <span>Freelancer {fPct}%</span>
         <span>Split {rPct}%</span>
@@ -72,7 +72,7 @@ function VoteBar3({ clientVotes, freelancerVotes, reProportionVotes, colors }: {
         <div className="h-full transition-all" style={{ width: `${fPct}%`, background: colors.infoText }} />
         <div className="h-full transition-all" style={{ width: `${rPct}%`, background: colors.badgeText }} />
       </div>
-      <div className="flex justify-between text-[10px] mt-1" style={{ color: colors.muted }}>
+      <div className="flex justify-between text-[10px] mt-1" style={{ color: colors.mutedFg }}>
         <span>{Number(clientVotes)} votes</span>
         <span>{Number(freelancerVotes)} votes</span>
         <span>{Number(reProportionVotes)} votes</span>
@@ -175,7 +175,7 @@ function DisputeCard({
   const statusLabel = DISPUTE_STATUS[st] || `Status ${st}`;
   const statusStyle = isResolved
     ? { background: dispute.clientWon ? colors.warningBg : colors.badgeBg, color: dispute.clientWon ? colors.warningText : colors.badgeText }
-    : isAutoResolved || isWithdrawn ? { background: colors.inputBg, color: colors.muted }
+    : isAutoResolved || isWithdrawn ? { background: colors.inputBg, color: colors.mutedFg }
     : isEscalated ? { background: colors.dangerBg, color: colors.dangerText }
     : isVotingPhase ? { background: colors.infoBg, color: colors.infoText }
     : isResponsePhase && !responseExpired ? { background: colors.warningBg, color: colors.warningText }
@@ -189,7 +189,7 @@ function DisputeCard({
     <div className="border rounded-xl p-5 card-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
-        <span className="text-xs" style={{ color: colors.muted }}>
+        <span className="text-xs" style={{ color: colors.mutedFg }}>
           Dispute #{disputeKey} · Job #{dispute.jobId.toString()}
           {Number(dispute.votingRound) > 0 && ` · Round ${Number(dispute.votingRound) + 1}`}
         </span>
@@ -213,7 +213,7 @@ function DisputeCard({
           </div>
         ) : (
           <div className="border border-dashed rounded-lg p-3" style={{ borderColor: colors.cardBorder }}>
-            <p className="text-xs italic" style={{ color: colors.muted }}>
+            <p className="text-xs italic" style={{ color: colors.mutedFg }}>
               {dispute.initiator.toLowerCase() === dispute.client.toLowerCase() ? "Freelancer" : "Client"} has not responded yet.
             </p>
           </div>
@@ -223,14 +223,14 @@ function DisputeCard({
       {/* Parties */}
       <div className="grid grid-cols-2 gap-3 text-sm mb-3">
         <div className="rounded-lg p-2" style={{ background: colors.warningBg }}>
-          <p className="text-xs mb-0.5" style={{ color: colors.muted }}>Client</p>
+          <p className="text-xs mb-0.5" style={{ color: colors.mutedFg }}>Client</p>
           <p className="font-mono text-xs" style={{ color: colors.warningText }}>
             {shortenAddress(dispute.client)}
             {isClientParty && " (you)"}
           </p>
         </div>
         <div className="rounded-lg p-2" style={{ background: colors.infoBg }}>
-          <p className="text-xs mb-0.5" style={{ color: colors.muted }}>Freelancer</p>
+          <p className="text-xs mb-0.5" style={{ color: colors.mutedFg }}>Freelancer</p>
           <p className="font-mono text-xs" style={{ color: colors.infoText }}>
             {shortenAddress(dispute.freelancer)}
             {isFreelancerParty && " (you)"}
@@ -258,7 +258,7 @@ function DisputeCard({
           {evidence.map((e, i) => (
             <div key={i} className="flex items-center justify-between text-xs rounded-lg px-3 py-2 border" style={{ borderColor: colors.cardBorder }}>
               <div>
-                <span style={{ color: colors.muted }}>By {shortenAddress(e.party)}</span>
+                <span style={{ color: colors.mutedFg }}>By {shortenAddress(e.party)}</span>
                 {e.party.toLowerCase() === dispute.client.toLowerCase() && <span className="ml-1" style={{ color: colors.warningText }}>(Client)</span>}
                 {e.party.toLowerCase() === dispute.freelancer.toLowerCase() && <span className="ml-1" style={{ color: colors.infoText }}>(Freelancer)</span>}
               </div>
@@ -278,7 +278,7 @@ function DisputeCard({
           <div className="rounded-lg border p-3 mb-3 space-y-2" style={{ borderColor: colors.cardBorder }}>
             <p className="text-xs font-semibold" style={{ color: colors.mutedFg }}>Submit Evidence</p>
             <EvidenceUploader onUpload={(cid) => setEvidenceHash(cid)} />
-            <p className="text-xs" style={{ color: colors.muted }}>Or paste an IPFS hash / URL:</p>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Or paste an IPFS hash / URL:</p>
             <Input placeholder="IPFS hash or link to evidence"
               value={evidenceHash} onChange={(e) => setEvidenceHash(e.target.value)} />
             <div className="flex gap-2">
@@ -327,12 +327,12 @@ function DisputeCard({
         </div>
       )}
       {isAutoResolved && (
-        <div className="mt-3 rounded-lg p-3 text-sm border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.muted }}>
+        <div className="mt-3 rounded-lg p-3 text-sm border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.mutedFg }}>
           Auto-resolved (no votes cast or deadline passed)
         </div>
       )}
       {isWithdrawn && (
-        <div className="mt-3 rounded-lg p-3 text-sm border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.muted }}>
+        <div className="mt-3 rounded-lg p-3 text-sm border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.mutedFg }}>
           Dispute was withdrawn by the initiator
         </div>
       )}
@@ -409,7 +409,7 @@ function DisputeCard({
             )
           )}
           {isResponsePhase && isParty && isInitiator && (
-            <p className="mt-3 text-xs text-center" style={{ color: colors.muted }}>
+            <p className="mt-3 text-xs text-center" style={{ color: colors.mutedFg }}>
               You raised this dispute. Waiting for the other party to respond.
             </p>
           )}
@@ -482,7 +482,7 @@ function DisputeCard({
               )}
               {/* Parties notice */}
               {isParty && (
-                <p className="text-xs text-center" style={{ color: colors.muted }}>
+                <p className="text-xs text-center" style={{ color: colors.mutedFg }}>
                   You&apos;re a party — you cannot vote, but you can set your proportion demand.
                 </p>
               )}
@@ -776,7 +776,7 @@ export default function DisputesPage() {
     <main className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold" style={{ color: colors.pageFg }}>Disputes</h1>
-        <p className="mt-1" style={{ color: colors.muted }}>Vote on disputes using your VRT tokens. Winners earn rewards.</p>
+        <p className="mt-1" style={{ color: colors.mutedFg }}>Vote on disputes using your VRT tokens. Winners earn rewards.</p>
       </div>
 
       <div className="border rounded-xl p-4 mb-6 text-sm" style={{ background: colors.primaryLight, borderColor: colors.primaryFg + "22" }}>
@@ -791,7 +791,7 @@ export default function DisputesPage() {
       </div>
 
       {!address && (
-        <p className="text-center py-20" style={{ color: colors.muted }}>Connect your wallet to see and vote on disputes.</p>
+        <p className="text-center py-20" style={{ color: colors.mutedFg }}>Connect your wallet to see and vote on disputes.</p>
       )}
 
       {address && contractsConfigured && (
@@ -817,7 +817,7 @@ export default function DisputesPage() {
               {[1, 2].map((i) => <div key={i} className="rounded-xl h-48 animate-pulse" style={{ background: colors.inputBg }} />)}
             </div>
           ) : displayed.length === 0 ? (
-            <div className="text-center py-20" style={{ color: colors.muted }}>
+            <div className="text-center py-20" style={{ color: colors.mutedFg }}>
               <p className="text-lg">
                 {filter === "active" ? "No active disputes." : filter === "resolved" ? "No resolved disputes yet." : filter === "mine" ? "You're not involved in any disputes." : "No disputes found."}
               </p>
