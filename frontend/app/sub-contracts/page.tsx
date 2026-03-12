@@ -316,6 +316,14 @@ function SubContractsInner() {
     const canAutoRelease = status === 2 && autoReleaseAt > 0 && now >= autoReleaseAt;
     const daysUntilRelease = autoReleaseAt > now ? Math.ceil((autoReleaseAt - now) / 86400) : 0;
 
+    const rawDescription = (s.description || "").trim();
+    const [metaLine = "", ...bodyLines] = rawDescription.split("\n");
+    const metaParts = metaLine.split(" | ").map((part: string) => part.trim()).filter(Boolean);
+
+    const cardTitle = metaParts[0] || `Sub-contract #${scKey}`;
+    const cardCategory = metaParts[1] && !metaParts[1].startsWith("Deadline:") ? metaParts[1] : "";
+    const cardDesc = bodyLines.join("\n").trim() || rawDescription;
+
     return (
       <div key={scKey} className="rounded-2xl border p-5 card-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
         {/* Header */}
