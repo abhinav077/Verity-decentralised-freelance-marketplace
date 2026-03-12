@@ -225,7 +225,7 @@ export default function Home() {
               style={{ overflow: 'visible' }}
             >
               <Link href="/jobs"
-                className="font-bold px-8 py-3 text-base inline-block text-center min-w-[200px]"
+                className="font-bold px-8 py-1.5 text-base inline-block text-center min-w-[200px]"
                 style={{ color: colors.pageFg }}>
                 Browse Jobs
               </Link>
@@ -239,7 +239,7 @@ export default function Home() {
                   hoverBg={colors.primaryHover}
                   hoverFg={colors.primaryText}
                   borderColor="transparent"
-                  className="min-w-[200px]"
+                  className="min-w-[200px] rounded-2xl"
                   onClick={() => window.location.href = "/jobs?tab=mine"}
                 />
               </div>
@@ -252,7 +252,7 @@ export default function Home() {
                   hoverBg={colors.primaryHover}
                   hoverFg={colors.primaryText}
                   borderColor="transparent"
-                  className="min-w-[200px]"
+                  className="min-w-[200px] rounded-2xl"
                   onClick={connect}
                 />
               </div>
@@ -408,7 +408,7 @@ export default function Home() {
                 style={{ overflow: 'visible' }}
               >
                 <Link href="/jobs"
-                  className="font-bold px-8 py-3 text-base inline-block text-center min-w-[200px]"
+                  className="font-bold px-8 py-1.5 text-base inline-block text-center min-w-[200px]"
                   style={{ color: colors.pageFg }}>
                   Find Jobs
                 </Link>
@@ -421,7 +421,7 @@ export default function Home() {
                   hoverBg={colors.primaryHover}
                   hoverFg={colors.primaryText}
                   borderColor="transparent"
-                  className="min-w-[200px]"
+                  className="min-w-[200px] rounded-2xl"
                   onClick={() => window.location.href = "/jobs?tab=mine"}
                 />
               ) : (
@@ -432,7 +432,7 @@ export default function Home() {
                   hoverBg={colors.primaryHover}
                   hoverFg={colors.primaryText}
                   borderColor="transparent"
-                  className="min-w-[200px]"
+                  className="min-w-[200px] rounded-2xl"
                   onClick={connect}
                 />
               )}

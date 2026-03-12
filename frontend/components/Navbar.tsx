@@ -161,20 +161,6 @@ export default function Navbar() {
   /* Shared island height for visual consistency */
   const islandStyle: React.CSSProperties = { overflow: 'visible', minHeight: 44 };
 
-  /* liquid glass island style */
-  const liquidGlass: React.CSSProperties = {
-    backdropFilter: "blur(24px) saturate(1.8) brightness(1.05)",
-    WebkitBackdropFilter: "blur(24px) saturate(1.8) brightness(1.05)",
-    background: dk
-      ? "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0.06) 100%)"
-      : "linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0.72) 100%)",
-    border: `1px solid ${dk ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.7)"}`,
-    borderRadius: 18,
-    boxShadow: dk
-      ? "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(255,255,255,0.03)"
-      : "0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(255,255,255,0.4)",
-  };
-
   /* dropdown panel style – stronger glass for readability */
   const dropdown: React.CSSProperties = {
     backdropFilter: "blur(40px) saturate(2.2) brightness(1.1)",
@@ -296,13 +282,15 @@ export default function Navbar() {
               className="hidden sm:block shrink-0 pointer-events-auto transition-transform hover:scale-[1.03] active:scale-[0.98]"
               style={islandStyle}
             >
-              <button
-                onClick={() => router.push("/jobs?create=true")}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-extrabold tracking-wide uppercase transition-colors whitespace-nowrap"
-                style={{ color: colors.primaryFg }}
-              >
-                + Post a Job
-              </button>
+              <div className="px-1.5 py-1.5">
+                <button
+                  onClick={() => router.push("/jobs?create=true")}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-extrabold tracking-wide uppercase transition-colors whitespace-nowrap"
+                  style={{ color: colors.primaryFg }}
+                >
+                  + Post a Job
+                </button>
+              </div>
             </GlassSurface>
           )}
 
@@ -459,9 +447,9 @@ export default function Navbar() {
               borderRadius={18}
               style={islandStyle}
             >
-              <div className="px-2 py-1.5">
+              <div className="px-1.5 py-1.5">
               <button onClick={() => { const v = !profileOpen; closeAll(); if (v) setProfileOpen(true); }}
-                className="flex items-center gap-2 px-2 py-1 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-xl transition-colors"
                 style={{ color: colors.navText, background: profileOpen ? colors.primaryLight : "transparent" }}>
                 <WalletAvatar address={address} size={22} />
                 <span className="text-sm font-extrabold font-mono hidden sm:block whitespace-nowrap">{shortenAddress(address)}</span>
@@ -506,11 +494,22 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <button onClick={connect} disabled={connecting}
-              className="text-sm font-semibold px-5 py-2.5 transition-all disabled:opacity-60 hover:scale-[1.03] active:scale-[0.98]"
-              style={{ ...liquidGlass, background: colors.primary, color: colors.primaryText, border: "none" }}>
-              {connecting ? "Connecting…" : "Connect Wallet"}
-            </button>
+            <GlassSurface
+              isDark={dk}
+              width="auto"
+              height="auto"
+              borderRadius={18}
+              className="shrink-0 pointer-events-auto transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              style={islandStyle}
+            >
+              <div className="px-1.5 py-1.5">
+                <button onClick={connect} disabled={connecting}
+                  className="text-sm font-extrabold tracking-wide uppercase px-4 py-1.5 transition-all disabled:opacity-60 whitespace-nowrap"
+                  style={{ color: colors.primaryFg }}>
+                  {connecting ? "Connecting…" : "Connect Wallet"}
+                </button>
+              </div>
+            </GlassSurface>
           )}
 
           {/* Mobile hamburger (md:hidden) */}

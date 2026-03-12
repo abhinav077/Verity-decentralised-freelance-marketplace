@@ -33,7 +33,7 @@ function ButtonCreativeRight({
 
   return (
     <div
-      className={`group relative cursor-pointer px-6 py-3 w-fit rounded-full overflow-hidden text-center font-semibold transition-colors ${className}`}
+      className={`group relative cursor-pointer px-8 h-12.5 w-fit rounded-full overflow-hidden text-center font-semibold transition-colors flex items-center justify-center ${className}`}
       style={{
         background: isGlass ? 'rgba(255,255,255,0.06)' : bg,
         color: fg,
