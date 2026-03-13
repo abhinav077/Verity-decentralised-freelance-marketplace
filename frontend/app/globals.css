@@ -96,6 +96,7 @@
 html {
   color-scheme: light;
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -107,6 +108,7 @@ html {
 body {
   background: #f9fafb;
   color: #111827;
+  overflow-x: hidden;
 }
 
 .dark {
