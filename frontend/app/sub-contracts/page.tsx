@@ -6,6 +6,7 @@ import {
   getSubContracting, getJobMarket, formatEth, formatDate,
   shortenAddress, SUB_CONTRACT_STATUS, CONTRACT_ADDRESSES, NATIVE_SYMBOL,
 } from "@/lib/contracts";
+import { extractTransactionError, getExpectedChainId, getExpectedChainLabel, normalizeDecimalInput } from "@/lib/tx";
 import { ethers } from "ethers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -170,7 +171,7 @@ function SubContractsInner() {
   const run = async (label: string, fn: () => Promise<void>) => {
     setBusy(label);
     try { await fn(); window.dispatchEvent(new Event("dfm:tx")); load(); }
-    catch (err: any) { alert(err?.reason || err?.message || "Transaction failed"); }
+    catch (err: unknown) { alert(extractTransactionError(err)); }
     finally { setBusy(null); }
   };
 
@@ -196,13 +197,43 @@ function SubContractsInner() {
 
   const handlePlaceBid = (scId: string) => {
     run(`bid-${scId}`, async () => {
-      const sc = getSubContracting(signer!);
-      const tx = await sc.placeBid(
-        BigInt(scId),
-        ethers.parseEther(bidAmt),
-        Number(bidDays),
-        bidProposal,
-      );
+      if (!signer) throw new Error("Connect your wallet to place a bid.");
+      if (!signer.provider) throw new Error("Wallet provider unavailable. Reconnect your wallet and try again.");
+
+      const network = await signer.provider.getNetwork();
+      if (Number(network.chainId) !== getExpectedChainId()) {
+        throw new Error(`Switch your wallet to ${getExpectedChainLabel()} before placing a bid.`);
+      }
+
+      const proposal = bidProposal.trim();
+      if (!proposal) throw new Error("Enter a short proposal before submitting your bid.");
+
+      const normalizedAmount = normalizeDecimalInput(bidAmt);
+      let amount: bigint;
+      try {
+        amount = ethers.parseEther(normalizedAmount);
+      } catch {
+        throw new Error(`Enter a valid ${NATIVE_SYMBOL} amount.`);
+      }
+      if (amount <= 0n) throw new Error("Enter a bid amount greater than 0.");
+
+      const completionDays = Number.parseInt(bidDays.trim(), 10);
+      if (!Number.isInteger(completionDays) || completionDays <= 0) {
+        throw new Error("Completion days must be a whole number greater than 0.");
+      }
+
+      const sc = getSubContracting(signer);
+      await sc.placeBid.staticCall(BigInt(scId), amount, completionDays, proposal);
+
+      let gasLimit: bigint | undefined;
+      try {
+        const estimate = await sc.placeBid.estimateGas(BigInt(scId), amount, completionDays, proposal);
+        gasLimit = estimate + estimate / 5n;
+      } catch {}
+
+      const tx = gasLimit
+        ? await sc.placeBid(BigInt(scId), amount, completionDays, proposal, { gasLimit })
+        : await sc.placeBid(BigInt(scId), amount, completionDays, proposal);
       await tx.wait();
       setBidOpen(null); setBidAmt(""); setBidDays(""); setBidProposal("");
     });

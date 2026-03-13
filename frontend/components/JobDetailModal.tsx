@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ethers, JsonRpcSigner } from "ethers";
-import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, JOB_STATUS, chatKey, chatReadKey, timeRemaining, NATIVE_SYMBOL, timeAgo } from "@/lib/contracts";
+import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, chatKey, chatReadKey, timeRemaining, NATIVE_SYMBOL } from "@/lib/contracts";
+import { extractTransactionError, getExpectedChainId, getExpectedChainLabel, normalizeDecimalInput } from "@/lib/tx";
 import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import ReviewModal from "@/components/ReviewModal";
@@ -178,17 +179,61 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const run = async (label: string, fn: () => Promise<void>) => {
     setTxLoading(label); setTxError(null);
     try { await fn(); window.dispatchEvent(new Event("dfm:tx")); onRefresh(); }
-    catch (e: any) { setTxError(e?.reason || e?.message?.split("(")[0] || "Transaction failed"); }
+    catch (e: unknown) { setTxError(extractTransactionError(e)); }
     finally { setTxLoading(null); }
   };
 
   // ─── Actions ────────────────────────────────────────────────────────────────
 
   const placeBid = () => run("Placing bid…", async () => {
-    const jm = getJobMarket(signer!);
+    if (!signer) throw new Error("Connect your wallet to place a bid.");
+    if (!signer.provider) throw new Error("Wallet provider unavailable. Reconnect your wallet and try again.");
+
+    const network = await signer.provider.getNetwork();
+    if (Number(network.chainId) !== getExpectedChainId()) {
+      throw new Error(`Switch your wallet to ${getExpectedChainLabel()} before placing a bid.`);
+    }
+    if (liveStatus !== 0) throw new Error("This job is no longer open for bids.");
+    if (isClient) throw new Error("You cannot bid on your own job.");
+    if (hasAlreadyBid) throw new Error("You have already placed a bid.");
+    if (Number(job.deadline) <= blockTimestamp) throw new Error("The bidding deadline has passed.");
+
+    const proposal = bidProposal.trim();
+    if (!proposal) throw new Error("Enter a short proposal before submitting your bid.");
+
+    const normalizedAmount = normalizeDecimalInput(bidAmount);
+    let amount: bigint;
+    try {
+      amount = ethers.parseEther(normalizedAmount);
+    } catch {
+      throw new Error(`Enter a valid ${NATIVE_SYMBOL} amount.`);
+    }
+    if (amount <= 0n) throw new Error("Enter a bid amount greater than 0.");
+
+    const completionDaysText = bidDays.trim();
+    const completionDays = completionDaysText ? Number.parseInt(completionDaysText, 10) : 0;
+    if (!Number.isInteger(completionDays) || completionDays < 0) {
+      throw new Error("Completion days must be a whole number.");
+    }
+
+    const jm = getJobMarket(signer);
     const fn = jm.getFunction("placeBid(uint256,uint256,uint256,string)");
-    const tx = await fn(job.id, ethers.parseEther(bidAmount), bidDays ? parseInt(bidDays) : 0, bidProposal);
-    await tx.wait(); setShowBidForm(false);
+    await fn.staticCall(job.id, amount, completionDays, proposal);
+
+    let gasLimit: bigint | undefined;
+    try {
+      const estimate = await fn.estimateGas(job.id, amount, completionDays, proposal);
+      gasLimit = estimate + estimate / 5n;
+    } catch {}
+
+    const tx = gasLimit
+      ? await fn(job.id, amount, completionDays, proposal, { gasLimit })
+      : await fn(job.id, amount, completionDays, proposal);
+    await tx.wait();
+    setShowBidForm(false);
+    setBidAmount("");
+    setBidDays("");
+    setBidProposal("");
   });
 
   const acceptBid = (bid: Bid) => {
