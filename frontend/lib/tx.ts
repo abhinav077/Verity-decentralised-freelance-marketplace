@@ -1,6 +1,6 @@
 "use client";
 
-import { BrowserProvider, ethers, JsonRpcSigner, TransactionRequest } from "ethers";
+import { BigNumberish, BrowserProvider, ethers, JsonRpcSigner, TransactionRequest } from "ethers";
 
 const CHAIN_LABELS: Record<number, string> = {
   80002: "Polygon Amoy",
@@ -137,6 +137,10 @@ function maxBigInt(a: bigint, b: bigint): bigint {
   return a > b ? a : b;
 }
 
+function toBigInt(value: BigNumberish | null | undefined): bigint {
+  return value == null ? 0n : ethers.toBigInt(value);
+}
+
 function getMinPriorityFeePerGas(): bigint {
   const configured = process.env.NEXT_PUBLIC_MIN_PRIORITY_FEE_GWEI?.trim();
   return ethers.parseUnits(configured || DEFAULT_MIN_PRIORITY_GWEI, "gwei");
@@ -157,22 +161,22 @@ async function applyFeeFloor(
 
   const has1559 = feeData.maxFeePerGas != null || feeData.maxPriorityFeePerGas != null;
   if (!has1559) {
-    const networkGasPrice = feeData.gasPrice ?? 0n;
-    const txGasPrice = tx.gasPrice ?? 0n;
+    const networkGasPrice = toBigInt(feeData.gasPrice);
+    const txGasPrice = toBigInt(tx.gasPrice);
     return {
       ...tx,
       gasPrice: maxBigInt(maxBigInt(networkGasPrice, txGasPrice), minGasPrice),
     };
   }
 
-  const suggestedPriority = feeData.maxPriorityFeePerGas ?? feeData.gasPrice ?? 0n;
-  const txPriority = tx.maxPriorityFeePerGas ?? 0n;
+  const suggestedPriority = toBigInt(feeData.maxPriorityFeePerGas ?? feeData.gasPrice);
+  const txPriority = toBigInt(tx.maxPriorityFeePerGas);
   const maxPriorityFeePerGas = maxBigInt(maxBigInt(suggestedPriority, txPriority), minTip);
 
   // Keep max fee safely above priority and current base fee conditions.
-  const suggestedMaxFee = feeData.maxFeePerGas ?? 0n;
-  const txMaxFee = tx.maxFeePerGas ?? 0n;
-  const baseFromGasPrice = feeData.gasPrice ?? 0n;
+  const suggestedMaxFee = toBigInt(feeData.maxFeePerGas);
+  const txMaxFee = toBigInt(tx.maxFeePerGas);
+  const baseFromGasPrice = toBigInt(feeData.gasPrice);
   const minReasonableMaxFee = (baseFromGasPrice * 2n) + maxPriorityFeePerGas;
   const minMaxFeeVsTip = maxPriorityFeePerGas * 2n;
   const maxFeePerGas = maxBigInt(
