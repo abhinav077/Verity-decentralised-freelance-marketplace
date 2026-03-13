@@ -57,7 +57,7 @@ contract Governance is AccessControl, ReentrancyGuard {
     //  CROWDFUNDING (replaces quadratic funding)
     // ═══════════════════════════════════════════════════════════════════════
 
-    enum CrowdfundStatus { Active, Funded, Failed, Cancelled }
+    enum CrowdfundStatus { Active, Funded, Cancelled }
 
     struct CrowdfundProject {
         uint256 id;
@@ -233,20 +233,17 @@ contract Governance is AccessControl, ReentrancyGuard {
      * @param category    Category (Education, Environment, Tech, Health, etc.)
      * @param proofLink   URL/IPFS link to project proof, team info, milestones etc.
      * @param goalAmount  ETH goal (total amount needed)
-     * @param duration    How long the campaign runs (in seconds)
      */
     function createCrowdfundProject(
         string calldata title,
         string calldata description,
         string calldata category,
         string calldata proofLink,
-        uint256 goalAmount,
-        uint256 duration
+        uint256 goalAmount
     ) external returns (uint256) {
         require(bytes(title).length > 0, "Title required");
         require(bytes(description).length > 0, "Description required");
         require(goalAmount > 0, "Goal must be > 0");
-        require(duration > 0, "Duration must be > 0");
 
         if (vrtToken != address(0)) {
             require(
@@ -265,7 +262,7 @@ contract Governance is AccessControl, ReentrancyGuard {
             proofLink: proofLink,
             goalAmount: goalAmount,
             totalRaised: 0,
-            deadline: block.timestamp + duration,
+            deadline: 0,
             status: CrowdfundStatus.Active,
             createdAt: block.timestamp,
             contributorCount: 0,
@@ -283,7 +280,6 @@ contract Governance is AccessControl, ReentrancyGuard {
         CrowdfundProject storage p = crowdfundProjects[projectId];
         require(p.id != 0, "Project not found");
         require(p.status == CrowdfundStatus.Active, "Not active");
-        require(block.timestamp < p.deadline, "Campaign ended");
         require(msg.value > 0, "Send ETH");
 
         if (crowdfundContributions[projectId][msg.sender] == 0) {
@@ -338,26 +334,17 @@ contract Governance is AccessControl, ReentrancyGuard {
         emit CrowdfundUpdatePosted(projectId, desc);
     }
 
-    /**
-     * @notice Mark project as failed after deadline if goal not reached.
-     *         Contributors can then get refunds.
-     */
     function markProjectFailed(uint256 projectId) external {
-        CrowdfundProject storage p = crowdfundProjects[projectId];
-        require(p.status == CrowdfundStatus.Active, "Not active");
-        require(block.timestamp >= p.deadline, "Still active");
-        require(p.totalRaised < p.goalAmount, "Goal was reached");
-
-        p.status = CrowdfundStatus.Failed;
-        emit CrowdfundProjectFailed(projectId);
+        projectId;
+        revert("Failed status removed");
     }
 
     /**
-     * @notice Contributors can get a refund if project failed.
+      * @notice Contributors can get a refund if project is cancelled.
      */
     function refundContribution(uint256 projectId) external nonReentrant {
         CrowdfundProject storage p = crowdfundProjects[projectId];
-        require(p.status == CrowdfundStatus.Failed || p.status == CrowdfundStatus.Cancelled, "Not refundable");
+          require(p.status == CrowdfundStatus.Cancelled, "Not refundable");
 
         uint256 amount = crowdfundContributions[projectId][msg.sender];
         require(amount > 0, "Nothing to refund");

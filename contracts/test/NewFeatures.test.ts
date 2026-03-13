@@ -518,7 +518,7 @@ describe("New Features Tests", function () {
         .connect(freelancer)
         ["placeBid(uint256,uint256,string)"](1, ETH("1"), "x");
       await jobMarket.connect(client).acceptBid(1, { value: ETH("1") });
-      await jobMarket.connect(freelancer).deliverJob(1);
+      await jobMarket.connect(freelancer).deliverJob(1, "QmDeliveryProof");
       // After 7 days: too early
       await time.increase(7 * 24 * 60 * 60);
       await expect(jobMarket.autoReleasePayment(1)).to.be.revertedWith(
@@ -705,29 +705,24 @@ describe("New Features Tests", function () {
       expect(open[0].description).to.equal("Open A");
     });
 
-    it("sub-contractor submits and gets approved", async () => {
+    it("sub-contractor delivers with proof and gets approved", async () => {
       await subContracting
         .connect(freelancer)
         .createSubContract(1, sub.address, "Work", { value: ETH("0.5") });
-      await subContracting.connect(sub).submitWork(1);
+      await subContracting.connect(sub).deliverWork(1, "QmSubProof");
       const bal0 = await ethers.provider.getBalance(sub.address);
       await subContracting.connect(freelancer).approveWork(1);
       const bal1 = await ethers.provider.getBalance(sub.address);
       expect(bal1 - bal0).to.equal(ETH("0.5"));
     });
 
-    it("cancels active sub-contract and refunds", async () => {
+    it("cannot cancel active sub-contract", async () => {
       await subContracting
         .connect(freelancer)
         .createSubContract(1, sub.address, "Work", { value: ETH("0.5") });
-      const bal0 = await ethers.provider.getBalance(freelancer.address);
-      const tx = await subContracting
-        .connect(freelancer)
-        .cancelSubContract(1);
-      const receipt = await tx.wait();
-      const gasCost = receipt!.gasUsed * receipt!.gasPrice;
-      const bal1 = await ethers.provider.getBalance(freelancer.address);
-      expect(bal1 + gasCost - bal0).to.be.closeTo(ETH("0.5"), ETH("0.001"));
+      await expect(
+        subContracting.connect(freelancer).cancelSubContract(1)
+      ).to.be.revertedWith("Can only cancel when Open");
     });
 
     it("cancels open listing and refunds", async () => {
@@ -744,12 +739,12 @@ describe("New Features Tests", function () {
       expect(bal1 + gasCost - bal0).to.be.closeTo(ETH("0.5"), ETH("0.001"));
     });
 
-    it("only sub-contractor can submit", async () => {
+    it("only sub-contractor can deliver", async () => {
       await subContracting
         .connect(freelancer)
         .createSubContract(1, sub.address, "Work", { value: ETH("0.5") });
       await expect(
-        subContracting.connect(freelancer).submitWork(1)
+        subContracting.connect(freelancer).deliverWork(1, "QmSubProof")
       ).to.be.revertedWith("Not sub");
     });
 
@@ -783,8 +778,7 @@ describe("New Features Tests", function () {
           "Provide clean water to village X",
           "Environment",
           "https://proof.link",
-          ETH("5"),
-          30 * 24 * 60 * 60
+          ETH("5")
         );
       const p = await governance.getCrowdfundProject(1);
       expect(p.title).to.equal("Clean Water");
@@ -802,8 +796,7 @@ describe("New Features Tests", function () {
             "Desc",
             "Cat",
             "link",
-            ETH("1"),
-            3600
+            ETH("1")
           )
       ).to.be.revertedWith("Need >= 5 VRT to propose");
     });
@@ -816,8 +809,7 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("5"),
-          30 * 24 * 60 * 60
+          ETH("5")
         );
       await governance
         .connect(voter1)
@@ -835,8 +827,7 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("2"),
-          30 * 24 * 60 * 60
+          ETH("2")
         );
       await governance
         .connect(voter1)
@@ -853,8 +844,7 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("2"),
-          30 * 24 * 60 * 60
+          ETH("2")
         );
       await governance
         .connect(voter1)
@@ -869,7 +859,7 @@ describe("New Features Tests", function () {
       expect(bal1 + gasCost - bal0).to.be.closeTo(ETH("2"), ETH("0.001"));
     });
 
-    it("mark project failed after deadline", async () => {
+    it("cannot mark project failed (feature removed)", async () => {
       await governance
         .connect(client)
         .createCrowdfundProject(
@@ -877,19 +867,14 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("5"),
-          3600
+          ETH("5")
         );
-      await governance
-        .connect(voter1)
-        .contributeToProject(1, { value: ETH("1") });
-      await time.increase(3601);
-      await governance.markProjectFailed(1);
-      const p = await governance.getCrowdfundProject(1);
-      expect(p.status).to.equal(2); // Failed
+      await expect(governance.markProjectFailed(1)).to.be.revertedWith(
+        "Failed status removed"
+      );
     });
 
-    it("contributor gets refund on failed project", async () => {
+    it("contributor gets refund on cancelled project", async () => {
       await governance
         .connect(client)
         .createCrowdfundProject(
@@ -897,14 +882,12 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("5"),
-          3600
+          ETH("5")
         );
       await governance
         .connect(voter1)
         .contributeToProject(1, { value: ETH("1") });
-      await time.increase(3601);
-      await governance.markProjectFailed(1);
+      await governance.connect(client).cancelCrowdfundProject(1);
       const bal0 = await ethers.provider.getBalance(voter1.address);
       const tx = await governance.connect(voter1).refundContribution(1);
       const receipt = await tx.wait();
@@ -921,15 +904,14 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("5"),
-          30 * 24 * 60 * 60
+          ETH("5")
         );
       await governance
         .connect(voter1)
         .contributeToProject(1, { value: ETH("1") });
       await governance.connect(client).cancelCrowdfundProject(1);
       const p = await governance.getCrowdfundProject(1);
-      expect(p.status).to.equal(3); // Cancelled
+      expect(p.status).to.equal(2); // Cancelled
     });
 
     it("creator posts progress updates", async () => {
@@ -940,8 +922,7 @@ describe("New Features Tests", function () {
           "Desc",
           "Cat",
           "link",
-          ETH("5"),
-          30 * 24 * 60 * 60
+          ETH("5")
         );
       await governance
         .connect(client)

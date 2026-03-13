@@ -1,12 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { ethers, JsonRpcSigner } from "ethers";
-import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, chatKey, chatReadKey, timeRemaining, NATIVE_SYMBOL } from "@/lib/contracts";
+import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, timeRemaining, NATIVE_SYMBOL } from "@/lib/contracts";
 import { extractTransactionError, getExpectedChainId, getExpectedChainLabel, normalizeDecimalInput } from "@/lib/tx";
 import { useTheme } from "@/context/ThemeContext";
 import Link from "next/link";
 import ReviewModal from "@/components/ReviewModal";
 import TaskBoard from "@/components/TaskBoard";
+import IpfsFileUpload from "@/components/IpfsFileUpload";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
 import { Star, ClipboardList, Package, Heart, MessageCircle, Video, Handshake, Users, Lock, AlertTriangle, PenLine, Pencil, Clock, Briefcase, Calendar, X, Trash2 } from "lucide-react";
@@ -18,6 +19,9 @@ interface Job {
   budget: bigint; deadline: bigint; status: number; selectedFreelancer: string;
   acceptedBidId: bigint; createdAt: bigint; deliveredAt: bigint;
   milestoneCount: bigint; sealedBidding: boolean; expectedDays: bigint;
+  deliveryProof?: string;
+  tipGiven?: boolean;
+  revisionRequested?: boolean;
 }
 interface Bid {
   id: bigint; jobId: bigint; freelancer: string; amount: bigint;
@@ -72,6 +76,16 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   // Tip state
   const [showTipForm, setShowTipForm] = useState(false);
   const [tipAmount, setTipAmount] = useState("");
+  const [deliveryProofCid, setDeliveryProofCid] = useState("");
+  const [onChainDeliveryProof, setOnChainDeliveryProof] = useState(job.deliveryProof || "");
+  const [tipGiven, setTipGiven] = useState(Boolean(job.tipGiven));
+  const [revisionRequested, setRevisionRequested] = useState(Boolean(job.revisionRequested));
+
+  useEffect(() => {
+    setOnChainDeliveryProof(job.deliveryProof || "");
+    setTipGiven(Boolean(job.tipGiven));
+    setRevisionRequested(Boolean(job.revisionRequested));
+  }, [job.deliveryProof, job.tipGiven, job.revisionRequested]);
 
   // On-chain configurable params
   const [autoReleasePeriod, setAutoReleasePeriod] = useState<number | null>(null);
@@ -95,7 +109,12 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   useEffect(() => {
     if (!signer) return;
     getJobMarket(signer).getJob(job.id)
-      .then((j: any) => setLiveStatus(Number(j.status)))
+      .then((j: any) => {
+        setLiveStatus(Number(j.status));
+        setOnChainDeliveryProof(j.deliveryProof || "");
+        setTipGiven(Boolean(j.tipGiven));
+        setRevisionRequested(Boolean(j.revisionRequested));
+      })
       .catch(() => {});
     // Load configurable params
     getJobMarket(signer).AUTO_RELEASE_PERIOD()
@@ -245,18 +264,17 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   };
 
   const deliverJob = () => run("Delivering…", async () => {
-    const tx = await getJobMarket(signer!).deliverJob(job.id);
+    const proof = deliveryProofCid.trim();
+    if (!proof) throw new Error("Upload delivery proof before marking as delivered.");
+    const tx = await getJobMarket(signer!).deliverJob(job.id, proof);
     await tx.wait();
+    setDeliveryProofCid("");
+    setRevisionRequested(false);
   });
 
   const completeJob = () => run("Completing job…", async () => {
     const tx = await getJobMarket(signer!).completeJob(job.id);
     await tx.wait();
-    try {
-      localStorage.removeItem(chatKey(job.id));
-      localStorage.removeItem(chatReadKey(job.id, job.client));
-      localStorage.removeItem(chatReadKey(job.id, job.selectedFreelancer));
-    } catch {}
     setShowReview(true);
   });
 
@@ -265,11 +283,6 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     run("Cancelling job…", async () => {
       const tx = await getJobMarket(signer!).cancelJob(job.id);
       await tx.wait();
-      try {
-        localStorage.removeItem(chatKey(job.id));
-        localStorage.removeItem(chatReadKey(job.id, job.client));
-        localStorage.removeItem(chatReadKey(job.id, job.selectedFreelancer));
-      } catch {}
     });
   };
 
@@ -299,6 +312,21 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const requestRevision = () => run("Requesting revision…", async () => {
     const tx = await getJobMarket(signer!).requestRevision(job.id);
     await tx.wait();
+    setRevisionRequested(true);
+  });
+
+  const approveRevisionRequest = () => run("Approving revision…", async () => {
+    const tx = await getJobMarket(signer!).approveRevisionRequest(job.id);
+    await tx.wait();
+    setRevisionRequested(false);
+    setOnChainDeliveryProof("");
+    setLiveStatus(1);
+  });
+
+  const rejectRevisionRequest = () => run("Rejecting revision…", async () => {
+    const tx = await getJobMarket(signer!).rejectRevisionRequest(job.id);
+    await tx.wait();
+    setRevisionRequested(false);
   });
 
   // ─── Settlement ───────────────────────────────────────────────────────────
@@ -340,6 +368,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     const tx = await getJobMarket(signer!).tipFreelancer(job.id, { value: ethers.parseEther(tipAmount) });
     await tx.wait();
     setShowTipForm(false); setTipAmount("");
+    setTipGiven(true);
   });
 
   // ─── Withdraw bid ────────────────────────────────────────────────────────
@@ -578,11 +607,20 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 </div>
               )}
               {isFreelancer && (
-                <button onClick={deliverJob} disabled={!!txLoading}
-                  className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
-                  style={{ background: "#7c3aed", color: "#fff" }}>
-                  {txLoading === "Delivering…" ? "Delivering…" : <><Package size={16} className="inline mr-1" />Mark as Delivered</>}
-                </button>
+                <div className="rounded-xl p-4 border space-y-3" style={{ borderColor: colors.cardBorder }}>
+                  <h4 className="text-sm font-semibold" style={{ color: colors.pageFg }}>Upload Work Before Delivery</h4>
+                  <IpfsFileUpload
+                    label={deliveryProofCid ? "Replace Uploaded Work" : "Upload Delivered Work"}
+                    compact
+                    existingCid={deliveryProofCid || undefined}
+                    onUpload={(cid) => setDeliveryProofCid(cid)}
+                  />
+                  <button onClick={deliverJob} disabled={!!txLoading || !deliveryProofCid}
+                    className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
+                    style={{ background: "#7c3aed", color: "#fff" }}>
+                    {txLoading === "Delivering…" ? "Delivering…" : <><Package size={16} className="inline mr-1" />Mark as Delivered</>}
+                  </button>
+                </div>
               )}
               {isClient && (
                 <button onClick={completeJob} disabled={!!txLoading}
@@ -706,6 +744,14 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 <p className="text-xs mt-1" style={{ color: "#6d28d9" }}>
                   Delivered {formatDate(job.deliveredAt)}. Auto-release in {autoReleasePeriod != null ? timeRemaining(Number(job.deliveredAt) + autoReleasePeriod) : "…"}.
                 </p>
+                {onChainDeliveryProof && (
+                  <p className="text-xs mt-2">
+                    <a href={`https://gateway.pinata.cloud/ipfs/${onChainDeliveryProof}`} target="_blank" rel="noopener noreferrer"
+                      className="underline" style={{ color: "#6d28d9" }}>
+                      View uploaded work proof
+                    </a>
+                  </p>
+                )}
               </div>
 
               {(isClient || isFreelancer) && (
@@ -731,12 +777,36 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     style={{ background: colors.successText, color: "#fff" }}>
                     {txLoading === "Completing job…" ? "Completing…" : "✓ Approve & Release Payment"}
                   </button>
-                  <button onClick={requestRevision} disabled={!!txLoading}
-                    className="w-full border rounded-lg py-2 text-sm disabled:opacity-60"
-                    style={{ borderColor: "#7c3aed55", color: "#7c3aed" }}>
-                    {txLoading === "Requesting revision…" ? "Requesting…" : <><Pencil size={14} className="inline mr-1" />Request Revision</>}
-                  </button>
+                  {!revisionRequested ? (
+                    <button onClick={requestRevision} disabled={!!txLoading}
+                      className="w-full border rounded-lg py-2 text-sm disabled:opacity-60"
+                      style={{ borderColor: "#7c3aed55", color: "#7c3aed" }}>
+                      {txLoading === "Requesting revision…" ? "Requesting…" : <><Pencil size={14} className="inline mr-1" />Request Revision</>}
+                    </button>
+                  ) : (
+                    <div className="rounded-lg p-3 text-xs border" style={{ background: colors.warningBg, borderColor: colors.warningText + "44", color: colors.warningText }}>
+                      Revision requested. Waiting for freelancer response.
+                    </div>
+                  )}
                 </>
+              )}
+
+              {isFreelancer && revisionRequested && (
+                <div className="rounded-xl p-4 border space-y-2" style={{ borderColor: colors.cardBorder }}>
+                  <p className="text-sm font-medium" style={{ color: colors.pageFg }}>Client requested a revision</p>
+                  <div className="flex gap-2">
+                    <button onClick={approveRevisionRequest} disabled={!!txLoading}
+                      className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
+                      style={{ background: colors.successText, color: "#fff" }}>
+                      {txLoading === "Approving revision…" ? "Approving…" : "Accept Revision"}
+                    </button>
+                    <button onClick={rejectRevisionRequest} disabled={!!txLoading}
+                      className="flex-1 border rounded-lg py-2 text-sm disabled:opacity-60"
+                      style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
+                      {txLoading === "Rejecting revision…" ? "Rejecting…" : "Reject Revision"}
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* Settlement — both parties can propose or respond */}
@@ -955,8 +1025,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   Payment has been released to the freelancer.
                 </p>
               </div>
+              <Link href={`/chat/${job.id.toString()}`}
+                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
+                <MessageCircle size={16} /> Open Chat
+              </Link>
               {/* Tip freelancer (client only) */}
-              {isClient && (
+              {isClient && !tipGiven && (
                 showTipForm ? (
                   <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
                     <h4 className="font-semibold flex items-center gap-1.5" style={{ color: colors.pageFg }}><Heart size={16} /> Send a Tip</h4>

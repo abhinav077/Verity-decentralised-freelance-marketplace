@@ -1,6 +1,6 @@
 "use client";
 import { useWallet } from "@/context/WalletContext";
-import { useNotifications, NotifType } from "@/context/NotificationsContext";
+import { useNotifications, NotifType, AppNotification } from "@/context/NotificationsContext";
 import { useTheme, THEME_NAMES, THEME_META, ThemeName } from "@/context/ThemeContext";
 import { shortenAddress, getVRTToken, getEscrow, chatKey, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
 import { useEffect, useCallback, useState, useRef } from "react";
@@ -26,6 +26,7 @@ import {
   Rocket,
   ScrollText,
   Search,
+  Plus,
   Star,
   Stars,
   Sun,
@@ -159,7 +160,12 @@ export default function Navbar() {
   const wrongNetwork = chainId !== null && chainId !== expectedChainId;
 
   /* Shared island height for visual consistency */
-  const islandStyle: React.CSSProperties = { overflow: 'visible', minHeight: 44 };
+  const islandHeight = 58;
+  const islandStyle: React.CSSProperties = {
+    overflow: "visible",
+    display: "flex",
+    alignItems: "stretch",
+  };
 
   /* dropdown panel style – stronger glass for readability */
   const dropdown: React.CSSProperties = {
@@ -183,6 +189,26 @@ export default function Navbar() {
     return colors.primaryFg;
   };
 
+  const handleNotificationOpen = useCallback((n: AppNotification) => {
+    if (n.type === "chat" && address) {
+      try {
+        const msgs: unknown[] = JSON.parse(
+          localStorage.getItem(chatKey(n.jobId)) || "[]"
+        );
+        localStorage.setItem(
+          chatReadKey(n.jobId, address),
+          String(msgs.length)
+        );
+      } catch { /* ignore */ }
+      refresh();
+    } else if (n.type !== "dispute") {
+      dismiss(n.id);
+    }
+
+    closeAll();
+    router.push(n.link);
+  }, [address, closeAll, dismiss, refresh, router]);
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 pointer-events-none" style={{ fontFamily: "var(--font-mono-alt), var(--font-geist-mono), monospace" }}>
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 pt-3 flex items-center justify-between gap-2 sm:gap-2.5">
@@ -191,15 +217,17 @@ export default function Navbar() {
         <GlassSurface
           isDark={dk}
           width="auto"
-          height="auto"
+          height={islandHeight}
           borderRadius={18}
           className="shrink-0 pointer-events-auto transition-transform hover:scale-[1.03] active:scale-[0.98]"
           style={islandStyle}
         >
-          <Link href="/" className="flex items-center gap-2 px-3 sm:px-4 py-2">
-            <Image src="/logo.svg" alt="Verity" width={32} height={32} className="w-8 h-8" />
-            <span className="hidden md:block font-black text-base leading-none tracking-tight" style={{ color: colors.pageFg }}>VERITY</span>
-          </Link>
+          <div className="flex h-full items-stretch px-1.5">
+            <Link href="/" className="flex h-full items-center gap-2 rounded-xl px-3 sm:px-4">
+              <Image src="/logo.svg" alt="Verity" width={28} height={28} className="w-7 h-7" />
+              <span className="hidden md:block font-black text-base leading-none tracking-tight" style={{ color: colors.pageFg }}>VERITY</span>
+            </Link>
+          </div>
         </GlassSurface>
 
         {/* Center nav island */}
@@ -207,15 +235,15 @@ export default function Navbar() {
         <GlassSurface
           isDark={dk}
           width="auto"
-          height="auto"
+          height={islandHeight}
           borderRadius={18}
           style={islandStyle}
         >
-        <div className="flex items-center gap-0.5 px-1.5 py-1.5">
+        <div className="flex h-full items-stretch gap-0.5 px-1.5">
           {/* Find Work dropdown */}
           <div className="relative" ref={findWorkRef}>
             <button onClick={() => { const v = !findWorkOpen; closeAll(); if (v) setFindWorkOpen(true); }}
-              className="flex items-center gap-1 px-4 py-2 text-sm font-extrabold rounded-lg transition-colors tracking-wide uppercase"
+              className="flex h-full items-center gap-1 px-4 text-sm font-extrabold rounded-lg transition-colors tracking-wide uppercase"
               style={{ color: findWorkOpen ? colors.primaryFg : colors.navText, background: findWorkOpen ? colors.primaryLight : "transparent" }}>
               Find Work
               <svg className={`w-3 h-3 transition-transform ${findWorkOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -237,7 +265,7 @@ export default function Navbar() {
 
           {/* Disputes */}
           <Link href="/disputes"
-            className="px-4 py-2 text-sm font-extrabold rounded-lg transition-colors tracking-wide uppercase"
+            className="flex h-full items-center px-4 text-sm font-extrabold rounded-lg transition-colors tracking-wide uppercase"
             style={{ color: pathname.startsWith("/disputes") ? colors.primaryFg : colors.navText,
                      background: pathname.startsWith("/disputes") ? colors.primaryLight : "transparent" }}>
             Disputes
@@ -246,7 +274,7 @@ export default function Navbar() {
           {/* Other dropdown */}
           <div className="relative" ref={otherRef}>
             <button onClick={() => { const v = !otherOpen; closeAll(); if (v) setOtherOpen(true); }}
-              className="flex items-center gap-1 px-4 py-2 text-sm font-extrabold rounded-lg transition-colors tracking-wide uppercase"
+              className="flex h-full items-center gap-1 px-4 text-sm font-extrabold rounded-lg transition-colors tracking-wide uppercase"
               style={{ color: otherOpen ? colors.primaryFg : colors.navText, background: otherOpen ? colors.primaryLight : "transparent" }}>
               Other
               <svg className={`w-3 h-3 transition-transform ${otherOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -270,55 +298,72 @@ export default function Navbar() {
         </div>
 
         {/* Right side – separate islands */}
-        <div className="flex min-w-0 items-center gap-2 pointer-events-auto">
+        <div className="flex min-w-0 items-stretch gap-2 pointer-events-auto">
 
-          {/* Post a Job island */}
+          {/* Post a Job action (single control, responsive content) */}
           {address && (
             <GlassSurface
               isDark={dk}
               width="auto"
-              height="auto"
+              height={islandHeight}
               borderRadius={18}
-              className="hidden lg:block shrink-0 pointer-events-auto transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              className="shrink-0 pointer-events-auto transition-transform hover:scale-[1.03] active:scale-[0.98]"
               style={islandStyle}
             >
-              <div className="px-1.5 py-1.5">
+              <div className="flex h-full items-stretch px-1.5">
                 <button
                   onClick={() => router.push("/jobs?create=true")}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-extrabold tracking-wide uppercase transition-colors whitespace-nowrap"
-                  style={{ color: colors.primaryFg }}
+                  className="flex h-full items-center justify-center rounded-xl transition-colors px-3 xl:px-4"
+                  style={{ color: colors.primaryFg, background: "transparent" }}
+                  aria-label="Post a Job"
+                  title="Post a Job"
                 >
-                  + Post a Job
+                  <span className="flex items-center xl:hidden"><Plus className="w-4 h-4" /></span>
+                  <span className="hidden xl:inline text-sm font-extrabold tracking-wide uppercase whitespace-nowrap">Post a Job +</span>
                 </button>
               </div>
             </GlassSurface>
           )}
 
           {wrongNetwork && (
-            <button
-              onClick={switchToExpectedChain}
-              className="text-xs px-2.5 py-1 rounded-full font-medium hidden md:block cursor-pointer hover:opacity-80 transition-opacity"
-              style={{ background: colors.dangerBg, color: colors.dangerText }}
-              title="Click to switch network"
-            >
-              Wrong Network — Switch
-            </button>
+            <div className="hidden md:flex">
+              <GlassSurface
+                isDark={dk}
+                width="auto"
+                height={islandHeight}
+                borderRadius={18}
+                className="shrink-0"
+                style={islandStyle}
+              >
+                <div className="flex h-full items-stretch px-1.5">
+                  <button
+                    onClick={switchToExpectedChain}
+                    className="flex h-full items-center rounded-xl px-3 text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ background: colors.dangerBg, color: colors.dangerText }}
+                    title="Click to switch network"
+                  >
+                    Wrong Network — Switch
+                  </button>
+                </div>
+              </GlassSurface>
+            </div>
           )}
 
           {/* Theme + Bell island */}
+          <div className="hidden md:flex">
           <GlassSurface
             isDark={dk}
             width="auto"
-            height="auto"
+            height={islandHeight}
             borderRadius={18}
             style={islandStyle}
           >
-          <div className="flex items-center gap-0.5 px-1.5 py-1.5">
+          <div className="flex h-full items-stretch gap-0.5 px-1.5">
             {/* Theme picker */}
             <div className="relative" ref={themeRef}>
               <button
                 onClick={() => { const v = !themeOpen; closeAll(); if (v) setThemeOpen(true); }}
-                className="p-2 rounded-xl transition-colors"
+                className="flex h-full items-center justify-center rounded-xl px-2.5 transition-colors"
                 style={{ color: themeOpen ? colors.primaryFg : iconNeutral, background: themeOpen ? colors.primaryLight : "transparent" }}
                 aria-label="Change theme"
               >
@@ -359,7 +404,7 @@ export default function Navbar() {
               <div className="relative" ref={bellRef}>
                 <button
                   onClick={() => { const v = !bellOpen; closeAll(); if (v) setBellOpen(true); }}
-                  className="relative p-2 rounded-xl transition-colors"
+                  className="relative flex h-full items-center justify-center rounded-xl px-2.5 transition-colors"
                   style={{ color: bellOpen ? colors.primaryFg : iconNeutral, background: bellOpen ? colors.primaryLight : "transparent" }}
                   aria-label="Notifications"
                 >
@@ -392,26 +437,7 @@ export default function Navbar() {
                         {notifications.map((n) => (
                           <div key={n.id} className="flex items-start gap-1 transition-colors">
                             <button
-                              onClick={() => {
-                                if (n.type === "chat" && address) {
-                                  try {
-                                    const msgs: unknown[] = JSON.parse(
-                                      localStorage.getItem(chatKey(n.jobId)) || "[]"
-                                    );
-                                    localStorage.setItem(
-                                      chatReadKey(n.jobId, address),
-                                      String(msgs.length)
-                                    );
-                                  } catch { /* ignore */ }
-                                  refresh();
-                                } else if (n.type === "dispute") {
-                                  // no-op
-                                } else {
-                                  dismiss(n.id);
-                                }
-                                setBellOpen(false);
-                                router.push(n.link);
-                              }}
+                              onClick={() => handleNotificationOpen(n)}
                               className="flex-1 text-left px-4 py-3 flex items-start gap-3"
                             >
                               {(() => {
@@ -438,6 +464,7 @@ export default function Navbar() {
             )}
           </div>
           </GlassSurface>
+          </div>
 
           {/* Profile / Connect island */}
           {address ? (
@@ -445,13 +472,13 @@ export default function Navbar() {
             <GlassSurface
               isDark={dk}
               width="auto"
-              height="auto"
+              height={islandHeight}
               borderRadius={18}
               style={islandStyle}
             >
-              <div className="px-1.5 py-1.5">
+              <div className="flex h-full items-stretch px-1.5">
               <button onClick={() => { const v = !profileOpen; closeAll(); if (v) setProfileOpen(true); }}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-xl transition-colors"
+                className="flex h-full items-center gap-2 px-2 rounded-xl transition-colors"
                 style={{ color: colors.navText, background: profileOpen ? colors.primaryLight : "transparent" }}>
                 <WalletAvatar address={address} size={22} />
                 <span className="text-sm font-extrabold font-mono hidden lg:block whitespace-nowrap">{shortenAddress(address)}</span>
@@ -499,14 +526,14 @@ export default function Navbar() {
             <GlassSurface
               isDark={dk}
               width="auto"
-              height="auto"
+              height={islandHeight}
               borderRadius={18}
               className="shrink-0 pointer-events-auto transition-transform hover:scale-[1.03] active:scale-[0.98]"
               style={islandStyle}
             >
-              <div className="px-1.5 py-1.5">
+              <div className="flex h-full items-stretch px-1.5">
                 <button onClick={connect} disabled={connecting}
-                  className="text-xs sm:text-sm font-extrabold tracking-wide uppercase px-3 sm:px-4 py-1.5 transition-all disabled:opacity-60 whitespace-nowrap"
+                  className="flex h-full items-center text-xs sm:text-sm font-extrabold tracking-wide uppercase px-3 sm:px-4 rounded-xl transition-all disabled:opacity-60 whitespace-nowrap"
                   style={{ color: colors.primaryFg }}>
                   <span className="sm:hidden">{connecting ? "Connecting…" : "Connect"}</span>
                   <span className="hidden sm:inline">{connecting ? "Connecting…" : "Connect Wallet"}</span>
@@ -520,12 +547,12 @@ export default function Navbar() {
             <GlassSurface
               isDark={dk}
               width="auto"
-              height="auto"
+              height={islandHeight}
               borderRadius={18}
               style={islandStyle}
             >
             <button onClick={() => { const v = !mobileOpen; closeAll(); if (v) setMobileOpen(true); }}
-              className="p-2 rounded-xl transition-colors"
+              className="flex h-full items-center justify-center rounded-xl px-2.5 transition-colors"
               style={{ color: mobileOpen ? colors.primaryFg : iconSubtle }}
               aria-label="Menu">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -536,7 +563,7 @@ export default function Navbar() {
             </button>
             </GlassSurface>
             {mobileOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 py-1.5 z-50" style={dropdown}>
+              <div className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] py-1.5 z-50 max-h-[72vh] overflow-y-auto" style={dropdown}>
                 {wrongNetwork && (
                   <>
                     <button
@@ -566,6 +593,78 @@ export default function Navbar() {
                     <item.icon className="w-4 h-4" />{item.label}
                   </Link>
                 ))}
+                <div className="my-1 mx-2 border-t" style={{ borderColor: colors.divider }} />
+                <div className="px-3 py-2">
+                  <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: colors.mutedFg }}>Theme</p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5">
+                    {THEME_NAMES.map(t => {
+                      const ThemeIcon = THEME_ICONS[t];
+                      const active = theme === t;
+                      return (
+                        <button
+                          key={t}
+                          onClick={() => { setTheme(t); setMobileOpen(false); }}
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
+                          style={{
+                            background: active ? colors.primaryLight : "transparent",
+                            color: active ? colors.primaryFg : colors.navText,
+                            fontWeight: active ? 600 : 500,
+                          }}
+                        >
+                          <ThemeIcon className="w-4 h-4 shrink-0" />
+                          <span className="truncate">{THEME_META[t].label}</span>
+                          {active && <Check className="ml-auto w-3.5 h-3.5 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {address && (
+                  <>
+                    <div className="my-1 mx-2 border-t" style={{ borderColor: colors.divider }} />
+                    <div className="px-3 py-2">
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: colors.mutedFg }}>Notifications</p>
+                        {totalCount > 0 && (
+                          <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: colors.dangerBg, color: colors.dangerText }}>
+                            {totalCount} new
+                          </span>
+                        )}
+                      </div>
+                      {notifications.length === 0 ? (
+                        <p className="px-1 pt-2 text-sm" style={{ color: colors.mutedFg }}>You&apos;re all caught up!</p>
+                      ) : (
+                        <div className="mt-2 space-y-1.5">
+                          {notifications.map((n) => {
+                            const NotifIcon = NOTIF_ICONS[n.type];
+                            return (
+                              <div key={`mobile-${n.id}`} className="flex items-start gap-1">
+                                <button
+                                  onClick={() => handleNotificationOpen(n)}
+                                  className="flex-1 rounded-lg px-3 py-2 text-left transition-colors"
+                                  style={{ background: colors.primaryLight }}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <NotifIcon className="mt-0.5 h-4 w-4 shrink-0" style={{ color: notifIconColor(n.type) }} />
+                                    <p className="text-xs leading-relaxed" style={{ color: colors.pageFg }}>{n.message}</p>
+                                  </div>
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
+                                  className="shrink-0 rounded-lg p-2 transition-colors"
+                                  style={{ color: colors.mutedFg }}
+                                  aria-label="Dismiss notification"
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

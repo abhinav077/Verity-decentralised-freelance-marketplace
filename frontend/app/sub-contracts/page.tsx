@@ -12,10 +12,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/reactbits/Input";
 import { Label } from "@/components/reactbits/Label";
+import IpfsFileUpload from "@/components/IpfsFileUpload";
 import {
   Package, ClipboardList, Link as LinkIcon, Send, CheckCircle2,
   RotateCcw, Clock, Handshake, AlertTriangle, X,
-  MessageCircle, Video,
+  MessageCircle, Video, Heart, Briefcase,
 } from "lucide-react";
 import TaskBoard from "@/components/TaskBoard";
 
@@ -34,6 +35,7 @@ function SubContractsInner() {
   const [busy, setBusy] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [createEntryError, setCreateEntryError] = useState<string | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
 
   // Bids & settlements loaded per card
   const [scBids, setScBids] = useState<Record<string, any[]>>({});
@@ -61,6 +63,9 @@ function SubContractsInner() {
 
   // Task board state
   const [showTaskBoard, setShowTaskBoard] = useState<string | null>(null);
+  const [deliveryProofDraft, setDeliveryProofDraft] = useState<Record<string, string>>({});
+  const [tipOpenBySc, setTipOpenBySc] = useState<Record<string, boolean>>({});
+  const [tipAmtBySc, setTipAmtBySc] = useState<Record<string, string>>({});
 
   // Categories (same as job posting)
   const CATEGORIES = [
@@ -253,8 +258,15 @@ function SubContractsInner() {
   };
 
   const handleDeliver = (scId: bigint) => run(`deliver-${scId}`, async () => {
-    const tx = await getSubContracting(signer!).deliverWork(scId);
+    const proof = (deliveryProofDraft[scId.toString()] || "").trim();
+    if (!proof) throw new Error("Upload work proof before marking as delivered.");
+    const tx = await getSubContracting(signer!).deliverWork(scId, proof);
     await tx.wait();
+    setDeliveryProofDraft((prev) => {
+      const next = { ...prev };
+      delete next[scId.toString()];
+      return next;
+    });
   });
 
   const handleApprove = (scId: bigint) => run(`approve-${scId}`, async () => {
@@ -264,6 +276,16 @@ function SubContractsInner() {
 
   const handleRevision = (scId: bigint) => run(`rev-${scId}`, async () => {
     const tx = await getSubContracting(signer!).requestRevision(scId);
+    await tx.wait();
+  });
+
+  const handleApproveRevision = (scId: bigint) => run(`rev-approve-${scId}`, async () => {
+    const tx = await getSubContracting(signer!).approveRevisionRequest(scId);
+    await tx.wait();
+  });
+
+  const handleRejectRevision = (scId: bigint) => run(`rev-reject-${scId}`, async () => {
+    const tx = await getSubContracting(signer!).rejectRevisionRequest(scId);
     await tx.wait();
   });
 
@@ -294,6 +316,18 @@ function SubContractsInner() {
     run(`setresp-${scId}`, async () => {
       const tx = await getSubContracting(signer!).respondToSettlement(scId, accept);
       await tx.wait();
+    });
+  };
+
+  const handleTipSubContractor = (scId: bigint) => {
+    const key = scId.toString();
+    run(`tip-${key}`, async () => {
+      const tipAmt = (tipAmtBySc[key] || "").trim();
+      if (!tipAmt) throw new Error(`Enter a tip amount in ${NATIVE_SYMBOL}.`);
+      const tx = await getSubContracting(signer!).tipSubContractor(scId, { value: ethers.parseEther(tipAmt) });
+      await tx.wait();
+      setTipOpenBySc((prev) => ({ ...prev, [key]: false }));
+      setTipAmtBySc((prev) => ({ ...prev, [key]: "" }));
     });
   };
 
@@ -328,7 +362,7 @@ function SubContractsInner() {
 
   /* ── Card renderer ──────────────────────────────────────────────────── */
 
-  const renderCard = (s: any) => {
+  const renderCard = (s: any, inModal = false) => {
     const status = Number(s.status);
     const isPrimary = address?.toLowerCase() === s.primaryFreelancer.toLowerCase();
     const isSub = address?.toLowerCase() === s.subContractor?.toLowerCase();
@@ -354,6 +388,77 @@ function SubContractsInner() {
     const cardTitle = metaParts[0] || `Sub-contract #${scKey}`;
     const cardCategory = metaParts[1] && !metaParts[1].startsWith("Deadline:") ? metaParts[1] : "";
     const cardDesc = bodyLines.join("\n").trim() || rawDescription;
+    const deadlineMeta = metaParts.find((p: string) => p.startsWith("Deadline:")) || "Deadline: —";
+    const expectedMeta = metaParts.find((p: string) => p.startsWith("Expected:")) || "Expected: —";
+
+    if (!inModal) {
+      const statusDotColor: Record<number, string> = {
+        0: "#16A34A", 1: "#3B82F6", 2: "#7C3AED", 3: "#64748B", 4: "#D97706", 5: "#DC2626",
+      };
+
+      return (
+        <div
+          key={scKey}
+          className="rounded-xl p-5 border flex flex-col justify-between transition-shadow hover:shadow-lg"
+          style={{ background: colors.cardBg, borderColor: colors.cardBorder }}
+        >
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {cardCategory && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+                    style={{ background: colors.primary, color: colors.primaryText }}>
+                    {cardCategory}
+                  </span>
+                )}
+                <span className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: statusDotColor[status] || colors.mutedFg }}>
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: statusDotColor[status] || colors.mutedFg }} />
+                  {SUB_CONTRACT_STATUS[status] || "Unknown"}
+                </span>
+              </div>
+              <span className="text-base font-bold shrink-0" style={{ color: colors.successText }}>
+                {formatEth(s.payment)} {NATIVE_SYMBOL}
+              </span>
+            </div>
+
+            <h3 className="font-semibold text-lg leading-tight line-clamp-2 mb-2" style={{ color: colors.pageFg }}>
+              {cardTitle}
+            </h3>
+            <p className="text-xs mb-3" style={{ color: colors.mutedFg }}>
+              SC #{scKey} • {jobTitles[s.parentJobId.toString()] || `Job #${s.parentJobId.toString()}`}
+            </p>
+            {cardDesc && (
+              <p className="text-sm line-clamp-2 mb-4" style={{ color: colors.pageFg }}>
+                {cardDesc}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3 text-xs" style={{ color: colors.mutedFg }}>
+              <span className="flex items-center gap-1"><Clock size={12} /> Posted {formatDate(s.createdAt)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {isOpen && !isPrimary && address && !myBid && (
+                <button
+                  onClick={() => { setSelectedDetail(s); setBidOpen(scKey); }}
+                  className="px-4 py-1.5 text-xs font-semibold rounded-lg btn-hover"
+                  style={{ background: colors.primary, color: colors.primaryText }}>
+                  Place a Bid
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedDetail(s)}
+                className="px-4 py-1.5 text-xs font-semibold rounded-lg btn-hover"
+                style={{ background: colors.pageFg, color: colors.pageBg }}>
+                View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div key={scKey} className="rounded-2xl border p-5 card-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
@@ -369,7 +474,7 @@ function SubContractsInner() {
                 </span>
               )}
             </div>
-            <h3 className="text-base font-bold mt-1" style={{ color: colors.pageFg }}>{cardTitle}</h3>
+            <h3 className="text-2xl font-bold mt-1" style={{ color: colors.pageFg }}>{cardTitle}</h3>
             <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
               SC #{scKey} — {jobTitles[s.parentJobId.toString()] || `Job #${s.parentJobId.toString()}`}
               {" · "}Posted by{" "}
@@ -391,7 +496,27 @@ function SubContractsInner() {
           </div>
         </div>
 
-            {cardDesc && <p className="text-sm mb-3 leading-relaxed" style={{ color: colors.pageFg }}>{cardDesc}</p>}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="rounded-xl px-4 py-3" style={{ background: colors.primaryLight }}>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Reward</p>
+            <p className="font-mono font-bold" style={{ color: colors.primaryFg }}>{formatEth(s.payment)} {NATIVE_SYMBOL}</p>
+          </div>
+          <div className="rounded-xl px-4 py-3" style={{ background: colors.surfaceBg }}>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Deadline</p>
+            <p className="font-bold text-sm" style={{ color: colors.pageFg }}>{deadlineMeta.replace("Deadline:", "").trim() || "—"}</p>
+          </div>
+          <div className="rounded-xl px-4 py-3" style={{ background: colors.surfaceBg }}>
+            <p className="text-xs" style={{ color: colors.mutedFg }}>Expected</p>
+            <p className="font-bold text-sm" style={{ color: colors.pageFg }}>{expectedMeta.replace("Expected:", "").trim() || "—"}</p>
+          </div>
+        </div>
+
+            {cardDesc && (
+              <div className="mb-3">
+                <h4 className="text-sm font-semibold mb-1" style={{ color: colors.pageFg }}>Sub-Contract Description</h4>
+                <p className="text-sm leading-relaxed" style={{ color: colors.pageFg }}>{cardDesc}</p>
+              </div>
+            )}
 
         {/* Actions area */}
         <div className="space-y-2 pt-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
@@ -495,18 +620,20 @@ function SubContractsInner() {
                 <ClipboardList size={16} /> Task Board
               </button>
               {isSub && (
-                <button onClick={() => handleDeliver(s.id)} disabled={!!busy}
-                  className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
-                  style={{ background: "#7c3aed", color: "#fff" }}>
-                  {busy === `deliver-${s.id}` ? "Delivering…" : <><Package size={16} className="inline mr-1" />Mark as Delivered</>}
-                </button>
-              )}
-              {isPrimary && (
-                <button onClick={() => handleApprove(s.id)} disabled={!!busy}
-                  className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
-                  style={{ background: colors.successText, color: "#fff" }}>
-                  {busy === `approve-${s.id}` ? "Completing…" : "✓ Mark as Complete & Release Payment"}
-                </button>
+                <div className="rounded-xl p-4 border space-y-3" style={{ borderColor: colors.cardBorder }}>
+                  <h4 className="text-sm font-semibold" style={{ color: colors.pageFg }}>Upload Work Before Delivery</h4>
+                  <IpfsFileUpload
+                    compact
+                    label={(deliveryProofDraft[scKey] || "") ? "Replace Uploaded Work" : "Upload Delivered Work"}
+                    existingCid={deliveryProofDraft[scKey] || undefined}
+                    onUpload={(cid) => setDeliveryProofDraft((prev) => ({ ...prev, [scKey]: cid }))}
+                  />
+                  <button onClick={() => handleDeliver(s.id)} disabled={!!busy || !(deliveryProofDraft[scKey] || "").trim()}
+                    className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
+                    style={{ background: "#7c3aed", color: "#fff" }}>
+                    {busy === `deliver-${s.id}` ? "Delivering…" : <><Package size={16} className="inline mr-1" />Mark as Delivered</>}
+                  </button>
+                </div>
               )}
               {/* Settlement */}
               {settlement ? (
@@ -564,6 +691,13 @@ function SubContractsInner() {
           {/* ── DELIVERED (status 2): Full lifecycle ── */}
           {status === 2 && isParty && (
             <div className="space-y-2">
+              {s.deliveryProof && (
+                <a href={`https://gateway.pinata.cloud/ipfs/${s.deliveryProof}`} target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center border rounded-lg py-2 text-sm"
+                  style={{ borderColor: colors.primary + "33", color: colors.primaryFg }}>
+                  <LinkIcon size={14} className="mr-1" />View Uploaded Work Proof
+                </a>
+              )}
               <Link href={`/chat/sc-${scKey}`}
                 className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                 style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
@@ -581,10 +715,31 @@ function SubContractsInner() {
                     style={{ background: colors.successText, color: "#fff" }}>
                     {busy === `approve-${s.id}` ? "…" : <><CheckCircle2 size={14} className="inline mr-1" />Approve &amp; Release Payment</>}
                   </button>
-                  <button onClick={() => handleRevision(s.id)} disabled={!!busy}
-                    className="flex-1 rounded-lg py-2.5 text-sm font-medium border disabled:opacity-60 btn-outline-hover"
-                    style={{ borderColor: colors.cardBorder, color: colors.pageFg }}>
-                    {busy === `rev-${s.id}` ? "…" : <><RotateCcw size={14} className="inline mr-1" />Request Revision</>}
+                  {!s.revisionRequested ? (
+                    <button onClick={() => handleRevision(s.id)} disabled={!!busy}
+                      className="flex-1 rounded-lg py-2.5 text-sm font-medium border disabled:opacity-60 btn-outline-hover"
+                      style={{ borderColor: colors.cardBorder, color: colors.pageFg }}>
+                      {busy === `rev-${s.id}` ? "…" : <><RotateCcw size={14} className="inline mr-1" />Request Revision</>}
+                    </button>
+                  ) : (
+                    <div className="flex-1 rounded-lg py-2.5 text-sm border text-center"
+                      style={{ borderColor: colors.warningText + "44", color: colors.warningText, background: colors.warningBg }}>
+                      Waiting for revision response
+                    </div>
+                  )}
+                </div>
+              )}
+              {isSub && s.revisionRequested && (
+                <div className="flex gap-2">
+                  <button onClick={() => handleApproveRevision(s.id)} disabled={!!busy}
+                    className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
+                    style={{ background: colors.successText, color: "#fff" }}>
+                    {busy === `rev-approve-${s.id}` ? "…" : "Accept Revision"}
+                  </button>
+                  <button onClick={() => handleRejectRevision(s.id)} disabled={!!busy}
+                    className="flex-1 border rounded-lg py-2 text-sm disabled:opacity-60"
+                    style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
+                    {busy === `rev-reject-${s.id}` ? "…" : "Reject Revision"}
                   </button>
                 </div>
               )}
@@ -678,9 +833,63 @@ function SubContractsInner() {
 
           {/* ── COMPLETED summary ── */}
           {status === 3 && (
-            <p className="text-xs flex items-center gap-1" style={{ color: colors.successText }}>
-              <CheckCircle2 size={14} /> Completed {s.completedAt ? formatDate(s.completedAt) : ""}
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs flex items-center gap-1" style={{ color: colors.successText }}>
+                <CheckCircle2 size={14} /> Completed {s.completedAt ? formatDate(s.completedAt) : ""}
+              </p>
+              {isParty && (
+                <Link href={`/chat/sc-${scKey}`}
+                  className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                  style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
+                  <MessageCircle size={16} /> Open Chat
+                </Link>
+              )}
+              {isPrimary && !s.tipGiven && (
+                tipOpenBySc[scKey] ? (
+                  <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: colors.cardBorder }}>
+                    <h4 className="font-semibold text-sm flex items-center gap-1.5" style={{ color: colors.pageFg }}>
+                      <Heart size={15} /> Send a Tip
+                    </h4>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      min="0.001"
+                      placeholder={`Tip amount in ${NATIVE_SYMBOL}`}
+                      value={tipAmtBySc[scKey] || ""}
+                      onChange={(e) => setTipAmtBySc((prev) => ({ ...prev, [scKey]: e.target.value }))}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setTipOpenBySc((prev) => ({ ...prev, [scKey]: false }));
+                          setTipAmtBySc((prev) => ({ ...prev, [scKey]: "" }));
+                        }}
+                        className="flex-1 border rounded-lg py-2 text-sm"
+                        style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleTipSubContractor(s.id)}
+                        disabled={!!busy || !(tipAmtBySc[scKey] || "").trim()}
+                        className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
+                        style={{ background: colors.primary, color: colors.primaryText }}
+                      >
+                        {busy === `tip-${scKey}` ? "Sending…" : "Send Tip"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setTipOpenBySc((prev) => ({ ...prev, [scKey]: true }))}
+                    className="w-full border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                    style={{ borderColor: colors.primary + "55", color: colors.primaryFg }}
+                  >
+                    <Heart size={15} className="inline mr-1" />Tip Sub-Contractor
+                  </button>
+                )
+              )}
+            </div>
           )}
         </div>
 
@@ -742,7 +951,7 @@ function SubContractsInner() {
                   <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create one from an in-progress job as the assigned freelancer</p>
                 </div>
               ) : (
-                <div className="space-y-3">{openSubs.map(s => renderCard(s))}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{openSubs.map(s => renderCard(s))}</div>
               )
             )}
             {tab === "mine" && (
@@ -753,7 +962,7 @@ function SubContractsInner() {
                   <p className="text-sm mt-1" style={{ color: colors.mutedFg }}>Create or bid on one to get started</p>
                 </div>
               ) : (
-                <div className="space-y-3">{mySubs.map(s => renderCard(s))}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{mySubs.map(s => renderCard(s))}</div>
               )
             )}
           </>
@@ -840,6 +1049,30 @@ function SubContractsInner() {
                 </button>
               </div>
             </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedDetail && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelectedDetail(null)}>
+          <div
+            className="w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto p-5"
+            style={{ background: colors.cardBg }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-1 pb-4 mb-4" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: colors.primary }}>
+                  <Briefcase size={16} style={{ color: colors.primaryText }} />
+                </span>
+                <span className="text-sm font-semibold" style={{ color: colors.pageFg }}>Sub-Contract Details</span>
+              </div>
+              <button onClick={() => setSelectedDetail(null)} className="p-1 rounded-md hover:bg-black/5" style={{ color: colors.mutedFg }}><X size={18} /></button>
+            </div>
+            {renderCard(selectedDetail, true)}
+            <div className="flex justify-end pt-4 mt-4" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
+              <button onClick={() => setSelectedDetail(null)} className="px-4 py-2 text-sm font-medium" style={{ color: colors.mutedFg }}>Close</button>
             </div>
           </div>
         </div>

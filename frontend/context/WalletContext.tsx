@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { BrowserProvider, JsonRpcSigner } from "ethers";
+import { patchSignerWithFeeFloor } from "@/lib/tx";
 
 interface WalletState {
   address: string | null;
@@ -38,7 +39,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try {
       const _provider = new BrowserProvider(window.ethereum);
       await _provider.send("eth_requestAccounts", []);
-      const _signer = await _provider.getSigner();
+      const rawSigner = await _provider.getSigner();
+      const _signer = patchSignerWithFeeFloor(rawSigner, _provider);
       const _address = await _signer.getAddress();
       const network = await _provider.getNetwork();
       setProvider(_provider);

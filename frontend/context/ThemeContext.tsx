@@ -44,22 +44,22 @@ export interface ThemeColors {
 }
 
 const THEMES: Record<ThemeName, ThemeColors> = {
-  /* ── Light ── clean white canvas, blue accent ── */
+  /* ── Light ── clean white canvas, neutral grayscale ── */
   light: {
     pageBg: "#FFFFFF", pageFg: "#1E293B",
-    cardBg: "#FFFFFF", cardBorder: "#E2E8F0", cardHoverBorder: "#3B82F6",
+    cardBg: "#FFFFFF", cardBorder: "#E2E8F0", cardHoverBorder: "#94A3B8",
     surfaceBg: "#F8FAFC",
     navBg: "#FFFFFF", navBorder: "#E2E8F0", navText: "#1E293B",
-    primary: "#3B82F6", primaryHover: "#2563EB", primaryLight: "#EFF6FF",
-    primaryText: "#FFFFFF", primaryFg: "#2563EB",
+    primary: "#475569", primaryHover: "#334155", primaryLight: "#F1F5F9",
+    primaryText: "#FFFFFF", primaryFg: "#334155",
     muted: "#94A3B8", mutedFg: "#64748B",
-    inputBg: "#FFFFFF", inputBorder: "#CBD5E1", inputFocus: "#3B82F6",
+    inputBg: "#FFFFFF", inputBorder: "#CBD5E1", inputFocus: "#64748B",
     divider: "#F1F5F9",
-    badgeBg: "#EFF6FF", badgeText: "#1D4ED8",
+    badgeBg: "#F1F5F9", badgeText: "#334155",
     successBg: "#F0FDF4", successText: "#16A34A",
     warningBg: "#FFFBEB", warningText: "#D97706",
     dangerBg: "#FEF2F2", dangerText: "#DC2626",
-    infoBg: "#EFF6FF", infoText: "#3B82F6",
+    infoBg: "#F8FAFC", infoText: "#475569",
     colorScheme: "light",
   },
   /* ── Dark ── slate noir, soft blue accent ── */
@@ -170,22 +170,22 @@ const THEMES: Record<ThemeName, ThemeColors> = {
     infoBg: "#E3F2FD", infoText: "#1565C0",
     colorScheme: "light",
   },
-  /* ── Pastel ── dreamy soft tones, light scheme ── */
+  /* ── Pastel ── icy light blues, frosted look ── */
   pastel: {
-    pageBg: "#F8FAFC", pageFg: "#334155",
-    cardBg: "#FFFFFF", cardBorder: "#E8E2FE", cardHoverBorder: "#A5B4FC",
-    surfaceBg: "#F1F0FF",
-    navBg: "#FEFCFF", navBorder: "#E8E2FE", navText: "#4C1D95",
-    primary: "#A5B4FC", primaryHover: "#818CF8", primaryLight: "#EEF2FF",
-    primaryText: "#1E1B4B", primaryFg: "#6366F1",
-    muted: "#CBD5E1", mutedFg: "#6D28D9",
-    inputBg: "#FFFFFF", inputBorder: "#DDD6FE", inputFocus: "#A5B4FC",
-    divider: "#E8E2FE",
-    badgeBg: "#FBCFE8", badgeText: "#9D174D",
-    successBg: "#D1FAE5", successText: "#166534",
-    warningBg: "#FEF3C7", warningText: "#92400E",
-    dangerBg: "#FECDD3", dangerText: "#BE123C",
-    infoBg: "#C7D2FE", infoText: "#3730A3",
+    pageBg: "#F3FAFF", pageFg: "#0F2A3D",
+    cardBg: "#FCFEFF", cardBorder: "#D8ECF8", cardHoverBorder: "#7FC8E8",
+    surfaceBg: "#ECF7FD",
+    navBg: "#F7FCFF", navBorder: "#D8ECF8", navText: "#13415E",
+    primary: "#7FC8E8", primaryHover: "#5EB3D8", primaryLight: "#E6F6FF",
+    primaryText: "#0B2B3F", primaryFg: "#1E6C90",
+    muted: "#B9D7E8", mutedFg: "#4A7C98",
+    inputBg: "#FFFFFF", inputBorder: "#CFE6F4", inputFocus: "#7FC8E8",
+    divider: "#D8ECF8",
+    badgeBg: "#DDF2FF", badgeText: "#1F5F80",
+    successBg: "#E7F8F2", successText: "#1B7A5A",
+    warningBg: "#FFF6E8", warningText: "#9A6A18",
+    dangerBg: "#FFECEF", dangerText: "#B53A57",
+    infoBg: "#E1F3FF", infoText: "#236E95",
     colorScheme: "light",
   },
 };

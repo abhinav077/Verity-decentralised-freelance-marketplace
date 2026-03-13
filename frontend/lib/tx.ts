@@ -1,5 +1,7 @@
 "use client";
 
+import { BrowserProvider, ethers, JsonRpcSigner, TransactionRequest } from "ethers";
+
 const CHAIN_LABELS: Record<number, string> = {
   80002: "Polygon Amoy",
   84532: "Base Sepolia",
@@ -19,6 +21,7 @@ const LOW_SIGNAL_PATTERNS = [
 const FRIENDLY_PATTERNS: Array<[RegExp, string]> = [
   [/user denied|user rejected|rejected the request|denied transaction signature/i, "Transaction rejected in wallet."],
   [/insufficient funds/i, "Insufficient funds to cover the transaction and gas."],
+  [/gas price below minimum|gas tip cap .*minimum needed|maxpriorityfeepergas .*less than block base fee/i, "Gas settings are below network minimum. Increase wallet gas fees and retry."],
   [/already bid/i, "You have already placed a bid."],
   [/proposal required/i, "Enter a short proposal before submitting your bid."],
   [/amount must be > 0/i, "Enter a bid amount greater than 0."],
@@ -125,4 +128,80 @@ export function extractTransactionError(error: unknown, fallback = "Transaction 
   }
 
   return fallback;
+}
+
+const DEFAULT_MIN_PRIORITY_GWEI = "25";
+const DEFAULT_MIN_GAS_PRICE_GWEI = "25";
+
+function maxBigInt(a: bigint, b: bigint): bigint {
+  return a > b ? a : b;
+}
+
+function getMinPriorityFeePerGas(): bigint {
+  const configured = process.env.NEXT_PUBLIC_MIN_PRIORITY_FEE_GWEI?.trim();
+  return ethers.parseUnits(configured || DEFAULT_MIN_PRIORITY_GWEI, "gwei");
+}
+
+function getMinGasPrice(): bigint {
+  const configured = process.env.NEXT_PUBLIC_MIN_GAS_PRICE_GWEI?.trim();
+  return ethers.parseUnits(configured || DEFAULT_MIN_GAS_PRICE_GWEI, "gwei");
+}
+
+async function applyFeeFloor(
+  tx: TransactionRequest,
+  provider: BrowserProvider,
+): Promise<TransactionRequest> {
+  const feeData = await provider.getFeeData();
+  const minTip = getMinPriorityFeePerGas();
+  const minGasPrice = getMinGasPrice();
+
+  const has1559 = feeData.maxFeePerGas != null || feeData.maxPriorityFeePerGas != null;
+  if (!has1559) {
+    const networkGasPrice = feeData.gasPrice ?? 0n;
+    const txGasPrice = tx.gasPrice ?? 0n;
+    return {
+      ...tx,
+      gasPrice: maxBigInt(maxBigInt(networkGasPrice, txGasPrice), minGasPrice),
+    };
+  }
+
+  const suggestedPriority = feeData.maxPriorityFeePerGas ?? feeData.gasPrice ?? 0n;
+  const txPriority = tx.maxPriorityFeePerGas ?? 0n;
+  const maxPriorityFeePerGas = maxBigInt(maxBigInt(suggestedPriority, txPriority), minTip);
+
+  // Keep max fee safely above priority and current base fee conditions.
+  const suggestedMaxFee = feeData.maxFeePerGas ?? 0n;
+  const txMaxFee = tx.maxFeePerGas ?? 0n;
+  const baseFromGasPrice = feeData.gasPrice ?? 0n;
+  const minReasonableMaxFee = (baseFromGasPrice * 2n) + maxPriorityFeePerGas;
+  const minMaxFeeVsTip = maxPriorityFeePerGas * 2n;
+  const maxFeePerGas = maxBigInt(
+    maxBigInt(maxBigInt(suggestedMaxFee, txMaxFee), minReasonableMaxFee),
+    minMaxFeeVsTip,
+  );
+
+  return {
+    ...tx,
+    maxPriorityFeePerGas,
+    maxFeePerGas,
+    gasPrice: undefined,
+  };
+}
+
+export function patchSignerWithFeeFloor(signer: JsonRpcSigner, provider: BrowserProvider): JsonRpcSigner {
+  const anySigner = signer as unknown as {
+    sendTransaction: (tx: TransactionRequest) => Promise<unknown>;
+    __dfmFeeFloorPatched?: boolean;
+  };
+
+  if (anySigner.__dfmFeeFloorPatched) return signer;
+
+  const originalSendTransaction = anySigner.sendTransaction.bind(signer);
+  anySigner.sendTransaction = async (tx: TransactionRequest) => {
+    const txWithFees = await applyFeeFloor(tx, provider);
+    return originalSendTransaction(txWithFees);
+  };
+  anySigner.__dfmFeeFloorPatched = true;
+
+  return signer;
 }

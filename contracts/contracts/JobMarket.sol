@@ -72,6 +72,9 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         uint256 milestoneCount;
         bool    sealedBidding;       // if true, frontend hides bids from other freelancers
         uint256 expectedDays;        // client's expected completion timeframe in days
+        string  deliveryProof;       // IPFS CID / proof link submitted on delivery
+        bool    tipGiven;            // one-time client tip guard
+        bool    revisionRequested;   // waiting for freelancer to accept/reject revision request
     }
 
     struct Bid {
@@ -144,6 +147,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     event SettlementAccepted(uint256 indexed jobId);
     event SettlementRejected(uint256 indexed jobId);
     event RevisionRequested(uint256 indexed jobId);
+    event RevisionRequestResponded(uint256 indexed jobId, bool accepted);
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -215,7 +219,10 @@ contract JobMarket is AccessControl, ReentrancyGuard {
             deliveredAt: 0,
             milestoneCount: milestoneAmounts.length,
             sealedBidding: sealedBidding,
-            expectedDays: expectedDays
+            expectedDays: expectedDays,
+            deliveryProof: "",
+            tipGiven: false,
+            revisionRequested: false
         });
 
         for (uint256 i; i < milestoneAmounts.length; i++) {
@@ -256,7 +263,10 @@ contract JobMarket is AccessControl, ReentrancyGuard {
             deliveredAt: 0,
             milestoneCount: 0,
             sealedBidding: false,
-            expectedDays: 0
+            expectedDays: 0,
+            deliveryProof: "",
+            tipGiven: false,
+            revisionRequested: false
         });
         _ensureProfile(msg.sender);
         emit JobCreated(jid, msg.sender, title, budget, category);
@@ -392,6 +402,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         Job storage job = jobs[jobId];
         require(job.client == msg.sender, "Only client");
         require(job.status == JobStatus.InProgress || job.status == JobStatus.Delivered, "Not completable");
+        require(!job.revisionRequested, "Revision response pending");
         if (job.milestoneCount > 0) {
             for (uint256 i; i < job.milestoneCount; i++)
                 require(milestones[jobId][i].status == MilestoneStatus.Approved, "Milestones pending");
@@ -402,6 +413,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     function _completeJob(uint256 jobId) internal {
         Job storage job = jobs[jobId];
         job.status = JobStatus.Completed;
+        job.revisionRequested = false;
 
         uint256 bidAmt = bids[job.acceptedBidId].amount;
         userProfiles[job.selectedFreelancer].jobsCompleted++;
@@ -419,11 +431,14 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     }
 
     /// @notice Freelancer marks job delivered — starts 14-day auto-release timer
-    function deliverJob(uint256 jobId) external {
+    function deliverJob(uint256 jobId, string calldata ipfsProof) external {
         Job storage job = jobs[jobId];
         require(msg.sender == job.selectedFreelancer && job.status == JobStatus.InProgress, "Not allowed");
+        require(bytes(ipfsProof).length > 0, "Proof required");
         job.status = JobStatus.Delivered;
         job.deliveredAt = block.timestamp;
+        job.deliveryProof = ipfsProof;
+        job.revisionRequested = false;
         emit JobDelivered(jobId, msg.sender, block.timestamp + AUTO_RELEASE_PERIOD);
     }
 
@@ -431,6 +446,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     function autoReleasePayment(uint256 jobId) external nonReentrant {
         Job storage job = jobs[jobId];
         require(job.status == JobStatus.Delivered && job.deliveredAt > 0, "Not delivered");
+        require(!job.revisionRequested, "Revision response pending");
         require(block.timestamp >= job.deliveredAt + AUTO_RELEASE_PERIOD, "Too early");
         _completeJob(jobId);
         emit JobAutoReleased(jobId);
@@ -449,6 +465,8 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     function tipFreelancer(uint256 jobId) external payable nonReentrant {
         Job storage job = jobs[jobId];
         require(job.client == msg.sender && job.status == JobStatus.Completed && msg.value > 0, "Bad tip");
+        require(!job.tipGiven, "Tip already sent");
+        job.tipGiven = true;
         (bool ok,) = payable(job.selectedFreelancer).call{value: msg.value}("");
         require(ok, "Tip failed");
         emit TipAdded(jobId, msg.value);
@@ -527,9 +545,30 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         Job storage job = jobs[_jobId];
         require(job.status == JobStatus.Delivered, "Not delivered");
         require(msg.sender == job.client, "Only client");
+        require(!job.revisionRequested, "Already requested");
+        job.revisionRequested = true;
+        emit RevisionRequested(_jobId);
+    }
+
+    function approveRevisionRequest(uint256 _jobId) external {
+        Job storage job = jobs[_jobId];
+        require(job.status == JobStatus.Delivered, "Not delivered");
+        require(job.revisionRequested, "No request");
+        require(msg.sender == job.selectedFreelancer, "Only freelancer");
         job.status = JobStatus.InProgress;
         job.deliveredAt = 0;
-        emit RevisionRequested(_jobId);
+        job.deliveryProof = "";
+        job.revisionRequested = false;
+        emit RevisionRequestResponded(_jobId, true);
+    }
+
+    function rejectRevisionRequest(uint256 _jobId) external {
+        Job storage job = jobs[_jobId];
+        require(job.status == JobStatus.Delivered, "Not delivered");
+        require(job.revisionRequested, "No request");
+        require(msg.sender == job.selectedFreelancer, "Only freelancer");
+        job.revisionRequested = false;
+        emit RevisionRequestResponded(_jobId, false);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

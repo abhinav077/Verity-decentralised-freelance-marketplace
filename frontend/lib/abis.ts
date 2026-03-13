@@ -4,7 +4,7 @@
 
 // ── JobMarket ────────────────────────────────────────────────────────────────
 
-const JOB_TUPLE = "tuple(uint256 id, address client, string title, string description, string category, uint256 budget, uint256 deadline, uint8 status, address selectedFreelancer, uint256 acceptedBidId, uint256 createdAt, uint256 deliveredAt, uint256 milestoneCount, bool sealedBidding, uint256 expectedDays)";
+const JOB_TUPLE = "tuple(uint256 id, address client, string title, string description, string category, uint256 budget, uint256 deadline, uint8 status, address selectedFreelancer, uint256 acceptedBidId, uint256 createdAt, uint256 deliveredAt, uint256 milestoneCount, bool sealedBidding, uint256 expectedDays, string deliveryProof, bool tipGiven, bool revisionRequested)";
 const BID_TUPLE = "tuple(uint256 id, uint256 jobId, address freelancer, uint256 amount, uint256 completionDays, string proposal, uint256 timestamp, bool isActive)";
 const SETTLEMENT_TUPLE = "tuple(uint256 jobId, address proposer, uint256 percentComplete, uint256 freelancerPercent, bool active)";
 const MS_TUPLE = "tuple(string title, uint256 amount, uint8 status)";
@@ -31,13 +31,15 @@ export const JOB_MARKET_ABI = [
   "function withdrawBid(uint256 bidId) external",
   "function acceptBid(uint256 bidId) external payable",
   // Job lifecycle
-  "function deliverJob(uint256 jobId) external",
+  "function deliverJob(uint256 jobId, string ipfsProof) external",
   "function completeJob(uint256 jobId) external",
   "function autoReleasePayment(uint256 jobId) external",
   "function cancelJob(uint256 jobId) external",
   "function tipFreelancer(uint256 jobId) external payable",
   // Revision
   "function requestRevision(uint256 jobId) external",
+  "function approveRevisionRequest(uint256 jobId) external",
+  "function rejectRevisionRequest(uint256 jobId) external",
   // Settlement
   "function requestSettlement(uint256 jobId, uint256 percentComplete, uint256 freelancerPct) external",
   "function respondToSettlement(uint256 jobId, bool accept) external",
@@ -252,7 +254,7 @@ export const GOVERNANCE_ABI = [
   "function hasVotedOnProposal(uint256 pid, address voter) view returns (bool)",
   `function getProposal(uint256 pid) view returns (${PROPOSAL_TUPLE})`,
   // Crowdfunding
-  "function createCrowdfundProject(string title, string description, string category, string proofLink, uint256 goalAmount, uint256 duration) external returns (uint256)",
+  "function createCrowdfundProject(string title, string description, string category, string proofLink, uint256 goalAmount) external returns (uint256)",
   "function contributeToProject(uint256 projectId) external payable",
   "function withdrawCrowdfundFunds(uint256 projectId) external",
   "function postCrowdfundUpdate(uint256 projectId, string desc, string link) external",
@@ -278,7 +280,7 @@ export const GOVERNANCE_ABI = [
 
 // ── BountyBoard ─────────────────────────────────────────────────────────────
 
-const BOUNTY_TUPLE = "tuple(uint256 id, address poster, string title, string description, string category, uint256 reward, uint256 vrtReward, uint256 deadline, uint256 maxWinners, uint256 approvedCount, uint8 status, uint256 createdAt)";
+const BOUNTY_TUPLE = "tuple(uint256 id, address poster, string title, string description, string category, uint256 reward, uint256 vrtReward, uint256 deadline, uint256 maxWinners, uint256 approvedCount, uint256 totalPaidOut, uint8 status, uint256 createdAt)";
 const SUBMISSION_TUPLE = "tuple(uint256 id, uint256 bountyId, address submitter, string description, string ipfsProof, uint8 status, uint256 timestamp)";
 
 export const BOUNTY_BOARD_ABI = [
@@ -308,7 +310,7 @@ const SC_BID_TUPLE = "tuple(uint256 id, uint256 scId, address bidder, uint256 am
 
 const SC_SETTLEMENT_TUPLE = "tuple(address proposer, uint256 freelancerPercent, bool active)";
 
-const SUB_CONTRACT_TUPLE = "tuple(uint256 id, uint256 parentJobId, address primaryFreelancer, address subContractor, string description, uint256 payment, uint8 status, uint256 createdAt, uint256 deliveredAt, uint256 completedAt, uint256 acceptedBidId)";
+const SUB_CONTRACT_TUPLE = "tuple(uint256 id, uint256 parentJobId, address primaryFreelancer, address subContractor, string description, uint256 payment, uint8 status, uint256 createdAt, uint256 deliveredAt, uint256 completedAt, uint256 acceptedBidId, string deliveryProof, bool revisionRequested, bool tipGiven)";
 
 export const SUB_CONTRACTING_ABI = [
   "function subContractCounter() view returns (uint256)",
@@ -323,10 +325,13 @@ export const SUB_CONTRACTING_ABI = [
   "function applyForSubContract(uint256 scId) external",
   "function assignSubContractor(uint256 scId, address _sub) external",
   // Delivery lifecycle
-  "function deliverWork(uint256 scId) external",
+  "function deliverWork(uint256 scId, string ipfsProof) external",
   "function approveWork(uint256 scId) external",
   "function requestRevision(uint256 scId) external",
+  "function approveRevisionRequest(uint256 scId) external",
+  "function rejectRevisionRequest(uint256 scId) external",
   "function autoRelease(uint256 scId) external",
+  "function tipSubContractor(uint256 scId) external payable",
   // Cancel
   "function cancelSubContract(uint256 scId) external",
   // Settlement

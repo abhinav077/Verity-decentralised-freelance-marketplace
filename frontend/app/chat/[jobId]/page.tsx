@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getJobMarket, getSubContracting, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey, NATIVE_SYMBOL, SUB_CONTRACT_STATUS } from "@/lib/contracts";
+import { getJobMarket, getSubContracting, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
 import { ethers } from "ethers";
 import { Paperclip, MessageCircle, FileText } from "lucide-react";
 
@@ -90,7 +90,7 @@ export default function ChatPage() {
     const fetchJob = () => {
       if (isSubContract && scNumericId) {
         if (!CONTRACT_ADDRESSES.SubContracting) return;
-        getSubContracting(reader).getSubContract(BigInt(scNumericId)).then((sc: any) => {
+        getSubContracting(reader).getSubContract(BigInt(scNumericId)).then((sc: { id: bigint; description: string; primaryFreelancer: string; subContractor: string; status: number; payment: bigint; }) => {
           const newStatus = Number(sc.status);
           // Map SC status to job-like status for display: 0=Open,1=Active,2=Delivered,3=Completed,4=Disputed,5=Cancelled
           const displayStatus = newStatus === 1 ? 1 : newStatus === 2 ? 5 : newStatus === 3 ? 2 : newStatus === 4 ? 4 : newStatus === 5 ? 3 : 0;
@@ -107,7 +107,7 @@ export default function ChatPage() {
         }).catch(() => setJobLoaded(true));
       } else {
         if (!CONTRACT_ADDRESSES.JobMarket) return;
-        getJobMarket(reader).getJob(BigInt(jobId)).then((j: any) => {
+        getJobMarket(reader).getJob(BigInt(jobId)).then((j: { id: bigint; title: string; client: string; selectedFreelancer: string; status: number; budget: bigint; }) => {
           const newStatus = Number(j.status);
           setJob({
             id: j.id, title: j.title, client: j.client,
@@ -180,7 +180,7 @@ export default function ChatPage() {
     setText("");
     setAttachment(null);
     setSending(false);
-  }, [address, text, attachment, messages, jobId]);
+  }, [address, text, attachment, jobId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -338,11 +338,11 @@ export default function ChatPage() {
       )}
 
       {/* Input bar */}
-      {job.status >= 2 ? (
+      {job.status === 3 ? (
         <div className="rounded-2xl shadow-sm p-4 text-center border"
           style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
           <p className="text-sm" style={{ color: colors.mutedFg }}>
-            This chat is read-only — the job is {statusLabel.toLowerCase()}.
+            This chat is read-only — the job is cancelled.
           </p>
         </div>
       ) : (

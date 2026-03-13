@@ -20,7 +20,7 @@ interface CrowdfundUpdate {
 }
 
 const STATUS_LABELS: Record<number, string> = {
-  0: "Active", 1: "Funded", 2: "Failed", 3: "Cancelled",
+  0: "Active", 1: "Funded", 2: "Cancelled",
 };
 
 export default function CrowdfundingPage() {
@@ -30,7 +30,7 @@ export default function CrowdfundingPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [expandedId, setExpandedId] = useState<bigint | null>(null);
-  const [crowdFilter, setCrowdFilter] = useState<"all" | "active" | "funded" | "failed">("all");
+  const [crowdFilter, setCrowdFilter] = useState<"all" | "active" | "funded" | "cancelled">("all");
   const [updates, setUpdates] = useState<Record<string, CrowdfundUpdate[]>>({});
   const [myContributions, setMyContributions] = useState<Record<string, bigint>>({});
   const [txLoading, setTxLoading] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function CrowdfundingPage() {
   const [minVrtToCrowdfund, setMinVrtToCrowdfund] = useState("5");
 
   // Create form
-  const [form, setForm] = useState({ title: "", description: "", category: "Product", proofLink: "", goalAmount: "", durationDays: "30" });
+  const [form, setForm] = useState({ title: "", description: "", category: "Product", proofLink: "", goalAmount: "" });
   // Update form
   const [updateDesc, setUpdateDesc] = useState("");
   const [updateLink, setUpdateLink] = useState("");
@@ -124,11 +124,11 @@ export default function CrowdfundingPage() {
       const gov = getGovernance(signer);
       const tx = await gov.createCrowdfundProject(
         form.title, form.description, form.category, form.proofLink,
-        ethers.parseEther(form.goalAmount), parseInt(form.durationDays) * 86400
+        ethers.parseEther(form.goalAmount)
       );
       await tx.wait();
       setShowCreate(false);
-      setForm({ title: "", description: "", category: "Product", proofLink: "", goalAmount: "", durationDays: "30" });
+      setForm({ title: "", description: "", category: "Product", proofLink: "", goalAmount: "" });
     });
   };
 
@@ -176,20 +176,12 @@ export default function CrowdfundingPage() {
     });
   };
 
-  const markFailed = async (pid: bigint) => {
-    if (!signer) return;
-    await runTx(`fail-${pid}`, async () => {
-      const tx = await getGovernance(signer).markProjectFailed(pid);
-      await tx.wait();
-    });
-  };
-
   const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
 
   const filteredProjects = projects.filter((p) => {
     if (crowdFilter === "active") return p.status === 0;
     if (crowdFilter === "funded") return p.status === 1;
-    if (crowdFilter === "failed") return p.status === 2 || p.status === 3;
+    if (crowdFilter === "cancelled") return p.status === 2;
     return true;
   });
 
@@ -205,13 +197,13 @@ export default function CrowdfundingPage() {
       {address && configured && (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div className="flex gap-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
-            {(["all", "active", "funded", "failed"] as const).map((f) => (
+            {(["all", "active", "funded", "cancelled"] as const).map((f) => (
               <button key={f} onClick={() => setCrowdFilter(f)}
                 className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
                 style={crowdFilter === f
                   ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
                   : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
-                {f === "all" ? "All Projects" : f === "active" ? "Active" : f === "funded" ? "Funded" : "Failed"}
+                {f === "all" ? "All Projects" : f === "active" ? "Active" : f === "funded" ? "Funded" : "Cancelled"}
               </button>
             ))}
           </div>
@@ -249,12 +241,8 @@ export default function CrowdfundingPage() {
                 <Input placeholder="Proof/docs link (optional)"
                   value={form.proofLink} onChange={e => setForm(f => ({ ...f, proofLink: e.target.value }))} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Input type="number" step="0.01" min="0.01" placeholder={`Goal (${NATIVE_SYMBOL})`} required
-                  value={form.goalAmount} onChange={e => setForm(f => ({ ...f, goalAmount: e.target.value }))} />
-                <Input type="number" min="1" max="365" placeholder="Duration (days)"
-                  value={form.durationDays} onChange={e => setForm(f => ({ ...f, durationDays: e.target.value }))} />
-              </div>
+              <Input type="number" step="0.01" min="0.01" placeholder={`Goal (${NATIVE_SYMBOL})`} required
+                value={form.goalAmount} onChange={e => setForm(f => ({ ...f, goalAmount: e.target.value }))} />
               <button type="submit" disabled={!!txLoading}
                 className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
                 style={{ background: colors.primary, color: colors.primaryText }}>
@@ -287,12 +275,10 @@ export default function CrowdfundingPage() {
             const pctFunded = p.goalAmount > 0n ? Number((p.totalRaised * 100n) / p.goalAmount) : 0;
             const isActive = p.status === 0;
             const isFunded = p.status === 1;
-            const isFailed = p.status === 2;
-            const isCancelled = p.status === 3;
-            const deadlineReached = Math.floor(Date.now() / 1000) >= Number(p.deadline);
+            const isCancelled = p.status === 2;
             const expanded = expandedId === p.id;
             const myContrib = myContributions[pid] || 0n;
-            const canRefund = (isFailed || isCancelled) && myContrib > 0n;
+            const canRefund = isCancelled && myContrib > 0n;
 
             return (
               <div key={pid} className="border rounded-xl p-5 card-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
@@ -308,7 +294,7 @@ export default function CrowdfundingPage() {
                     </div>
                     <h3 className="text-lg font-bold mt-1" style={{ color: colors.pageFg }}>{p.title}</h3>
                     <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>
-                      by {isCreator ? "You" : shortenAddress(p.creator)} · {Number(p.contributorCount)} contributors · Deadline: {formatDate(p.deadline)}
+                      by {isCreator ? "You" : shortenAddress(p.creator)} · {Number(p.contributorCount)} contributors
                     </p>
                   </div>
                   <button onClick={() => { setExpandedId(expanded ? null : p.id); if (!expanded) loadUpdates(p.id); }}
@@ -374,14 +360,6 @@ export default function CrowdfundingPage() {
                       className="px-3 py-1.5 rounded-lg text-sm border disabled:opacity-60 btn-outline-hover"
                       style={{ borderColor: colors.dangerText + "55", color: colors.dangerText }}>
                       Cancel Project
-                    </button>
-                  )}
-                  {isActive && deadlineReached && (
-                    <button onClick={() => markFailed(p.id)}
-                      disabled={!!txLoading}
-                      className="px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-60 btn-hover"
-                      style={{ background: colors.dangerBg, color: colors.dangerText }}>
-                      {txLoading === `fail-${pid}` ? "…" : "Mark as Failed"}
                     </button>
                   )}
                   {canRefund && (

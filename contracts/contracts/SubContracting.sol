@@ -56,6 +56,9 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         uint256 deliveredAt;
         uint256 completedAt;
         uint256 acceptedBidId;
+        string  deliveryProof;      // IPFS CID / proof link submitted on delivery
+        bool    revisionRequested;  // waiting for sub-contractor response to revision
+        bool    tipGiven;           // one-time tip guard
     }
 
     struct Bid {
@@ -111,6 +114,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
     event WorkDelivered(uint256 indexed id, address indexed subContractor, uint256 autoReleaseAt);
     event WorkApproved(uint256 indexed id, address indexed subContractor, uint256 payment);
     event RevisionRequested(uint256 indexed id);
+    event RevisionRequestResponded(uint256 indexed id, bool accepted);
     event SubContractCancelled(uint256 indexed id);
     event AutoReleased(uint256 indexed id);
     event DisputeRaised(uint256 indexed id, address indexed initiator);
@@ -119,6 +123,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
     event SettlementRequested(uint256 indexed id, address indexed proposer, uint256 freelancerPercent);
     event SettlementAccepted(uint256 indexed id);
     event SettlementRejected(uint256 indexed id);
+    event TipAdded(uint256 indexed id, uint256 amount);
     event TokenMintFailed(address indexed user, uint256 amount);
 
     // ── Constructor ──────────────────────────────────────────────────────
@@ -170,7 +175,10 @@ contract SubContracting is AccessControl, ReentrancyGuard {
             createdAt: block.timestamp,
             deliveredAt: 0,
             completedAt: 0,
-            acceptedBidId: 0
+            acceptedBidId: 0,
+            deliveryProof: "",
+            revisionRequested: false,
+            tipGiven: false
         });
 
         jobSubContracts[parentJobId].push(scId);
@@ -293,12 +301,15 @@ contract SubContracting is AccessControl, ReentrancyGuard {
     // ═══════════════════════════════════════════════════════════════════════
 
     /// @notice Sub-contractor marks work delivered — starts auto-release timer
-    function deliverWork(uint256 scId) external {
+    function deliverWork(uint256 scId, string calldata ipfsProof) external {
         SubContract storage sc = subContracts[scId];
         require(msg.sender == sc.subContractor, "Not sub");
         require(sc.status == Status.Active, "Not active");
+        require(bytes(ipfsProof).length > 0, "Proof required");
         sc.status = Status.Delivered;
         sc.deliveredAt = block.timestamp;
+        sc.deliveryProof = ipfsProof;
+        sc.revisionRequested = false;
         emit WorkDelivered(scId, msg.sender, block.timestamp + AUTO_RELEASE_PERIOD);
     }
 
@@ -307,6 +318,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         SubContract storage sc = subContracts[scId];
         require(msg.sender == sc.primaryFreelancer, "Not primary");
         require(sc.status == Status.Delivered, "Not delivered");
+        require(!sc.revisionRequested, "Revision response pending");
         _completeSubContract(scId);
     }
 
@@ -315,15 +327,37 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         SubContract storage sc = subContracts[scId];
         require(msg.sender == sc.primaryFreelancer, "Not primary");
         require(sc.status == Status.Delivered, "Not delivered");
+        require(!sc.revisionRequested, "Already requested");
+        sc.revisionRequested = true;
+        emit RevisionRequested(scId);
+    }
+
+    function approveRevisionRequest(uint256 scId) external {
+        SubContract storage sc = subContracts[scId];
+        require(msg.sender == sc.subContractor, "Not sub");
+        require(sc.status == Status.Delivered, "Not delivered");
+        require(sc.revisionRequested, "No request");
         sc.status = Status.Active;
         sc.deliveredAt = 0;
-        emit RevisionRequested(scId);
+        sc.deliveryProof = "";
+        sc.revisionRequested = false;
+        emit RevisionRequestResponded(scId, true);
+    }
+
+    function rejectRevisionRequest(uint256 scId) external {
+        SubContract storage sc = subContracts[scId];
+        require(msg.sender == sc.subContractor, "Not sub");
+        require(sc.status == Status.Delivered, "Not delivered");
+        require(sc.revisionRequested, "No request");
+        sc.revisionRequested = false;
+        emit RevisionRequestResponded(scId, false);
     }
 
     /// @notice Anyone triggers auto-release after AUTO_RELEASE_PERIOD
     function autoRelease(uint256 scId) external nonReentrant {
         SubContract storage sc = subContracts[scId];
         require(sc.status == Status.Delivered && sc.deliveredAt > 0, "Not delivered");
+        require(!sc.revisionRequested, "Revision response pending");
         require(block.timestamp >= sc.deliveredAt + AUTO_RELEASE_PERIOD, "Too early");
         _completeSubContract(scId);
         emit AutoReleased(scId);
@@ -341,6 +375,21 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         _mintVRT(sc.subContractor, REPUTATION_REWARD);
 
         emit WorkApproved(scId, sc.subContractor, sc.payment);
+    }
+
+    /// @notice Primary freelancer can tip sub-contractor once after completion
+    function tipSubContractor(uint256 scId) external payable nonReentrant {
+        SubContract storage sc = subContracts[scId];
+        require(msg.sender == sc.primaryFreelancer, "Not primary");
+        require(sc.status == Status.Completed, "Not completed");
+        require(msg.value > 0, "Bad tip");
+        require(!sc.tipGiven, "Tip already sent");
+
+        sc.tipGiven = true;
+        (bool ok,) = payable(sc.subContractor).call{value: msg.value}("");
+        require(ok, "Tip failed");
+
+        emit TipAdded(scId, msg.value);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

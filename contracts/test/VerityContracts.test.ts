@@ -265,7 +265,7 @@ describe("Verity DFM Contracts", function () {
       await createBasicJob();
       await jobMarket.connect(freelancer).placeBid(1, ETH("0.8"), "x");
       await jobMarket.connect(client).acceptBid(1, { value: ETH("0.8") });
-      await jobMarket.connect(freelancer).deliverJob(1);
+      await jobMarket.connect(freelancer).deliverJob(1, "QmDeliveryProof");
       expect((await jobMarket.getJob(1)).status).to.equal(5); // Delivered
       await time.increase(14 * 24 * 60 * 60 + 1);
       await jobMarket.autoReleasePayment(1);

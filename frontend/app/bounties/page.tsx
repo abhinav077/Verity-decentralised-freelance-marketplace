@@ -44,6 +44,25 @@ export default function BountiesPage() {
   const [subDesc, setSubDesc] = useState("");
   const [subProof, setSubProof] = useState("");
 
+  const approvedFromSubmissions = submissions.filter((s) => Number(s.status) === 1).length;
+  const maxWinnersCount = selectedBounty ? Number(selectedBounty.maxWinners) : 0;
+  const approvedCount = selectedBounty
+    ? Math.max(Number(selectedBounty.approvedCount), approvedFromSubmissions)
+    : 0;
+  const winnerSlotsFilled = !!selectedBounty && approvedCount >= maxWinnersCount;
+  const effectiveStatus = selectedBounty
+    ? (winnerSlotsFilled ? 1 : Number(selectedBounty.status))
+    : 0;
+
+  const getEffectiveBountyStatus = (b: any): number => {
+    const approved = Number(b.approvedCount);
+    const maxWinners = Number(b.maxWinners);
+    if (maxWinners > 0 && approved >= maxWinners) return 1;
+    return Number(b.status);
+  };
+
+  const isBountyExpired = (b: any): boolean => Number(b.deadline) <= Math.floor(Date.now() / 1000);
+
   const loadBounties = useCallback(async () => {
     if (!configured || !provider) return;
     try {
@@ -97,6 +116,24 @@ export default function BountiesPage() {
     setBusy(true);
     try {
       const bb = getBountyBoard(signer);
+      const bounty = await bb.getBounty(bountyId);
+      const now = Math.floor(Date.now() / 1000);
+      if (Number(bounty.id) === 0) {
+        alert("Bounty not found on the current network. Refresh and open a valid bounty.");
+        return;
+      }
+      if (Number(bounty.status) !== 0) {
+        alert("This bounty is not open for submissions.");
+        return;
+      }
+      if (Number(bounty.deadline) <= now) {
+        alert("This bounty deadline has passed.");
+        return;
+      }
+      if (Number(bounty.approvedCount) >= Number(bounty.maxWinners)) {
+        alert("This bounty already has all winners selected.");
+        return;
+      }
       const tx = await bb.submitWork(bountyId, subDesc, subProof);
       await tx.wait();
       setSubDesc(""); setSubProof("");
@@ -207,13 +244,13 @@ export default function BountiesPage() {
         <div className="grid md:grid-cols-2 gap-4">
           {bounties
             .filter((b) => {
-              const s = Number(b.status);
+              const s = getEffectiveBountyStatus(b);
               if (bountyFilter === "open") return s === 0;
               if (bountyFilter === "completed") return s === 1;
-              return true;
+              return s !== 1;
             })
             .map((b) => {
-              const status = Number(b.status);
+              const status = getEffectiveBountyStatus(b);
               return (
                 <div
                   key={b.id.toString()}
@@ -349,16 +386,16 @@ export default function BountiesPage() {
               </div>
               <div className="rounded-xl px-4 py-3" style={{ background: colors.surfaceBg }}>
                 <p className="text-xs" style={{ color: colors.mutedFg }}>Winners</p>
-                <p className="font-bold" style={{ color: colors.pageFg }}>{Number(selectedBounty.approvedCount)}/{Number(selectedBounty.maxWinners)}</p>
+                <p className="font-bold" style={{ color: colors.pageFg }}>{approvedCount}/{maxWinnersCount}</p>
               </div>
               <div className="rounded-xl px-4 py-3" style={{ background: colors.surfaceBg }}>
                 <p className="text-xs" style={{ color: colors.mutedFg }}>Status</p>
-                <p className="font-bold" style={{ color: colors.pageFg }}>{BOUNTY_STATUS[Number(selectedBounty.status)]}</p>
+                <p className="font-bold" style={{ color: colors.pageFg }}>{BOUNTY_STATUS[effectiveStatus]}</p>
               </div>
             </div>
 
             {/* Cancel button for poster */}
-            {address?.toLowerCase() === selectedBounty.poster.toLowerCase() && Number(selectedBounty.status) === 0 && (
+            {address?.toLowerCase() === selectedBounty.poster.toLowerCase() && effectiveStatus === 0 && !winnerSlotsFilled && (
               <button onClick={() => handleCancel(Number(selectedBounty.id))} disabled={busy}
                 className="text-xs px-3 py-1.5 rounded-lg mb-4"
                 style={{ background: colors.dangerBg, color: colors.dangerText }}>
@@ -367,7 +404,7 @@ export default function BountiesPage() {
             )}
 
             {/* Submit work form */}
-            {address && Number(selectedBounty.status) === 0 && address.toLowerCase() !== selectedBounty.poster.toLowerCase() && (
+            {address && effectiveStatus === 0 && !winnerSlotsFilled && !isBountyExpired(selectedBounty) && address.toLowerCase() !== selectedBounty.poster.toLowerCase() && (
               <div className="rounded-xl border p-4 mb-4" style={{ borderColor: colors.cardBorder }}>
                 <h3 className="text-sm font-semibold mb-3" style={{ color: colors.pageFg }}>Submit Your Work</h3>
                 <textarea value={subDesc} onChange={e => setSubDesc(e.target.value)} rows={2} placeholder="Describe your submission…"
@@ -415,13 +452,13 @@ export default function BountiesPage() {
                         </span>
                       </div>
                       <p className="text-sm mb-1" style={{ color: colors.pageFg }}>{s.description}</p>
-                      {s.ipfsProof && (
+                      {s.ipfsProof && isPoster && (
                         <a href={resolveIpfsUrl(s.ipfsProof)} target="_blank" rel="noopener noreferrer"
                           className="text-xs font-mono hover:underline" style={{ color: colors.primaryFg }}>
                           Proof: {s.ipfsProof.length > 20 ? s.ipfsProof.slice(0, 10) + "…" + s.ipfsProof.slice(-6) : s.ipfsProof} ↗
                         </a>
                       )}
-                      {isPoster && subStatus === 0 && (
+                      {isPoster && subStatus === 0 && !winnerSlotsFilled && (
                         <div className="flex gap-2 mt-2">
                           <button onClick={() => handleApprove(Number(s.id), Number(selectedBounty.id))} disabled={busy}
                             className="text-xs px-3 py-1 rounded-lg font-medium btn-hover"
