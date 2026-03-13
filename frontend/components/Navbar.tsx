@@ -295,10 +295,12 @@ export default function Navbar() {
           )}
 
           {wrongNetwork && (
-            <button onClick={switchToExpectedChain}
-              className="text-xs px-2.5 py-1 rounded-full font-medium hidden lg:block cursor-pointer hover:opacity-80 transition-opacity"
+            <button
+              onClick={switchToExpectedChain}
+              className="text-xs px-2.5 py-1 rounded-full font-medium hidden md:block cursor-pointer hover:opacity-80 transition-opacity"
               style={{ background: colors.dangerBg, color: colors.dangerText }}
-              title="Click to switch network">
+              title="Click to switch network"
+            >
               Wrong Network — Switch
             </button>
           )}
@@ -535,6 +537,18 @@ export default function Navbar() {
             </GlassSurface>
             {mobileOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 py-1.5 z-50" style={dropdown}>
+                {wrongNetwork && (
+                  <>
+                    <button
+                      onClick={() => { void switchToExpectedChain(); setMobileOpen(false); }}
+                      className="w-[calc(100%-0.5rem)] mx-1 mb-1 flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
+                      style={{ background: colors.dangerBg, color: colors.dangerText }}
+                    >
+                      Wrong Network - Switch
+                    </button>
+                    <div className="my-1 mx-2 border-t" style={{ borderColor: colors.divider }} />
+                  </>
+                )}
                 {[{ href: "/jobs", label: "Jobs", icon: Search }, { href: "/sub-contracts", label: "Sub-Contracts", icon: ScrollText },
                   { href: "/bounties", label: "Bounties", icon: Target }, { href: "/disputes", label: "Disputes", icon: Gavel }].map(item => (
                   <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
