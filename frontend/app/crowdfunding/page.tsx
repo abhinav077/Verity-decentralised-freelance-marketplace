@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getGovernance, CONTRACT_ADDRESSES, formatEth, formatDate, shortenAddress, NATIVE_SYMBOL } from "@/lib/contracts";
+import Link from "next/link";
 import { Input } from "@/components/reactbits/Input";
 import { Paperclip, Wallet, Link as LinkIcon, X, Heart } from "lucide-react";
 
@@ -294,7 +295,7 @@ export default function CrowdfundingPage() {
                     </div>
                     <h3 className="text-lg font-bold mt-1" style={{ color: colors.pageFg }}>{p.title}</h3>
                     <p className="text-xs mt-0.5" style={{ color: colors.mutedFg }}>
-                      by {isCreator ? "You" : shortenAddress(p.creator)} · {Number(p.contributorCount)} contributors
+                      by {isCreator ? "You" : <Link href={`/profile/${p.creator}`} className="underline" style={{ color: colors.primaryFg }}>{shortenAddress(p.creator)}</Link>} · {Number(p.contributorCount)} contributors
                     </p>
                   </div>
                   <button onClick={() => { setExpandedId(expanded ? null : p.id); if (!expanded) loadUpdates(p.id); }}

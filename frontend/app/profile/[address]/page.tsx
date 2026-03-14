@@ -272,8 +272,8 @@ export default function ProfilePage() {
                   {profile?.bio && <LinkifyText text={profile.bio} className="text-sm leading-relaxed" style={{ color: colors.pageFg }} />}
                   {skillList.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {skillList.map(s => (
-                        <span key={s} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                      {skillList.map((s, i) => (
+                        <span key={`${s}-${i}`} className="text-xs px-2.5 py-1 rounded-full font-medium"
                           style={{ background: colors.primaryLight, color: colors.primaryFg }}>{s}</span>
                       ))}
                     </div>

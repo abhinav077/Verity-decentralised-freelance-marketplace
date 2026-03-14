@@ -627,9 +627,8 @@ Achievements are unlocked automatically based on your activity:
 | **Who can access** | Only the client and the assigned freelancer for that job |
 | **Inputs** | Type a message (Enter to send, Shift+Enter for new line). Attach files (max 1MB). |
 | **Output** | Messages appear as chat bubbles (blue = yours, white = theirs) with timestamps |
-| **Storage** | Messages are stored in your browser's localStorage — NOT on the blockchain. Messages sync across tabs on the same computer. |
 | **Images** | Attached images render inline in the chat |
-| **Read-only** | Chat becomes read-only when the job is completed or cancelled |
+
 
 ### Task Board (Kanban)
 
@@ -640,7 +639,7 @@ Achievements are unlocked automatically based on your activity:
 | **Columns** | To Do → In Progress → Done |
 | **Actions** | Add task (type + Enter), drag-and-drop between columns, move with arrow buttons, delete |
 | **Who can edit** | Freelancer only. Client can view in read-only mode. |
-| **Storage** | localStorage (per job) — not on-chain |
+
 
 ---
 
@@ -824,7 +823,7 @@ The project follows the standard Web3 storage pattern:
 | Job data, bids, escrow, wallet addresses | **Blockchain** (smart contracts) | Immutable, trustless, verifiable |
 | Profile images, resumes, portfolio files, evidence | **IPFS** (via Pinata) | Large files, decentralized, content-addressed |
 | CID references (pointers to IPFS files) | **Blockchain** (stored in smart contracts) | Links on-chain data to off-chain files |
-| Chat messages | **Browser localStorage** | Ephemeral, per-device |
+| Chat messages | **Storage** | Ephemeral, per-device |
 
 ### IPFS Upload Flow
 

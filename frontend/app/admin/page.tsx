@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, type ReactNode } from "react";
+import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
 import {
@@ -742,7 +743,9 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <div style={{ fontSize: 12, color: colors.mutedFg }}>
-                          Client: {shortenAddress(d.client)} — Freelancer: {shortenAddress(d.freelancer)}
+                          Client: <Link href={`/profile/${d.client}`} style={{ color: colors.primaryFg, textDecoration: "underline" }}>{shortenAddress(d.client)}</Link>
+                          {" — "}
+                          Freelancer: <Link href={`/profile/${d.freelancer}`} style={{ color: colors.primaryFg, textDecoration: "underline" }}>{shortenAddress(d.freelancer)}</Link>
                         </div>
                       </div>
                       <div style={{ fontSize: 13, color: colors.mutedFg, marginTop: 6 }}>{d.reason}</div>

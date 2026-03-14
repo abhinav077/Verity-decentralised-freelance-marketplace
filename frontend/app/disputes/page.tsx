@@ -9,8 +9,9 @@ import {
 import { resolveIpfsUrl } from "@/lib/ipfs";
 import { useIpfsUpload } from "@/hooks/useIpfsUpload";
 import { ethers } from "ethers";
+import Link from "next/link";
 import { Input } from "@/components/reactbits/Input";
-import { Paperclip, Scale, Timer, Clock, Vote, BarChart3, PenLine } from "lucide-react";
+import { Paperclip, Scale, Timer, Clock, Vote, PenLine } from "lucide-react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -123,29 +124,27 @@ function EvidenceUploader({ onUpload }: { onUpload: (cid: string) => void }) {
 function DisputeCard({
   dispute, currentAddress,
   onCastVote, onAdvancePhase, onResolve, onAutoResolve, onResponse,
-  onSetProportionDemand, onEscalateToAdmin, onSubmitEvidence, evidence,
-  txLoading, colors, responseDays,
+  onEscalateToAdmin, evidence,
+  txLoading, colors, responseDays, canSeeVoteBar,
 }: {
   dispute: Dispute; currentAddress: string | null;
   onCastVote: (disputeId: bigint, voteType: number) => Promise<void>;
   onAdvancePhase: (disputeId: bigint) => Promise<void>;
   onResolve: (disputeId: bigint) => Promise<void>;
   onAutoResolve: (disputeId: bigint) => Promise<void>;
-  onResponse: (disputeId: bigint, text: string) => Promise<void>;
-  onSetProportionDemand: (disputeId: bigint, myPct: number) => Promise<void>;
+  onResponse: (disputeId: bigint, text: string, evidenceHash: string, myPct: number) => Promise<void>;
   onEscalateToAdmin: (disputeId: bigint) => Promise<void>;
-  onSubmitEvidence: (disputeId: bigint, ipfsHash: string) => Promise<void>;
   evidence: { party: string; ipfsHash: string; timestamp: bigint }[];
-  txLoading: string | null; colors: any; responseDays: number;
+  txLoading: string | null; colors: any; responseDays: number; canSeeVoteBar: boolean;
 }) {
   const [voteType, setVoteType] = useState<number>(0); // 0=Client 1=Freelancer 2=ReProportion
   const [showVoteForm, setShowVoteForm] = useState(false);
   const [responseFormText, setResponseFormText] = useState("");
   const [showResponseForm, setShowResponseForm] = useState(false);
-  const [showEvidenceForm, setShowEvidenceForm] = useState(false);
-  const [evidenceHash, setEvidenceHash] = useState("");
-  const [showDemandForm, setShowDemandForm] = useState(false);
-  const [demandPct, setDemandPct] = useState("50");
+  const [responseEvidenceHash, setResponseEvidenceHash] = useState("");
+  const [responseDemandPct, setResponseDemandPct] = useState("50");
+  const [showClientDetails, setShowClientDetails] = useState(false);
+  const [showFreelancerDetails, setShowFreelancerDetails] = useState(false);
 
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -185,6 +184,13 @@ function DisputeCard({
   const inputStyle = { background: colors.inputBg, borderColor: colors.inputBorder, color: colors.pageFg };
   void isTerminal;
 
+  const isClientInitiator = dispute.initiator.toLowerCase() === dispute.client.toLowerCase();
+  const isFreelancerInitiator = dispute.initiator.toLowerCase() === dispute.freelancer.toLowerCase();
+  const clientComplaint = isClientInitiator ? dispute.reason : (dispute.responseSubmitted ? dispute.respondentDescription : "");
+  const freelancerComplaint = isFreelancerInitiator ? dispute.reason : (dispute.responseSubmitted ? dispute.respondentDescription : "");
+  const clientEvidence = evidence.filter((e) => e.party.toLowerCase() === dispute.client.toLowerCase());
+  const freelancerEvidence = evidence.filter((e) => e.party.toLowerCase() === dispute.freelancer.toLowerCase());
+
   return (
     <div className="border rounded-xl p-5 card-hover" style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
       {/* Header */}
@@ -196,113 +202,110 @@ function DisputeCard({
         <span className="text-xs font-medium px-2 py-1 rounded-full shrink-0" style={statusStyle}>{statusLabel}</span>
       </div>
 
-      {/* Complaint + Response */}
-      <div className="space-y-2 mb-3">
+      {/* Title + complaint boxes */}
+      <div className="rounded-lg border p-3 mb-3" style={{ borderColor: colors.cardBorder, background: colors.surfaceBg }}>
+        <p className="text-sm font-semibold" style={{ color: colors.pageFg }}>Dispute Title</p>
+        <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>Job #{dispute.jobId.toString()} dispute between client and freelancer</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <div className="border rounded-lg p-3" style={{ background: colors.warningBg, borderColor: colors.warningText + "22" }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: colors.warningText }}>
-            {dispute.initiator.toLowerCase() === dispute.client.toLowerCase() ? "Client" : "Freelancer"}&apos;s complaint:
-          </p>
-          <p className="text-sm" style={{ color: colors.pageFg }}>{dispute.reason}</p>
+          <p className="text-xs font-semibold mb-2" style={{ color: colors.warningText }}>Client Complaint</p>
+          <button
+            onClick={() => setShowClientDetails((v) => !v)}
+            className="w-full rounded-lg py-1.5 text-xs font-medium btn-hover"
+            style={{ background: colors.warningText, color: "#fff" }}
+          >
+            {showClientDetails ? "Hide Details" : "View Details"}
+          </button>
+          {showClientDetails && (
+            <div className="mt-2 text-xs space-y-2" style={{ color: colors.pageFg }}>
+              <p><span className="font-semibold">Description:</span> {clientComplaint || "Not submitted yet"}</p>
+              <p><span className="font-semibold">Proportion Demand:</span> {dispute.clientDemandSet ? `${Number(dispute.clientDemandPct)}%` : "Not submitted"}</p>
+              <div>
+                <p className="font-semibold">Proofs:</p>
+                {clientEvidence.length === 0 ? (
+                  <p style={{ color: colors.mutedFg }}>No evidence uploaded.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {clientEvidence.map((e, i) => (
+                      <a
+                        key={i}
+                        href={resolveIpfsUrl(e.ipfsHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block underline break-all"
+                        style={{ color: colors.primaryFg }}
+                      >
+                        {e.ipfsHash}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-        {dispute.responseSubmitted ? (
-          <div className="border rounded-lg p-3" style={{ background: colors.infoBg, borderColor: colors.infoText + "22" }}>
-            <p className="text-xs font-semibold mb-1" style={{ color: colors.infoText }}>
-              {dispute.initiator.toLowerCase() === dispute.client.toLowerCase() ? "Freelancer" : "Client"}&apos;s response:
-            </p>
-            <p className="text-sm" style={{ color: colors.pageFg }}>{dispute.respondentDescription}</p>
-          </div>
-        ) : (
-          <div className="border border-dashed rounded-lg p-3" style={{ borderColor: colors.cardBorder }}>
-            <p className="text-xs italic" style={{ color: colors.mutedFg }}>
-              {dispute.initiator.toLowerCase() === dispute.client.toLowerCase() ? "Freelancer" : "Client"} has not responded yet.
-            </p>
-          </div>
-        )}
+
+        <div className="border rounded-lg p-3" style={{ background: colors.infoBg, borderColor: colors.infoText + "22" }}>
+          <p className="text-xs font-semibold mb-2" style={{ color: colors.infoText }}>Freelancer Complaint</p>
+          <button
+            onClick={() => setShowFreelancerDetails((v) => !v)}
+            className="w-full rounded-lg py-1.5 text-xs font-medium btn-hover"
+            style={{ background: colors.infoText, color: "#fff" }}
+          >
+            {showFreelancerDetails ? "Hide Details" : "View Details"}
+          </button>
+          {showFreelancerDetails && (
+            <div className="mt-2 text-xs space-y-2" style={{ color: colors.pageFg }}>
+              <p><span className="font-semibold">Description:</span> {freelancerComplaint || "Not submitted yet"}</p>
+              <p><span className="font-semibold">Proportion Demand:</span> {dispute.freelancerDemandSet ? `${Number(dispute.freelancerDemandPct)}%` : "Not submitted"}</p>
+              <div>
+                <p className="font-semibold">Proofs:</p>
+                {freelancerEvidence.length === 0 ? (
+                  <p style={{ color: colors.mutedFg }}>No evidence uploaded.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {freelancerEvidence.map((e, i) => (
+                      <a
+                        key={i}
+                        href={resolveIpfsUrl(e.ipfsHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block underline break-all"
+                        style={{ color: colors.primaryFg }}
+                      >
+                        {e.ipfsHash}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Parties */}
       <div className="grid grid-cols-2 gap-3 text-sm mb-3">
         <div className="rounded-lg p-2" style={{ background: colors.warningBg }}>
           <p className="text-xs mb-0.5" style={{ color: colors.mutedFg }}>Client</p>
-          <p className="font-mono text-xs" style={{ color: colors.warningText }}>
+          <Link href={`/profile/${dispute.client}`} className="font-mono text-xs hover:underline" style={{ color: colors.warningText }}>
             {shortenAddress(dispute.client)}
             {isClientParty && " (you)"}
-          </p>
+          </Link>
         </div>
         <div className="rounded-lg p-2" style={{ background: colors.infoBg }}>
           <p className="text-xs mb-0.5" style={{ color: colors.mutedFg }}>Freelancer</p>
-          <p className="font-mono text-xs" style={{ color: colors.infoText }}>
+          <Link href={`/profile/${dispute.freelancer}`} className="font-mono text-xs hover:underline" style={{ color: colors.infoText }}>
             {shortenAddress(dispute.freelancer)}
             {isFreelancerParty && " (you)"}
-          </p>
+          </Link>
         </div>
       </div>
 
-      {/* Proportion demand info */}
-      {(isVotingPhase || isResolved) && (dispute.freelancerDemandSet || dispute.clientDemandSet) && (
-        <div className="rounded-lg p-3 mb-3 border text-xs space-y-1" style={{ background: colors.badgeBg, borderColor: colors.badgeText + "22" }}>
-          <p className="font-semibold" style={{ color: colors.badgeText }}>Proportion Demands</p>
-          {dispute.clientDemandSet && (
-            <p style={{ color: colors.pageFg }}>Client demands: {Number(dispute.clientDemandPct)}% of funds</p>
-          )}
-          {dispute.freelancerDemandSet && (
-            <p style={{ color: colors.pageFg }}>Freelancer demands: {Number(dispute.freelancerDemandPct)}% of funds</p>
-          )}
-        </div>
-      )}
-
-      {/* Evidence */}
-      {evidence.length > 0 && (
-        <div className="rounded-lg border p-3 mb-3 space-y-2" style={{ borderColor: colors.cardBorder }}>
-          <p className="text-xs font-semibold" style={{ color: colors.mutedFg }}><Paperclip size={12} className="inline mr-1" />Evidence ({evidence.length})</p>
-          {evidence.map((e, i) => (
-            <div key={i} className="flex items-center justify-between text-xs rounded-lg px-3 py-2 border" style={{ borderColor: colors.cardBorder }}>
-              <div>
-                <span style={{ color: colors.mutedFg }}>By {shortenAddress(e.party)}</span>
-                {e.party.toLowerCase() === dispute.client.toLowerCase() && <span className="ml-1" style={{ color: colors.warningText }}>(Client)</span>}
-                {e.party.toLowerCase() === dispute.freelancer.toLowerCase() && <span className="ml-1" style={{ color: colors.infoText }}>(Freelancer)</span>}
-              </div>
-              <a href={resolveIpfsUrl(e.ipfsHash)}
-                target="_blank" rel="noopener noreferrer"
-                className="font-mono hover:underline" style={{ color: colors.primaryFg }}>
-                {e.ipfsHash.length > 20 ? e.ipfsHash.slice(0, 10) + "…" + e.ipfsHash.slice(-6) : e.ipfsHash}
-              </a>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Submit evidence (parties only, during active phases) */}
-      {isParty && st <= 2 && (
-        showEvidenceForm ? (
-          <div className="rounded-lg border p-3 mb-3 space-y-2" style={{ borderColor: colors.cardBorder }}>
-            <p className="text-xs font-semibold" style={{ color: colors.mutedFg }}>Submit Evidence</p>
-            <EvidenceUploader onUpload={(cid) => setEvidenceHash(cid)} />
-            <p className="text-xs" style={{ color: colors.mutedFg }}>Or paste an IPFS hash / URL:</p>
-            <Input placeholder="IPFS hash or link to evidence"
-              value={evidenceHash} onChange={(e) => setEvidenceHash(e.target.value)} />
-            <div className="flex gap-2">
-              <button onClick={() => { setShowEvidenceForm(false); setEvidenceHash(""); }}
-                className="flex-1 border rounded-lg py-1.5 text-xs" style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
-              <button onClick={() => onSubmitEvidence(dispute.id, evidenceHash).then(() => { setShowEvidenceForm(false); setEvidenceHash(""); })}
-                disabled={!!txLoading || !evidenceHash}
-                className="flex-1 rounded-lg py-1.5 text-xs font-medium disabled:opacity-60"
-                style={{ background: colors.primary, color: colors.primaryText }}>
-                {txLoading === `evidence-${disputeKey}` ? "Submitting…" : "Submit"}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button onClick={() => setShowEvidenceForm(true)}
-            className="w-full border rounded-lg py-1.5 text-xs mb-3 btn-outline-hover"
-            style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
-            <><Paperclip size={12} className="inline mr-1" />Submit Evidence</>
-          </button>
-        )
-      )}
-
-      {/* 3-way vote bar */}
-      {(isVotingPhase || isResolved || isAutoResolved || Number(dispute.totalVoters) > 0) && (
+      {/* 3-way vote bar (visible only to parties and admin) */}
+      {canSeeVoteBar && (isVotingPhase || isResolved || isAutoResolved || Number(dispute.totalVoters) > 0) && (
         <VoteBar3
           clientVotes={dispute.clientVotes}
           freelancerVotes={dispute.freelancerVotes}
@@ -387,13 +390,37 @@ function DisputeCard({
                 <textarea rows={2} placeholder="Explain your side…"
                   className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                   value={responseFormText} onChange={(e) => setResponseFormText(e.target.value)} />
+                <EvidenceUploader onUpload={(cid) => setResponseEvidenceHash(cid)} />
+                <Input
+                  placeholder="IPFS hash or link to evidence"
+                  value={responseEvidenceHash}
+                  onChange={(e) => setResponseEvidenceHash(e.target.value)}
+                />
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="Your proportion demand %"
+                  value={responseDemandPct}
+                  onChange={(e) => setResponseDemandPct(e.target.value)}
+                />
                 <div className="flex gap-2">
-                  <button onClick={() => setShowResponseForm(false)}
+                  <button onClick={() => {
+                    setShowResponseForm(false);
+                    setResponseFormText("");
+                    setResponseEvidenceHash("");
+                    setResponseDemandPct("50");
+                  }}
                     className="flex-1 border rounded-lg py-2 text-sm"
                     style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
                   <button
-                    onClick={() => onResponse(dispute.id, responseFormText).then(() => { setShowResponseForm(false); setResponseFormText(""); })}
-                    disabled={!!txLoading || !responseFormText}
+                    onClick={() => onResponse(dispute.id, responseFormText, responseEvidenceHash, parseInt(responseDemandPct || "0")).then(() => {
+                      setShowResponseForm(false);
+                      setResponseFormText("");
+                      setResponseEvidenceHash("");
+                      setResponseDemandPct("50");
+                    })}
+                    disabled={!!txLoading || !responseFormText || !responseEvidenceHash || responseDemandPct === ""}
                     className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
                     style={{ background: colors.primary, color: colors.primaryText }}>
                     {txLoading === `response-${disputeKey}` ? "Submitting…" : "Submit Response"}
@@ -486,38 +513,10 @@ function DisputeCard({
                   You&apos;re a party — you cannot vote, but you can set your proportion demand.
                 </p>
               )}
-              {/* Proportion demand setting for parties */}
               {isParty && (
-                showDemandForm ? (
-                  <div className="mt-3 pt-3 space-y-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
-                    <p className="text-sm font-medium" style={{ color: colors.pageFg }}>
-                      Set your proportion demand (% of funds you believe you deserve)
-                    </p>
-                    <Input type="number" min="0" max="100" value={demandPct}
-                      onChange={(e) => setDemandPct(e.target.value)}
-                      placeholder="e.g. 60" />
-                    <div className="flex gap-2">
-                      <button onClick={() => setShowDemandForm(false)}
-                        className="flex-1 border rounded-lg py-2 text-sm"
-                        style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>Cancel</button>
-                      <button
-                        onClick={() => onSetProportionDemand(dispute.id, parseInt(demandPct)).then(() => setShowDemandForm(false))}
-                        disabled={!!txLoading}
-                        className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
-                        style={{ background: colors.badgeText, color: "#fff" }}>
-                        {txLoading === `demand-${disputeKey}` ? "Setting…" : "Set Demand"}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button onClick={() => setShowDemandForm(true)}
-                    className="mt-2 w-full border rounded-lg py-2 text-xs btn-outline-hover"
-                    style={{ borderColor: colors.badgeText + "55", color: colors.badgeText }}>
-                    <BarChart3 size={14} className="inline mr-1" />Set My Proportion Demand
-                    {((isClientParty && dispute.clientDemandSet) || (isFreelancerParty && dispute.freelancerDemandSet)) &&
-                      " (already set)"}
-                  </button>
-                )
+                <p className="text-xs text-center mt-2" style={{ color: colors.mutedFg }}>
+                  Proportion demand is submitted together with your complaint/response.
+                </p>
               )}
             </>
           ) : (
@@ -580,6 +579,7 @@ export default function DisputesPage() {
   const [votingDays, setVotingDays] = useState(5);
   const [voterRewardVrt, setVoterRewardVrt] = useState("2");
   const [minVrtToVote, setMinVrtToVote] = useState("0");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const contractsConfigured = CONTRACT_ADDRESSES.DisputeResolution !== "";
 
@@ -649,6 +649,28 @@ export default function DisputesPage() {
     })();
   }, [provider, signer, contractsConfigured]);
 
+  useEffect(() => {
+    if (!contractsConfigured || !address) {
+      setIsAdmin(false);
+      return;
+    }
+    const reader = provider || signer;
+    if (!reader) {
+      setIsAdmin(false);
+      return;
+    }
+    (async () => {
+      try {
+        const dr = getDisputeResolution(reader);
+        const role = await dr.ADMIN_ROLE();
+        const ok = await dr.hasRole(role, address);
+        setIsAdmin(Boolean(ok));
+      } catch {
+        setIsAdmin(false);
+      }
+    })();
+  }, [provider, signer, contractsConfigured, address]);
+
   useEffect(() => { setLoading(true); loadDisputes(); }, [loadDisputes]);
   useEffect(() => {
     if (!provider) return;
@@ -702,20 +724,20 @@ export default function DisputesPage() {
   };
 
   // ── Submit response ───────────────────────────────────────────────────
-  const handleResponse = async (disputeId: bigint, text: string) => {
+  const handleResponse = async (disputeId: bigint, text: string, evidenceHash: string, myPct: number) => {
     if (!signer) return;
     await runTx(`response-${disputeId.toString()}`, async () => {
-      const tx = await getDisputeResolution(signer).submitResponse(disputeId, text);
-      await tx.wait();
-    });
-  };
+      const dr = getDisputeResolution(signer);
+      const tx1 = await dr.submitResponse(disputeId, text);
+      await tx1.wait();
 
-  // ── Set proportion demand ─────────────────────────────────────────────
-  const handleSetProportionDemand = async (disputeId: bigint, myPct: number) => {
-    if (!signer) return;
-    await runTx(`demand-${disputeId.toString()}`, async () => {
-      const tx = await getDisputeResolution(signer).setProportionDemand(disputeId, myPct);
-      await tx.wait();
+      const tx2 = await dr.submitEvidence(disputeId, evidenceHash);
+      await tx2.wait();
+
+      const tx3 = await dr.setProportionDemand(disputeId, myPct);
+      await tx3.wait();
+
+      loadEvidenceForDispute(disputeId);
     });
   };
 
@@ -725,17 +747,6 @@ export default function DisputesPage() {
     await runTx(`escalate-${disputeId.toString()}`, async () => {
       const tx = await getDisputeResolution(signer).escalateToAdmin(disputeId);
       await tx.wait();
-    });
-  };
-
-  // ── Submit evidence ───────────────────────────────────────────────────
-  const handleSubmitEvidence = async (disputeId: bigint, ipfsHash: string) => {
-    if (!signer) return;
-    await runTx(`evidence-${disputeId.toString()}`, async () => {
-      const tx = await getDisputeResolution(signer).submitEvidence(disputeId, ipfsHash);
-      await tx.wait();
-      // Reload evidence for this dispute
-      loadEvidenceForDispute(disputeId);
     });
   };
 
@@ -799,7 +810,7 @@ export default function DisputesPage() {
           <div className="flex gap-6 mb-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
             {(["active", "resolved", "mine", "all"] as const).map((f) => (
               <button key={f} onClick={() => setFilter(f)}
-                className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
+                className="relative pb-2.5 text-sm font-medium transition-colors -mb-0.5"
                 style={filter === f
                   ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
                   : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
@@ -834,13 +845,16 @@ export default function DisputesPage() {
                   onResolve={handleResolve}
                   onAutoResolve={handleAutoResolve}
                   onResponse={handleResponse}
-                  onSetProportionDemand={handleSetProportionDemand}
                   onEscalateToAdmin={handleEscalateToAdmin}
-                  onSubmitEvidence={handleSubmitEvidence}
                   evidence={evidenceMap[d.id.toString()] || []}
                   txLoading={txLoading}
                   colors={colors}
                   responseDays={responseDays}
+                  canSeeVoteBar={Boolean(address) && (
+                    d.client.toLowerCase() === address.toLowerCase() ||
+                    d.freelancer.toLowerCase() === address.toLowerCase() ||
+                    isAdmin
+                  )}
                 />
               ))}
             </div>

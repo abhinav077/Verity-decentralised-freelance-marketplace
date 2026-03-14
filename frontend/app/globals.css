@@ -200,3 +200,29 @@ body {
 button, [role="button"], a {
   cursor: pointer;
 }
+
+/* Hide Liveblocks floating badge */
+#liveblocks-badge,
+#liveblocks-badge-hide-button {
+  display: none !important;
+}
+
+/* Stream Chat theme alignment */
+.verity-stream-chat .str-chat,
+.verity-stream-chat .str-chat__container,
+.verity-stream-chat .str-chat__channel,
+.verity-stream-chat .str-chat__main-panel,
+.verity-stream-chat .str-chat__list,
+.verity-stream-chat .str-chat__message-input {
+  background: var(--str-chat__background-color) !important;
+  color: var(--str-chat__text-color) !important;
+}
+
+.verity-stream-chat .str-chat__list-notifications,
+.verity-stream-chat .str-chat__message-simple,
+.verity-stream-chat .str-chat__message-input,
+.verity-stream-chat .str-chat__thread,
+.verity-stream-chat .str-chat__textarea,
+.verity-stream-chat .str-chat__input-flat {
+  border-color: var(--str-chat__border-color) !important;
+}

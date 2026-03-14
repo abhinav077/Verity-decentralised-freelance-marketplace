@@ -155,11 +155,19 @@ async function main() {
   };
   const rpcUrl = RPC_MAP[chainIdNum.toString()] || "";
 
-  // Preserve existing Pinata / IPFS keys that may already be in .env.local
+  // Preserve existing non-address keys that may already be in .env.local
   let existingExtra = "";
   if (fs.existsSync(envPath)) {
     const existing = fs.readFileSync(envPath, "utf-8");
-    const preserveKeys = ["PINATA_JWT", "NEXT_PUBLIC_PINATA_GATEWAY", "NEXT_PUBLIC_IPFS_GATEWAY"];
+    const preserveKeys = [
+      "PINATA_JWT",
+      "NEXT_PUBLIC_PINATA_GATEWAY",
+      "NEXT_PUBLIC_IPFS_GATEWAY",
+      "STREAM_API_KEY",
+      "STREAM_API_SECRET",
+      "NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY",
+      "LIVEBLOCKS_SECRET_KEY",
+    ];
     for (const line of existing.split("\n")) {
       const key = line.split("=")[0]?.trim();
       if (key && preserveKeys.includes(key)) {
@@ -182,7 +190,7 @@ NEXT_PUBLIC_GOVERNANCE=${govAddr}
 NEXT_PUBLIC_BOUNTY_BOARD=${bbAddr}
 NEXT_PUBLIC_SUB_CONTRACTING=${scAddr}
 
-# ═══ IPFS / Pinata (add your keys here or they are preserved from previous) ═══
+# ═══ Realtime / IPFS keys (preserved from previous .env.local) ═══
 ${existingExtra}`;
 
   try {

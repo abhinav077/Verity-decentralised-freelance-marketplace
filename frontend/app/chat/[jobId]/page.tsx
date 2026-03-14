@@ -4,23 +4,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getJobMarket, getSubContracting, shortenAddress, CONTRACT_ADDRESSES, chatKey, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
+import { getJobMarket, getSubContracting, shortenAddress, CONTRACT_ADDRESSES, chatReadKey, NATIVE_SYMBOL } from "@/lib/contracts";
+import { JobChat } from "@/components/StreamChatProvider";
 import { ethers } from "ethers";
-import { Paperclip, MessageCircle, FileText } from "lucide-react";
-
-interface Attachment {
-  name: string;
-  type: string;
-  data: string; // base64 DataURL
-}
-
-interface Message {
-  id: string;
-  sender: string;
-  text: string;
-  timestamp: number;
-  attachment?: Attachment;
-}
 
 interface JobInfo {
   id: bigint;
@@ -29,17 +15,6 @@ interface JobInfo {
   selectedFreelancer: string;
   status: number;
   budget: bigint;
-}
-
-function loadMessages(jobId: string): Message[] {
-  try {
-    const raw = localStorage.getItem(chatKey(jobId));
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveMessages(jobId: string, msgs: Message[]) {
-  try { localStorage.setItem(chatKey(jobId), JSON.stringify(msgs)); } catch {}
 }
 
 function Avatar({ address, size = 28 }: { address: string; size?: number }) {
@@ -62,14 +37,9 @@ export default function ChatPage() {
 
   const [job, setJob] = useState<JobInfo | null>(null);
   const [jobLoaded, setJobLoaded] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(() => jobId ? loadMessages(jobId) : []);
-  const [text, setText] = useState("");
-  const [attachment, setAttachment] = useState<Attachment | null>(null);
-  const [sending, setSending] = useState(false);
+  const [messagesCount, setMessagesCount] = useState(0);
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Detect sub-contract chat (sc-X prefix)
   const isSubContract = jobId?.startsWith("sc-") ?? false;
@@ -128,63 +98,11 @@ export default function ChatPage() {
     }
   }, [provider, signer, jobId, isSubContract, scNumericId]);
 
-  // Poll messages from localStorage every 1.5s + cross-tab sync
+  // Mark messages as read in local cache for badge counts (optional)
   useEffect(() => {
-    if (!jobId) return;
-    const interval = setInterval(() => {
-      const fresh = loadMessages(jobId);
-      setMessages((prev) => fresh.length !== prev.length ? fresh : prev);
-    }, 1500);
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === chatKey(jobId)) setMessages(loadMessages(jobId));
-    };
-    window.addEventListener("storage", onStorage);
-    return () => { clearInterval(interval); window.removeEventListener("storage", onStorage); };
-  }, [jobId]);
-
-  // Mark messages as read
-  useEffect(() => {
-    if (!jobId || !address || messages.length === 0) return;
-    localStorage.setItem(chatReadKey(jobId, address), String(messages.length));
-  }, [jobId, address, messages]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
-
-  const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 1 * 1024 * 1024) { alert("Max file size is 1 MB"); return; }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachment({ name: file.name, type: file.type, data: reader.result as string });
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  }, []);
-
-  const sendMessage = useCallback(() => {
-    if (!address || (!text.trim() && !attachment)) return;
-    setSending(true);
-    const msg: Message = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      sender: address,
-      text: text.trim(),
-      timestamp: Date.now(),
-      attachment: attachment ?? undefined,
-    };
-    const current = loadMessages(jobId);
-    const updated = [...current, msg];
-    setMessages(updated);
-    saveMessages(jobId, updated);
-    setText("");
-    setAttachment(null);
-    setSending(false);
-  }, [address, text, attachment, jobId]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
+    if (!jobId || !address) return;
+    localStorage.setItem(chatReadKey(jobId, address), String(messagesCount));
+  }, [jobId, address, messagesCount]);
 
   /* ── Early-return states ── */
   if (!address) {
@@ -283,131 +201,16 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Messages area */}
+      {/* Messages area - now powered by Stream Chat */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12" style={{ color: colors.mutedFg }}>
-            <MessageCircle size={40} className="mb-3" />
-            <p className="font-medium">No messages yet</p>
-            <p className="text-sm mt-1">Start the conversation below.</p>
-          </div>
-        )}
-        {messages.map((msg) => {
-          const isMine = msg.sender.toLowerCase() === address.toLowerCase();
-          return (
-            <div key={msg.id}
-              className={`flex gap-2.5 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
-              <Avatar address={msg.sender} size={28} />
-              <div className={`max-w-[72%] space-y-1 ${isMine ? "items-end" : "items-start"} flex flex-col`}>
-                <div className={`flex items-center gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
-                  <span className="text-xs font-mono" style={{ color: colors.mutedFg }}>
-                    {isMine ? "You" : shortenAddress(msg.sender)}
-                  </span>
-                  <span className="text-xs" style={{ color: colors.inputBorder }}>
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </div>
-                {msg.text && (
-                  <div className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
-                    style={isMine
-                      ? { background: colors.primary, color: colors.primaryText, borderTopRightRadius: 4 }
-                      : { background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, color: colors.pageFg, borderTopLeftRadius: 4 }
-                    }>
-                    {msg.text}
-                  </div>
-                )}
-                {msg.attachment && (
-                  <AttachmentBubble attachment={msg.attachment} isMine={isMine} colors={colors} />
-                )}
-              </div>
-            </div>
-          );
-        })}
+        <JobChat
+          jobId={jobId}
+          isSubContract={isSubContract}
+          walletAddress={address}
+          onMessagesCountChange={setMessagesCount}
+        />
         <div ref={bottomRef} />
       </div>
-
-      {/* Attachment preview */}
-      {attachment && (
-        <div className="mb-2 flex items-center gap-3 rounded-xl px-4 py-2 border"
-          style={{ background: colors.primaryLight, borderColor: colors.primary + "33" }}>
-          <Paperclip size={18} style={{ color: colors.primaryFg }} />
-          <span className="text-sm truncate flex-1" style={{ color: colors.primaryFg }}>{attachment.name}</span>
-          <button onClick={() => setAttachment(null)}
-            className="text-lg leading-none" style={{ color: colors.mutedFg }}>&times;</button>
-        </div>
-      )}
-
-      {/* Input bar */}
-      {job.status === 3 ? (
-        <div className="rounded-2xl shadow-sm p-4 text-center border"
-          style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-          <p className="text-sm" style={{ color: colors.mutedFg }}>
-            This chat is read-only — the job is cancelled.
-          </p>
-        </div>
-      ) : (
-      <div className="rounded-2xl shadow-sm flex items-end gap-2 p-2 border"
-        style={{ background: colors.cardBg, borderColor: colors.cardBorder }}>
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="p-2 rounded-xl shrink-0 transition-colors"
-          style={{ color: colors.mutedFg }}
-          title="Attach file"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round"
-              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-          </svg>
-        </button>
-        <input ref={fileRef} type="file" className="hidden" onChange={handleFile} />
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message… (Enter to send, Shift+Enter for newline)"
-          rows={1}
-          className="flex-1 resize-none text-sm outline-none py-2 max-h-32 overflow-y-auto bg-transparent"
-          style={{ lineHeight: "1.5", color: colors.pageFg }}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={sending || (!text.trim() && !attachment)}
-          className="disabled:opacity-40 disabled:cursor-not-allowed p-2.5 rounded-xl transition-colors shrink-0"
-          style={{ background: colors.primary, color: colors.primaryText }}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.269 20.876L5.999 12zm0 0h7.5" />
-          </svg>
-        </button>
-      </div>
-      )}
     </div>
-  );
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function AttachmentBubble({ attachment, isMine, colors }: { attachment: Attachment; isMine: boolean; colors: any }) {
-  const isImage = attachment.type.startsWith("image/");
-  if (isImage) {
-    return (
-      <div className="rounded-2xl overflow-hidden shadow-sm max-w-[240px] border"
-        style={{ borderColor: isMine ? colors.primary : colors.cardBorder }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={attachment.data} alt={attachment.name} className="w-full object-cover" />
-      </div>
-    );
-  }
-  return (
-    <a href={attachment.data} download={attachment.name}
-      className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm border shadow-sm transition-colors"
-      style={isMine
-        ? { background: colors.primaryHover, borderColor: colors.primary, color: colors.primaryText }
-        : { background: colors.cardBg, borderColor: colors.cardBorder, color: colors.primaryFg }
-      }>
-      <span><FileText size={16} /></span>
-      <span className="truncate max-w-[180px]">{attachment.name}</span>
-      <span className="opacity-60 text-xs">↓</span>
-    </a>
   );
 }

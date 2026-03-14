@@ -640,7 +640,11 @@ function SubContractsInner() {
                 <div className="rounded-xl p-4 border space-y-2" style={{ borderColor: colors.cardBorder }}>
                   <p className="text-sm font-medium" style={{ color: colors.pageFg }}>
                     <Handshake size={14} className="inline mr-1" />
-                    Settlement proposed by {settlement.proposer.toLowerCase() === address?.toLowerCase() ? "you" : shortenAddress(settlement.proposer)}
+                    Settlement proposed by {settlement.proposer.toLowerCase() === address?.toLowerCase() ? "you" : (
+                      <Link href={`/profile/${settlement.proposer}`} className="hover:underline" style={{ color: colors.primaryFg }}>
+                        {shortenAddress(settlement.proposer)}
+                      </Link>
+                    )}
                   </p>
                   <p className="text-xs" style={{ color: colors.mutedFg }}>
                     Sub-contractor gets {Number(settlement.freelancerPercent)}% — Primary gets {100 - Number(settlement.freelancerPercent)}%
@@ -755,7 +759,11 @@ function SubContractsInner() {
                 <div className="rounded-xl p-4 border space-y-2" style={{ borderColor: colors.cardBorder }}>
                   <p className="text-sm font-medium" style={{ color: colors.pageFg }}>
                     <Handshake size={14} className="inline mr-1" />
-                    Settlement proposed by {settlement.proposer.toLowerCase() === address?.toLowerCase() ? "you" : shortenAddress(settlement.proposer)}
+                    Settlement proposed by {settlement.proposer.toLowerCase() === address?.toLowerCase() ? "you" : (
+                      <Link href={`/profile/${settlement.proposer}`} className="hover:underline" style={{ color: colors.primaryFg }}>
+                        {shortenAddress(settlement.proposer)}
+                      </Link>
+                    )}
                   </p>
                   <p className="text-xs" style={{ color: colors.mutedFg }}>
                     Sub-contractor gets {Number(settlement.freelancerPercent)}% — Primary gets {100 - Number(settlement.freelancerPercent)}%
@@ -893,12 +901,6 @@ function SubContractsInner() {
           )}
         </div>
 
-        {/* Task Board (expanded inline) */}
-        {showTaskBoard === scKey && (
-          <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
-            <TaskBoard jobId={`sc-${scKey}`} onClose={() => setShowTaskBoard(null)} />
-          </div>
-        )}
       </div>
     );
   };
@@ -1076,6 +1078,13 @@ function SubContractsInner() {
             </div>
           </div>
         </div>
+      )}
+
+      {showTaskBoard && (
+        <TaskBoard
+          jobId={`sc-${showTaskBoard}`}
+          onClose={() => setShowTaskBoard(null)}
+        />
       )}
     </div>
   );

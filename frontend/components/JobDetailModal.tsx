@@ -49,6 +49,8 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const [bidDays, setBidDays] = useState("");
   const [bidProposal, setBidProposal] = useState("");
   const [disputeReason, setDisputeReason] = useState("");
+  const [disputeEvidenceHash, setDisputeEvidenceHash] = useState("");
+  const [disputeDemandPct, setDisputeDemandPct] = useState("50");
   const [showBidForm, setShowBidForm] = useState(initialShowBid ?? false);
   const [showDisputeForm, setShowDisputeForm] = useState(false);
   const [txLoading, setTxLoading] = useState<string | null>(null);
@@ -62,6 +64,8 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const [disputeResponseSubmitted, setDisputeResponseSubmitted] = useState(false);
   const [disputeCreatedAt, setDisputeCreatedAt] = useState<bigint | null>(null);
   const [responseText, setResponseText] = useState("");
+  const [responseEvidenceHash, setResponseEvidenceHash] = useState("");
+  const [responseDemandPct, setResponseDemandPct] = useState("50");
   const [showResponseForm, setShowResponseForm] = useState(false);
 
   // Settlement state
@@ -287,16 +291,61 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   };
 
   const raiseDispute = () => run("Raising dispute…", async () => {
-    const tx = await getDisputeResolution(signer!).raiseDispute(
-      job.id, job.client, job.selectedFreelancer, disputeReason
+    const reason = disputeReason.trim();
+    if (!reason) throw new Error("Please add dispute description.");
+    if (!disputeEvidenceHash.trim()) throw new Error("Please upload or paste dispute evidence.");
+    const demand = Number(disputeDemandPct);
+    if (!Number.isFinite(demand) || demand < 0 || demand > 100) {
+      throw new Error("Demand must be between 0 and 100.");
+    }
+
+    const dr = getDisputeResolution(signer!);
+    const disputeId = await dr.raiseDispute.staticCall(
+      job.id,
+      job.client,
+      job.selectedFreelancer,
+      reason,
     );
-    await tx.wait(); setShowDisputeForm(false);
+    const tx = await dr.raiseDispute(job.id, job.client, job.selectedFreelancer, reason);
+    await tx.wait();
+
+    const evTx = await dr.submitEvidence(disputeId, disputeEvidenceHash.trim());
+    await evTx.wait();
+
+    const demandTx = await dr.setProportionDemand(disputeId, demand);
+    await demandTx.wait();
+
+    setShowDisputeForm(false);
+    setDisputeReason("");
+    setDisputeEvidenceHash("");
+    setDisputeDemandPct("50");
   });
 
   const submitResponse = () => run("Submitting response…", async () => {
     if (!activeDisputeId) return;
-    const tx = await getDisputeResolution(signer!).submitResponse(activeDisputeId, responseText);
-    await tx.wait(); setDisputeResponseSubmitted(true); setShowResponseForm(false);
+    const desc = responseText.trim();
+    if (!desc) throw new Error("Please add your response description.");
+    if (!responseEvidenceHash.trim()) throw new Error("Please upload or paste your evidence.");
+    const demand = Number(responseDemandPct);
+    if (!Number.isFinite(demand) || demand < 0 || demand > 100) {
+      throw new Error("Demand must be between 0 and 100.");
+    }
+
+    const dr = getDisputeResolution(signer!);
+    const tx = await dr.submitResponse(activeDisputeId, desc);
+    await tx.wait();
+
+    const evTx = await dr.submitEvidence(activeDisputeId, responseEvidenceHash.trim());
+    await evTx.wait();
+
+    const demandTx = await dr.setProportionDemand(activeDisputeId, demand);
+    await demandTx.wait();
+
+    setDisputeResponseSubmitted(true);
+    setShowResponseForm(false);
+    setResponseText("");
+    setResponseEvidenceHash("");
+    setResponseDemandPct("50");
   });
 
   const withdrawDisputeAction = () => {
@@ -722,10 +771,34 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <textarea rows={3} placeholder="Describe your reason…"
                     className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                     value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
+                  <IpfsFileUpload
+                    label={disputeEvidenceHash ? "Replace Dispute Proof" : "Upload Dispute Proof"}
+                    compact
+                    existingCid={disputeEvidenceHash || undefined}
+                    onUpload={(cid) => setDisputeEvidenceHash(cid)}
+                  />
+                  <Input
+                    placeholder="Or paste evidence IPFS hash / URL"
+                    value={disputeEvidenceHash}
+                    onChange={e => setDisputeEvidenceHash(e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="Your proportion demand %"
+                    value={disputeDemandPct}
+                    onChange={e => setDisputeDemandPct(e.target.value)}
+                  />
                   <div className="flex gap-2">
-                    <button onClick={() => setShowDisputeForm(false)}
+                    <button onClick={() => {
+                      setShowDisputeForm(false);
+                      setDisputeReason("");
+                      setDisputeEvidenceHash("");
+                      setDisputeDemandPct("50");
+                    }}
                       className="flex-1 border rounded-lg py-2 text-sm" style={btnOutline}>Cancel</button>
-                    <button onClick={raiseDispute} disabled={!!txLoading || !disputeReason}
+                    <button onClick={raiseDispute} disabled={!!txLoading || !disputeReason.trim() || !disputeEvidenceHash.trim() || disputeDemandPct === ""}
                       className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
                       style={{ background: colors.warningText, color: "#fff" }}>
                       {txLoading === "Raising dispute…" ? "Submitting…" : "Raise Dispute"}
@@ -905,10 +978,34 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   <textarea rows={3} placeholder="Describe the issue…"
                     className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                     value={disputeReason} onChange={e => setDisputeReason(e.target.value)} />
+                  <IpfsFileUpload
+                    label={disputeEvidenceHash ? "Replace Dispute Proof" : "Upload Dispute Proof"}
+                    compact
+                    existingCid={disputeEvidenceHash || undefined}
+                    onUpload={(cid) => setDisputeEvidenceHash(cid)}
+                  />
+                  <Input
+                    placeholder="Or paste evidence IPFS hash / URL"
+                    value={disputeEvidenceHash}
+                    onChange={e => setDisputeEvidenceHash(e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="Your proportion demand %"
+                    value={disputeDemandPct}
+                    onChange={e => setDisputeDemandPct(e.target.value)}
+                  />
                   <div className="flex gap-2">
-                    <button onClick={() => setShowDisputeForm(false)}
+                    <button onClick={() => {
+                      setShowDisputeForm(false);
+                      setDisputeReason("");
+                      setDisputeEvidenceHash("");
+                      setDisputeDemandPct("50");
+                    }}
                       className="flex-1 border rounded-lg py-2 text-sm" style={btnOutline}>Cancel</button>
-                    <button onClick={raiseDispute} disabled={!!txLoading || !disputeReason}
+                    <button onClick={raiseDispute} disabled={!!txLoading || !disputeReason.trim() || !disputeEvidenceHash.trim() || disputeDemandPct === ""}
                       className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
                       style={{ background: colors.warningText, color: "#fff" }}>
                       {txLoading === "Raising dispute…" ? "Submitting…" : "Raise Dispute"}
@@ -990,10 +1087,34 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       <textarea rows={3} placeholder="Explain your side…"
                         className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none" style={inputStyle}
                         value={responseText} onChange={e => setResponseText(e.target.value)} />
+                      <IpfsFileUpload
+                        label={responseEvidenceHash ? "Replace Response Proof" : "Upload Response Proof"}
+                        compact
+                        existingCid={responseEvidenceHash || undefined}
+                        onUpload={(cid) => setResponseEvidenceHash(cid)}
+                      />
+                      <Input
+                        placeholder="Or paste evidence IPFS hash / URL"
+                        value={responseEvidenceHash}
+                        onChange={e => setResponseEvidenceHash(e.target.value)}
+                      />
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        placeholder="Your proportion demand %"
+                        value={responseDemandPct}
+                        onChange={e => setResponseDemandPct(e.target.value)}
+                      />
                       <div className="flex gap-2">
-                        <button onClick={() => setShowResponseForm(false)}
+                        <button onClick={() => {
+                          setShowResponseForm(false);
+                          setResponseText("");
+                          setResponseEvidenceHash("");
+                          setResponseDemandPct("50");
+                        }}
                           className="flex-1 border rounded-lg py-2 text-sm" style={btnOutline}>Cancel</button>
-                        <button onClick={submitResponse} disabled={!!txLoading || !responseText}
+                        <button onClick={submitResponse} disabled={!!txLoading || !responseText.trim() || !responseEvidenceHash.trim() || responseDemandPct === ""}
                           className="flex-1 rounded-lg py-2 text-sm font-medium disabled:opacity-60 btn-hover"
                           style={{ background: colors.infoText, color: "#fff" }}>
                           {txLoading === "Submitting response…" ? "Submitting…" : "Submit Response"}
@@ -1099,9 +1220,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                         <span className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ background: colors.inputBg, color: colors.mutedFg }}>
                           <Users size={14} />
                         </span>
-                        <span className="text-sm font-medium" style={{ color: colors.pageFg }}>
-                          {bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() ? "you" : shortenAddress(bid.freelancer)}
-                        </span>
+                        {bid.freelancer.toLowerCase() === currentAddress?.toLowerCase() ? (
+                          <span className="text-sm font-medium" style={{ color: colors.pageFg }}>you</span>
+                        ) : (
+                          <Link href={`/profile/${bid.freelancer}`} className="text-sm font-medium hover:underline" style={{ color: colors.primaryFg }}>
+                            {shortenAddress(bid.freelancer)}
+                          </Link>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold" style={{ color: colors.primaryFg }}>
