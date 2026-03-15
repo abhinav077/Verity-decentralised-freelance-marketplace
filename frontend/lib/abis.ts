@@ -4,10 +4,10 @@
 
 // ── JobMarket ────────────────────────────────────────────────────────────────
 
-const JOB_TUPLE = "tuple(uint256 id, address client, string title, string description, string category, uint256 budget, uint256 deadline, uint8 status, address selectedFreelancer, uint256 acceptedBidId, uint256 createdAt, uint256 deliveredAt, uint256 milestoneCount, bool sealedBidding, uint256 expectedDays, string deliveryProof, bool tipGiven, bool revisionRequested)";
+const JOB_TUPLE = "tuple(uint256 id, address client, string title, string description, string category, uint256 budget, uint256 deadline, uint8 status, address selectedFreelancer, uint256 acceptedBidId, uint256 createdAt, uint256 deliveredAt, uint256 milestoneCount, bool sealedBidding, uint256 expectedDays, string deliveryProof, string deliveryDescription, bool tipGiven, bool revisionRequested)";
 const BID_TUPLE = "tuple(uint256 id, uint256 jobId, address freelancer, uint256 amount, uint256 completionDays, string proposal, uint256 timestamp, bool isActive)";
 const SETTLEMENT_TUPLE = "tuple(uint256 jobId, address proposer, uint256 percentComplete, uint256 freelancerPercent, bool active)";
-const MS_TUPLE = "tuple(string title, uint256 amount, uint8 status)";
+const MS_TUPLE = "tuple(string title, uint256 amount, uint8 status, string submissionProof, string submissionDescription, uint256 submittedAt)";
 const PROFILE_TUPLE = "tuple(uint256 jobsCompleted, uint256 totalEarned, uint256 totalSpent, uint256 averageRating, bool exists)";
 
 export const JOB_MARKET_ABI = [
@@ -32,6 +32,7 @@ export const JOB_MARKET_ABI = [
   "function acceptBid(uint256 bidId) external payable",
   // Job lifecycle
   "function deliverJob(uint256 jobId, string ipfsProof) external",
+  "function deliverJob(uint256 jobId, string ipfsProof, string description) external",
   "function completeJob(uint256 jobId) external",
   "function autoReleasePayment(uint256 jobId) external",
   "function cancelJob(uint256 jobId) external",
@@ -44,7 +45,9 @@ export const JOB_MARKET_ABI = [
   "function requestSettlement(uint256 jobId, uint256 percentComplete, uint256 freelancerPct) external",
   "function respondToSettlement(uint256 jobId, bool accept) external",
   // Milestones
-  "function submitMilestone(uint256 jobId, uint256 idx) external",
+  "function submitMilestone(uint256 jobId, uint256 idx, string proof) external",
+  "function submitMilestone(uint256 jobId, uint256 idx, string proof, string description) external",
+  "function requestMilestoneRevision(uint256 jobId, uint256 idx) external",
   "function approveMilestone(uint256 jobId, uint256 idx) external",
   // Views
   `function getJob(uint256 jobId) view returns (${JOB_TUPLE})`,
@@ -60,7 +63,8 @@ export const JOB_MARKET_ABI = [
   "event JobCompleted(uint256 indexed jobId, address indexed freelancer, uint256 payment)",
   "event JobDelivered(uint256 indexed jobId, address indexed freelancer, uint256 autoReleaseAt)",
   "event JobAutoReleased(uint256 indexed jobId)",
-  "event MilestoneSubmitted(uint256 indexed jobId, uint256 milestoneIndex)",
+  "event MilestoneSubmitted(uint256 indexed jobId, uint256 milestoneIndex, string proof)",
+  "event MilestoneRevisionRequested(uint256 indexed jobId, uint256 milestoneIndex)",
   "event MilestoneApproved(uint256 indexed jobId, uint256 milestoneIndex, uint256 amount)",
   "event DisputeRaised(uint256 indexed jobId, address indexed initiator)",
   "event TipAdded(uint256 indexed jobId, uint256 amount)",
@@ -143,7 +147,9 @@ export const DISPUTE_RESOLUTION_ABI = [
   "function setMinVrtToVote(uint256 _m) external",
   // Actions
   "function raiseDispute(uint256 jobId, address client, address freelancer, string reason) external returns (uint256)",
+  "function raiseDisputeWithEvidenceAndDemand(uint256 jobId, address client, address freelancer, string reason, string ipfsHash, uint256 myPercent) external returns (uint256)",
   "function submitResponse(uint256 disputeId, string description) external",
+  "function submitResponseWithEvidenceAndDemand(uint256 disputeId, string description, string ipfsHash, uint256 myPercent) external",
   "function submitEvidence(uint256 disputeId, string ipfsHash) external",
   "function advanceToVotingPhase(uint256 disputeId) external",
   // Direct voting (no commit-reveal)
@@ -164,6 +170,7 @@ export const DISPUTE_RESOLUTION_ABI = [
   // Views
   `function getDispute(uint256 disputeId) view returns (${DISPUTE_TUPLE})`,
   `function getEvidence(uint256 disputeId) view returns (${EVIDENCE_TUPLE}[])`,
+  "function hasSubmittedEvidence(uint256 disputeId, address party) view returns (bool)",
   "function getVoteTallies(uint256 disputeId) view returns (uint256 cVotes, uint256 fVotes, uint256 rpVotes)",
   "function getDisputesByJob(uint256 jobId) view returns (uint256[])",
   "function getUserDisputes(address user) view returns (uint256[])",
@@ -310,7 +317,7 @@ const SC_BID_TUPLE = "tuple(uint256 id, uint256 scId, address bidder, uint256 am
 
 const SC_SETTLEMENT_TUPLE = "tuple(address proposer, uint256 freelancerPercent, bool active)";
 
-const SUB_CONTRACT_TUPLE = "tuple(uint256 id, uint256 parentJobId, address primaryFreelancer, address subContractor, string description, uint256 payment, uint8 status, uint256 createdAt, uint256 deliveredAt, uint256 completedAt, uint256 acceptedBidId, string deliveryProof, bool revisionRequested, bool tipGiven)";
+const SUB_CONTRACT_TUPLE = "tuple(uint256 id, uint256 parentJobId, address primaryFreelancer, address subContractor, string description, uint256 payment, uint8 status, uint256 createdAt, uint256 deliveredAt, uint256 completedAt, uint256 acceptedBidId, string deliveryProof, string deliveryDescription, bool revisionRequested, bool tipGiven)";
 
 export const SUB_CONTRACTING_ABI = [
   "function subContractCounter() view returns (uint256)",
@@ -326,6 +333,7 @@ export const SUB_CONTRACTING_ABI = [
   "function assignSubContractor(uint256 scId, address _sub) external",
   // Delivery lifecycle
   "function deliverWork(uint256 scId, string ipfsProof) external",
+  "function deliverWork(uint256 scId, string ipfsProof, string description) external",
   "function approveWork(uint256 scId) external",
   "function requestRevision(uint256 scId) external",
   "function approveRevisionRequest(uint256 scId) external",

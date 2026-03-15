@@ -46,7 +46,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     // ── Enums ────────────────────────────────────────────────────────────────
 
     enum JobStatus { Open, InProgress, Completed, Cancelled, Disputed, Delivered }
-    enum MilestoneStatus { Pending, InProgress, Submitted, Approved }
+    enum MilestoneStatus { Pending, Submitted, RevisionRequested, Approved }
 
     // ── Structs ──────────────────────────────────────────────────────────────
 
@@ -54,6 +54,9 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         string  title;
         uint256 amount;
         MilestoneStatus status;
+        string  submissionProof;
+        string  submissionDescription;
+        uint256 submittedAt;
     }
 
     struct Job {
@@ -73,6 +76,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         bool    sealedBidding;       // if true, frontend hides bids from other freelancers
         uint256 expectedDays;        // client's expected completion timeframe in days
         string  deliveryProof;       // IPFS CID / proof link submitted on delivery
+        string  deliveryDescription; // delivery notes from freelancer
         bool    tipGiven;            // one-time client tip guard
         bool    revisionRequested;   // waiting for freelancer to accept/reject revision request
     }
@@ -137,7 +141,8 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     event JobCancelled(uint256 indexed jobId, address indexed client, uint256 penalty);
     event JobDelivered(uint256 indexed jobId, address indexed freelancer, uint256 autoReleaseAt);
     event JobAutoReleased(uint256 indexed jobId);
-    event MilestoneSubmitted(uint256 indexed jobId, uint256 milestoneIndex);
+    event MilestoneSubmitted(uint256 indexed jobId, uint256 milestoneIndex, string proof);
+    event MilestoneRevisionRequested(uint256 indexed jobId, uint256 milestoneIndex);
     event MilestoneApproved(uint256 indexed jobId, uint256 milestoneIndex, uint256 amount);
     event DisputeRaised(uint256 indexed jobId, address indexed initiator);
     event JobRestoredToInProgress(uint256 indexed jobId);
@@ -221,12 +226,20 @@ contract JobMarket is AccessControl, ReentrancyGuard {
             sealedBidding: sealedBidding,
             expectedDays: expectedDays,
             deliveryProof: "",
+            deliveryDescription: "",
             tipGiven: false,
             revisionRequested: false
         });
 
         for (uint256 i; i < milestoneAmounts.length; i++) {
-            milestones[jid][i] = Milestone(milestoneTitles[i], milestoneAmounts[i], MilestoneStatus.Pending);
+            milestones[jid][i] = Milestone({
+                title: milestoneTitles[i],
+                amount: milestoneAmounts[i],
+                status: MilestoneStatus.Pending,
+                submissionProof: "",
+                submissionDescription: "",
+                submittedAt: 0
+            });
         }
 
         _ensureProfile(msg.sender);
@@ -265,6 +278,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
             sealedBidding: false,
             expectedDays: 0,
             deliveryProof: "",
+            deliveryDescription: "",
             tipGiven: false,
             revisionRequested: false
         });
@@ -363,19 +377,65 @@ contract JobMarket is AccessControl, ReentrancyGuard {
     //  MILESTONES
     // ═══════════════════════════════════════════════════════════════════════
 
-    function submitMilestone(uint256 jobId, uint256 idx) external {
+    function submitMilestone(uint256 jobId, uint256 idx, string calldata proof) external {
+        _submitMilestone(jobId, idx, proof, "");
+    }
+
+    function submitMilestone(uint256 jobId, uint256 idx, string calldata proof, string calldata description) external {
+        _submitMilestone(jobId, idx, proof, description);
+    }
+
+    function _submitMilestone(uint256 jobId, uint256 idx, string calldata proof, string memory description) internal {
         Job storage job = jobs[jobId];
         require(msg.sender == job.selectedFreelancer && job.status == JobStatus.InProgress, "Not allowed");
+        require(bytes(proof).length > 0, "Proof required");
         require(idx < job.milestoneCount, "Bad idx");
+        for (uint256 i; i < idx; i++) {
+            require(milestones[jobId][i].status == MilestoneStatus.Approved, "Submit milestones in order");
+        }
         Milestone storage ms = milestones[jobId][idx];
-        require(ms.status == MilestoneStatus.Pending || ms.status == MilestoneStatus.InProgress, "Not submittable");
+        require(ms.status == MilestoneStatus.Pending || ms.status == MilestoneStatus.RevisionRequested, "Not submittable");
         ms.status = MilestoneStatus.Submitted;
-        emit MilestoneSubmitted(jobId, idx);
+        ms.submissionProof = proof;
+        ms.submissionDescription = description;
+        ms.submittedAt = block.timestamp;
+        emit MilestoneSubmitted(jobId, idx, proof);
+
+        // Submitting the final milestone marks the full work as delivered.
+        if (idx + 1 == job.milestoneCount) {
+            job.status = JobStatus.Delivered;
+            job.deliveredAt = block.timestamp;
+            job.deliveryProof = proof;
+            job.deliveryDescription = description;
+            job.revisionRequested = false;
+            emit JobDelivered(jobId, msg.sender, block.timestamp + AUTO_RELEASE_PERIOD);
+        }
+    }
+
+    function requestMilestoneRevision(uint256 jobId, uint256 idx) external {
+        Job storage job = jobs[jobId];
+        require(msg.sender == job.client, "Only client");
+        require(job.status == JobStatus.InProgress || job.status == JobStatus.Delivered, "Bad status");
+        require(idx < job.milestoneCount, "Bad idx");
+
+        Milestone storage ms = milestones[jobId][idx];
+        require(ms.status == MilestoneStatus.Submitted, "Not submitted");
+
+        ms.status = MilestoneStatus.RevisionRequested;
+
+        // If final milestone is sent back for revision, move job back to InProgress.
+        if (idx + 1 == job.milestoneCount && job.status == JobStatus.Delivered) {
+            job.status = JobStatus.InProgress;
+            job.deliveredAt = 0;
+            job.deliveryProof = "";
+            job.deliveryDescription = "";
+        }
+        emit MilestoneRevisionRequested(jobId, idx);
     }
 
     function approveMilestone(uint256 jobId, uint256 idx) external nonReentrant {
         Job storage job = jobs[jobId];
-        require(msg.sender == job.client && job.status == JobStatus.InProgress, "Not allowed");
+        require(msg.sender == job.client && (job.status == JobStatus.InProgress || job.status == JobStatus.Delivered), "Not allowed");
         require(idx < job.milestoneCount, "Bad idx");
         Milestone storage ms = milestones[jobId][idx];
         require(ms.status == MilestoneStatus.Submitted, "Not submitted");
@@ -385,13 +445,6 @@ contract JobMarket is AccessControl, ReentrancyGuard {
             IEscrow(escrowContract).releaseMilestonePayment(jobId, ms.amount);
         }
         emit MilestoneApproved(jobId, idx, ms.amount);
-
-        // auto-complete if all approved
-        bool done = true;
-        for (uint256 i; i < job.milestoneCount; i++) {
-            if (milestones[jobId][i].status != MilestoneStatus.Approved) { done = false; break; }
-        }
-        if (done) _completeJob(jobId);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -432,12 +485,22 @@ contract JobMarket is AccessControl, ReentrancyGuard {
 
     /// @notice Freelancer marks job delivered — starts 14-day auto-release timer
     function deliverJob(uint256 jobId, string calldata ipfsProof) external {
+        _deliverJob(jobId, ipfsProof, "");
+    }
+
+    function deliverJob(uint256 jobId, string calldata ipfsProof, string calldata description) external {
+        _deliverJob(jobId, ipfsProof, description);
+    }
+
+    function _deliverJob(uint256 jobId, string calldata ipfsProof, string memory description) internal {
         Job storage job = jobs[jobId];
         require(msg.sender == job.selectedFreelancer && job.status == JobStatus.InProgress, "Not allowed");
+        require(job.milestoneCount == 0, "Use milestone submission");
         require(bytes(ipfsProof).length > 0, "Proof required");
         job.status = JobStatus.Delivered;
         job.deliveredAt = block.timestamp;
         job.deliveryProof = ipfsProof;
+        job.deliveryDescription = description;
         job.revisionRequested = false;
         emit JobDelivered(jobId, msg.sender, block.timestamp + AUTO_RELEASE_PERIOD);
     }
@@ -558,6 +621,7 @@ contract JobMarket is AccessControl, ReentrancyGuard {
         job.status = JobStatus.InProgress;
         job.deliveredAt = 0;
         job.deliveryProof = "";
+        job.deliveryDescription = "";
         job.revisionRequested = false;
         emit RevisionRequestResponded(_jobId, true);
     }

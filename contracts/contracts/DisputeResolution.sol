@@ -171,6 +171,15 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
         address freelancer,
         string calldata reason
     ) external returns (uint256) {
+        return _raiseDispute(jobId, client, freelancer, reason);
+    }
+
+    function _raiseDispute(
+        uint256 jobId,
+        address client,
+        address freelancer,
+        string calldata reason
+    ) internal returns (uint256) {
         require(msg.sender == client || msg.sender == freelancer, "Not party");
         require(bytes(reason).length > 0, "Reason required");
 
@@ -211,11 +220,42 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
         return did;
     }
 
+    /// @notice Raise dispute + submit initiator evidence + set initiator demand in one tx.
+    function raiseDisputeWithEvidenceAndDemand(
+        uint256 jobId,
+        address client,
+        address freelancer,
+        string calldata reason,
+        string calldata ipfsHash,
+        uint256 myPercent
+    ) external returns (uint256) {
+        uint256 did = _raiseDispute(jobId, client, freelancer, reason);
+        _submitEvidence(did, ipfsHash);
+        _setProportionDemand(did, myPercent);
+        return did;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  2) RESPOND
     // ═══════════════════════════════════════════════════════════════════════
 
     function submitResponse(uint256 did, string calldata desc) external {
+        _submitResponse(did, desc);
+    }
+
+    /// @notice Submit respondent description + evidence + demand in one tx.
+    function submitResponseWithEvidenceAndDemand(
+        uint256 did,
+        string calldata desc,
+        string calldata ipfsHash,
+        uint256 myPercent
+    ) external {
+        _submitResponse(did, desc);
+        _submitEvidence(did, ipfsHash);
+        _setProportionDemand(did, myPercent);
+    }
+
+    function _submitResponse(uint256 did, string calldata desc) internal {
         Dispute storage d = disputes[did];
         require(d.status == Status.ResponsePhase, "Not response phase");
         require(!d.responseSubmitted, "Already responded");
@@ -241,6 +281,10 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
     // ═══════════════════════════════════════════════════════════════════════
 
     function submitEvidence(uint256 did, string calldata ipfsHash) external {
+        _submitEvidence(did, ipfsHash);
+    }
+
+    function _submitEvidence(uint256 did, string calldata ipfsHash) internal {
         Dispute storage d = disputes[did];
         require(msg.sender == d.client || msg.sender == d.freelancer, "Not party");
         require(
@@ -271,6 +315,10 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
      *   If voters pick client → client gets 85%, freelancer gets 15%
      */
     function setProportionDemand(uint256 did, uint256 myPercent) external {
+        _setProportionDemand(did, myPercent);
+    }
+
+    function _setProportionDemand(uint256 did, uint256 myPercent) internal {
         Dispute storage d = disputes[did];
         require(
             d.status == Status.VotingPhase || d.status == Status.ResponsePhase,
@@ -501,6 +549,8 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
     function withdrawDispute(uint256 did) external nonReentrant {
         Dispute storage d = disputes[did];
         require(msg.sender == d.initiator, "Only initiator");
+        address other = d.initiator == d.client ? d.freelancer : d.client;
+        require(!_hasPartyEvidence(did, other), "Counterparty already submitted evidence");
         require(
             d.status != Status.Resolved &&
             d.status != Status.AutoResolved &&
@@ -540,6 +590,10 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
 
     function getEvidence(uint256 did) external view returns (Evidence[] memory) {
         return evidence[did];
+    }
+
+    function hasSubmittedEvidence(uint256 did, address party) external view returns (bool) {
+        return _hasPartyEvidence(did, party);
     }
 
     /// @notice Real-time vote tallies — frontend shows to parties only
@@ -584,6 +638,14 @@ contract DisputeResolution is AccessControl, ReentrancyGuard {
     function _startVotingPhase(Dispute storage d) internal {
         d.status = Status.VotingPhase;
         d.votingDeadline = block.timestamp + VOTING_PERIOD;
+    }
+
+    function _hasPartyEvidence(uint256 did, address party) internal view returns (bool) {
+        Evidence[] storage ev = evidence[did];
+        for (uint256 i; i < ev.length; i++) {
+            if (ev[i].party == party) return true;
+        }
+        return false;
     }
 
     function _executeResolution(Dispute storage d) internal {

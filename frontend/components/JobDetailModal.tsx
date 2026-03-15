@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ethers, JsonRpcSigner } from "ethers";
 import { getJobMarket, getDisputeResolution, getUserProfile, formatEth, formatDate, shortenAddress, timeRemaining, NATIVE_SYMBOL } from "@/lib/contracts";
 import { extractTransactionError, getExpectedChainId, getExpectedChainLabel, normalizeDecimalInput } from "@/lib/tx";
@@ -20,6 +20,7 @@ interface Job {
   acceptedBidId: bigint; createdAt: bigint; deliveredAt: bigint;
   milestoneCount: bigint; sealedBidding: boolean; expectedDays: bigint;
   deliveryProof?: string;
+  deliveryDescription?: string;
   tipGiven?: boolean;
   revisionRequested?: boolean;
 }
@@ -62,7 +63,6 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const [activeDisputeId, setActiveDisputeId] = useState<bigint | null>(null);
   const [disputeInitiator, setDisputeInitiator] = useState<string | null>(null);
   const [disputeResponseSubmitted, setDisputeResponseSubmitted] = useState(false);
-  const [disputeCreatedAt, setDisputeCreatedAt] = useState<bigint | null>(null);
   const [responseText, setResponseText] = useState("");
   const [responseEvidenceHash, setResponseEvidenceHash] = useState("");
   const [responseDemandPct, setResponseDemandPct] = useState("50");
@@ -75,21 +75,26 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const [settleFreelancerPct, setSettleFreelancerPct] = useState("50");
 
   // Milestone state
-  const [milestones, setMilestones] = useState<{title: string; amount: bigint; status: number}[]>([]);
+  const [milestones, setMilestones] = useState<{title: string; amount: bigint; status: number; submissionProof: string; submissionDescription: string; submittedAt: bigint}[]>([]);
+  const [milestoneProofInputs, setMilestoneProofInputs] = useState<Record<number, string>>({});
+  const [milestoneDescriptionInputs, setMilestoneDescriptionInputs] = useState<Record<number, string>>({});
 
   // Tip state
   const [showTipForm, setShowTipForm] = useState(false);
   const [tipAmount, setTipAmount] = useState("");
   const [deliveryProofCid, setDeliveryProofCid] = useState("");
+  const [deliveryDescription, setDeliveryDescription] = useState("");
   const [onChainDeliveryProof, setOnChainDeliveryProof] = useState(job.deliveryProof || "");
+  const [onChainDeliveryDescription, setOnChainDeliveryDescription] = useState(job.deliveryDescription || "");
   const [tipGiven, setTipGiven] = useState(Boolean(job.tipGiven));
   const [revisionRequested, setRevisionRequested] = useState(Boolean(job.revisionRequested));
 
   useEffect(() => {
     setOnChainDeliveryProof(job.deliveryProof || "");
+    setOnChainDeliveryDescription(job.deliveryDescription || "");
     setTipGiven(Boolean(job.tipGiven));
     setRevisionRequested(Boolean(job.revisionRequested));
-  }, [job.deliveryProof, job.tipGiven, job.revisionRequested]);
+  }, [job.deliveryProof, job.deliveryDescription, job.tipGiven, job.revisionRequested]);
 
   // On-chain configurable params
   const [autoReleasePeriod, setAutoReleasePeriod] = useState<number | null>(null);
@@ -98,6 +103,8 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const isClient = currentAddress?.toLowerCase() === job.client.toLowerCase();
   const isFreelancer = currentAddress?.toLowerCase() === job.selectedFreelancer.toLowerCase();
   const hasAlreadyBid = bids.some(b => b.freelancer.toLowerCase() === currentAddress?.toLowerCase());
+  const hasMilestones = Number(job.milestoneCount) > 0;
+  const allMilestonesApproved = milestones.length > 0 && milestones.every((m) => m.status === 3);
 
   // Escape key handler (only if review modal not showing)
   useEffect(() => {
@@ -116,6 +123,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
       .then((j: any) => {
         setLiveStatus(Number(j.status));
         setOnChainDeliveryProof(j.deliveryProof || "");
+        setOnChainDeliveryDescription(j.deliveryDescription || "");
         setTipGiven(Boolean(j.tipGiven));
         setRevisionRequested(Boolean(j.revisionRequested));
       })
@@ -160,12 +168,22 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   }, [job.id, signer]);
 
   // Load milestones
-  useEffect(() => {
+  const reloadMilestones = useCallback(async () => {
     if (!signer || Number(job.milestoneCount) === 0) return;
-    getJobMarket(signer).getJobMilestones(job.id).then((ms: any[]) => {
-      setMilestones(ms.map((m: any) => ({ title: m.title, amount: m.amount, status: Number(m.status) })));
-    }).catch(() => {});
+    const ms = await getJobMarket(signer).getJobMilestones(job.id);
+    setMilestones(ms.map((m: any) => ({
+      title: m.title,
+      amount: m.amount,
+      status: Number(m.status),
+      submissionProof: m.submissionProof || "",
+      submissionDescription: m.submissionDescription || "",
+      submittedAt: m.submittedAt || 0n,
+    })));
   }, [job.id, job.milestoneCount, signer]);
+
+  useEffect(() => {
+    reloadMilestones().catch(() => {});
+  }, [reloadMilestones]);
 
   // Auto-show review for completed
   useEffect(() => {
@@ -182,14 +200,14 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     if (!signer || liveStatus !== 4) return;
     const dr = getDisputeResolution(signer);
     setActiveDisputeId(null); setDisputeInitiator(null);
-    setDisputeResponseSubmitted(false); setDisputeCreatedAt(null);
+    setDisputeResponseSubmitted(false);
     dr.getDisputesByJob(job.id).then(async (ids: bigint[]) => {
       if (!ids || ids.length === 0) return;
       const lastId = ids[ids.length - 1];
       const dispute: any = await dr.getDispute(lastId);
       if (!dispute || dispute.id === 0n) return;
       setActiveDisputeId(dispute.id); setDisputeInitiator(dispute.initiator);
-      setDisputeResponseSubmitted(dispute.responseSubmitted); setDisputeCreatedAt(dispute.createdAt);
+      setDisputeResponseSubmitted(dispute.responseSubmitted);
       if (!dispute.responseSubmitted && currentAddress &&
           dispute.initiator.toLowerCase() !== currentAddress.toLowerCase() &&
           (dispute.client.toLowerCase() === currentAddress.toLowerCase() ||
@@ -270,9 +288,11 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
   const deliverJob = () => run("Delivering…", async () => {
     const proof = deliveryProofCid.trim();
     if (!proof) throw new Error("Upload delivery proof before marking as delivered.");
-    const tx = await getJobMarket(signer!).deliverJob(job.id, proof);
+    const fn = getJobMarket(signer!).getFunction("deliverJob(uint256,string,string)");
+    const tx = await fn(job.id, proof, deliveryDescription.trim());
     await tx.wait();
     setDeliveryProofCid("");
+    setDeliveryDescription("");
     setRevisionRequested(false);
   });
 
@@ -300,20 +320,23 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     }
 
     const dr = getDisputeResolution(signer!);
-    const disputeId = await dr.raiseDispute.staticCall(
+    await dr.raiseDisputeWithEvidenceAndDemand.staticCall(
       job.id,
       job.client,
       job.selectedFreelancer,
       reason,
+      disputeEvidenceHash.trim(),
+      demand,
     );
-    const tx = await dr.raiseDispute(job.id, job.client, job.selectedFreelancer, reason);
+    const tx = await dr.raiseDisputeWithEvidenceAndDemand(
+      job.id,
+      job.client,
+      job.selectedFreelancer,
+      reason,
+      disputeEvidenceHash.trim(),
+      demand,
+    );
     await tx.wait();
-
-    const evTx = await dr.submitEvidence(disputeId, disputeEvidenceHash.trim());
-    await evTx.wait();
-
-    const demandTx = await dr.setProportionDemand(disputeId, demand);
-    await demandTx.wait();
 
     setShowDisputeForm(false);
     setDisputeReason("");
@@ -332,14 +355,13 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     }
 
     const dr = getDisputeResolution(signer!);
-    const tx = await dr.submitResponse(activeDisputeId, desc);
+    const tx = await dr.submitResponseWithEvidenceAndDemand(
+      activeDisputeId,
+      desc,
+      responseEvidenceHash.trim(),
+      demand,
+    );
     await tx.wait();
-
-    const evTx = await dr.submitEvidence(activeDisputeId, responseEvidenceHash.trim());
-    await evTx.wait();
-
-    const demandTx = await dr.setProportionDemand(activeDisputeId, demand);
-    await demandTx.wait();
 
     setDisputeResponseSubmitted(true);
     setShowResponseForm(false);
@@ -347,15 +369,6 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
     setResponseEvidenceHash("");
     setResponseDemandPct("50");
   });
-
-  const withdrawDisputeAction = () => {
-    if (!confirm("Cancel this dispute? The job will return to In Progress.")) return;
-    run("Cancelling dispute…", async () => {
-      if (!activeDisputeId) return;
-      const tx = await getDisputeResolution(signer!).withdrawDispute(activeDisputeId);
-      await tx.wait();
-    });
-  };
 
   // ─── On-chain revision ────────────────────────────────────────────────────
   const requestRevision = () => run("Requesting revision…", async () => {
@@ -398,18 +411,27 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
 
   // ─── Milestones ──────────────────────────────────────────────────────────
   const submitMilestone = (idx: number) => run(`Submitting milestone ${idx + 1}…`, async () => {
-    const tx = await getJobMarket(signer!).submitMilestone(job.id, idx);
+    const proof = (milestoneProofInputs[idx] || "").trim();
+    if (!proof) throw new Error("Upload or paste milestone proof before submitting.");
+    const description = (milestoneDescriptionInputs[idx] || "").trim();
+    const fn = getJobMarket(signer!).getFunction("submitMilestone(uint256,uint256,string,string)");
+    const tx = await fn(job.id, idx, proof, description);
     await tx.wait();
-    // Reload milestones
-    const ms = await getJobMarket(signer!).getJobMilestones(job.id);
-    setMilestones(ms.map((m: any) => ({ title: m.title, amount: m.amount, status: Number(m.status) })));
+    setMilestoneProofInputs((prev) => ({ ...prev, [idx]: "" }));
+    setMilestoneDescriptionInputs((prev) => ({ ...prev, [idx]: "" }));
+    await reloadMilestones();
   });
 
   const approveMilestone = (idx: number) => run(`Approving milestone ${idx + 1}…`, async () => {
     const tx = await getJobMarket(signer!).approveMilestone(job.id, idx);
     await tx.wait();
-    const ms = await getJobMarket(signer!).getJobMilestones(job.id);
-    setMilestones(ms.map((m: any) => ({ title: m.title, amount: m.amount, status: Number(m.status) })));
+    await reloadMilestones();
+  });
+
+  const requestMilestoneRevision = (idx: number) => run(`Requesting revision for milestone ${idx + 1}…`, async () => {
+    const tx = await getJobMarket(signer!).requestMilestoneRevision(job.id, idx);
+    await tx.wait();
+    await reloadMilestones();
   });
 
   // ─── Tip ─────────────────────────────────────────────────────────────────
@@ -563,6 +585,11 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                       <p className="text-xs mt-1.5" style={{ color: colors.primaryFg }}>
                         The client&apos;s budget is {formatEth(job.budget)} {NATIVE_SYMBOL}.
                       </p>
+                      {hasMilestones && (
+                        <p className="text-xs mt-1" style={{ color: colors.infoText }}>
+                          This job uses {Number(job.milestoneCount)} milestone(s). Payment is released milestone-by-milestone after approval.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider">Bid Details / Proposal</Label>
@@ -600,7 +627,8 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
           {liveStatus === 1 && signer && (
             <div className="space-y-3">
               {(isClient || isFreelancer) && (
-                <>
+                <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Collaboration</h4>
                   <Link href={`/chat/${job.id.toString()}`}
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
@@ -616,53 +644,118 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
                     <ClipboardList size={16} /> Task Board
                   </button>
-                </>
+                  {isFreelancer && (
+                    <Link href={`/sub-contracts?jobId=${job.id.toString()}`}
+                      className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                      style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
+                      <Handshake size={16} /> Sub-Contract Part of This Job
+                    </Link>
+                  )}
+                </div>
               )}
-              {/* Sub-contracting link for freelancer */}
-              {isFreelancer && (
-                <Link href={`/sub-contracts?jobId=${job.id.toString()}`}
-                  className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
-                  style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
-                  <Handshake size={16} /> Sub-Contract Part of This Job
-                </Link>
-              )}
+              <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Delivery</h4>
               {/* Milestones */}
               {milestones.length > 0 && (isClient || isFreelancer) && (
-                <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
-                  <h4 className="text-sm font-semibold" style={{ color: colors.mutedFg }}>Milestones</h4>
+                <div className="rounded-lg border p-3 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                  <h4 className="text-sm font-semibold" style={{ color: colors.pageFg }}>Milestones</h4>
                   {milestones.map((ms, idx) => {
-                    const msStatus = ms.status === 0 ? "Pending" : ms.status === 1 ? "Submitted" : "Approved";
-                    const msColor = ms.status === 0 ? colors.mutedFg : ms.status === 1 ? colors.warningText : colors.successText;
+                    const isLastMilestone = idx + 1 === milestones.length;
+                    const msStatus = ms.status === 0
+                      ? "Pending"
+                      : ms.status === 1
+                      ? "Submitted"
+                      : ms.status === 2
+                      ? "Revision Requested"
+                      : "Approved";
+                    const msColor = ms.status === 0
+                      ? colors.mutedFg
+                      : ms.status === 1
+                      ? colors.warningText
+                      : ms.status === 2
+                      ? colors.dangerText
+                      : colors.successText;
                     return (
                       <div key={idx} className="flex items-center justify-between rounded-lg px-3 py-2 border"
                         style={{ borderColor: colors.cardBorder }}>
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{ms.title || `Milestone ${idx + 1}`}</p>
                           <p className="text-xs" style={{ color: colors.mutedFg }}>{formatEth(ms.amount)} {NATIVE_SYMBOL} · <span style={{ color: msColor }}>{msStatus}</span></p>
+                          {ms.submissionProof && (
+                            <p className="text-xs mt-1">
+                              <a href={`https://gateway.pinata.cloud/ipfs/${ms.submissionProof}`} target="_blank" rel="noopener noreferrer"
+                                className="underline" style={{ color: colors.primaryFg }}>
+                                View submitted proof
+                              </a>
+                            </p>
+                          )}
+                          {ms.submissionDescription && (
+                            <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
+                              Notes: {ms.submissionDescription}
+                            </p>
+                          )}
+                          {(ms.status === 0 || ms.status === 2) && isFreelancer && (
+                            <div className="mt-2 space-y-2">
+                              <IpfsFileUpload
+                                label={milestoneProofInputs[idx] ? "Replace Milestone Proof" : "Upload Milestone Proof"}
+                                compact
+                                existingCid={milestoneProofInputs[idx] || undefined}
+                                onUpload={(cid) => setMilestoneProofInputs((prev) => ({ ...prev, [idx]: cid }))}
+                              />
+                              <Input
+                                placeholder="Or paste milestone proof IPFS hash / URL"
+                                value={milestoneProofInputs[idx] || ""}
+                                onChange={(e) => setMilestoneProofInputs((prev) => ({ ...prev, [idx]: e.target.value }))}
+                              />
+                              <textarea
+                                rows={2}
+                                placeholder="Describe what was delivered for this milestone"
+                                className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                                style={inputStyle}
+                                value={milestoneDescriptionInputs[idx] || ""}
+                                onChange={(e) => setMilestoneDescriptionInputs((prev) => ({ ...prev, [idx]: e.target.value }))}
+                              />
+                            </div>
+                          )}
                         </div>
-                        {ms.status === 0 && isFreelancer && (
+                        {(ms.status === 0 || ms.status === 2) && isFreelancer && (
                           <button onClick={() => submitMilestone(idx)} disabled={!!txLoading}
                             className="text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
-                            style={{ background: colors.primary, color: colors.primaryText }}>Submit</button>
+                            style={{ background: colors.primary, color: colors.primaryText }}>
+                            {isLastMilestone ? "Submit & Mark Delivered" : "Submit Work"}
+                          </button>
                         )}
                         {ms.status === 1 && isClient && (
-                          <button onClick={() => approveMilestone(idx)} disabled={!!txLoading}
-                            className="text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
-                            style={{ background: colors.successText, color: "#fff" }}>Approve</button>
+                          <div className="flex flex-col gap-2 items-end">
+                            <button onClick={() => approveMilestone(idx)} disabled={!!txLoading}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
+                              style={{ background: colors.successText, color: "#fff" }}>Approve</button>
+                            <button onClick={() => requestMilestoneRevision(idx)} disabled={!!txLoading}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
+                              style={{ border: `1px solid ${colors.dangerText}66`, color: colors.dangerText }}>Request Revision</button>
+                          </div>
                         )}
                       </div>
                     );
                   })}
                 </div>
               )}
-              {isFreelancer && (
-                <div className="rounded-xl p-4 border space-y-3" style={{ borderColor: colors.cardBorder }}>
+              {isFreelancer && !hasMilestones && (
+                <div className="rounded-lg p-3 border space-y-3" style={{ borderColor: colors.cardBorder }}>
                   <h4 className="text-sm font-semibold" style={{ color: colors.pageFg }}>Upload Work Before Delivery</h4>
                   <IpfsFileUpload
                     label={deliveryProofCid ? "Replace Uploaded Work" : "Upload Delivered Work"}
                     compact
                     existingCid={deliveryProofCid || undefined}
                     onUpload={(cid) => setDeliveryProofCid(cid)}
+                  />
+                  <textarea
+                    rows={3}
+                    placeholder="Add a short delivery description for the client"
+                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                    style={inputStyle}
+                    value={deliveryDescription}
+                    onChange={(e) => setDeliveryDescription(e.target.value)}
                   />
                   <button onClick={deliverJob} disabled={!!txLoading || !deliveryProofCid}
                     className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
@@ -671,13 +764,21 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   </button>
                 </div>
               )}
-              {isClient && (
+              {isClient && !hasMilestones && (
                 <button onClick={completeJob} disabled={!!txLoading}
                   className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
                   style={{ background: colors.successText, color: "#fff" }}>
                   {txLoading === "Completing job…" ? "Completing…" : "✓ Mark as Complete & Release Payment"}
                 </button>
               )}
+              {isClient && hasMilestones && !allMilestonesApproved && (
+                <div className="rounded-lg p-3 text-xs border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.mutedFg }}>
+                  Approve each submitted milestone to continue. Final payment release is enabled after all milestones are approved.
+                </div>
+              )}
+              </div>
+              <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Resolution</h4>
               {/* Settlement — both parties can propose during InProgress */}
               {(isClient || isFreelancer) && !showSettlementForm && !showDisputeForm && (
                 <button onClick={() => setShowSettlementForm(true)}
@@ -806,6 +907,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                   </div>
                 </div>
               )}
+              </div>
             </div>
           )}
 
@@ -825,10 +927,16 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     </a>
                   </p>
                 )}
+                {onChainDeliveryDescription && (
+                  <p className="text-xs mt-2" style={{ color: "#6d28d9" }}>
+                    Delivery notes: {onChainDeliveryDescription}
+                  </p>
+                )}
               </div>
 
               {(isClient || isFreelancer) && (
-                <>
+                <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Collaboration</h4>
                   <Link href={`/chat/${job.id.toString()}`}
                     className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
                     style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
@@ -839,17 +947,79 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                     style={{ background: colors.infoBg, borderColor: colors.infoText + "33", color: colors.infoText }}>
                     <Video size={16} /> Start Video Call
                   </a>
-                </>
+                </div>
+              )}
+
+              {milestones.length > 0 && (isClient || isFreelancer) && (
+                <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Milestone Review</h4>
+                  <h4 className="text-sm font-semibold" style={{ color: colors.mutedFg }}>Milestones</h4>
+                  {milestones.map((ms, idx) => {
+                    const msStatus = ms.status === 0
+                      ? "Pending"
+                      : ms.status === 1
+                      ? "Submitted"
+                      : ms.status === 2
+                      ? "Revision Requested"
+                      : "Approved";
+                    const msColor = ms.status === 0
+                      ? colors.mutedFg
+                      : ms.status === 1
+                      ? colors.warningText
+                      : ms.status === 2
+                      ? colors.dangerText
+                      : colors.successText;
+                    return (
+                      <div key={idx} className="flex items-center justify-between rounded-lg px-3 py-2 border"
+                        style={{ borderColor: colors.cardBorder }}>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium" style={{ color: colors.pageFg }}>{ms.title || `Milestone ${idx + 1}`}</p>
+                          <p className="text-xs" style={{ color: colors.mutedFg }}>{formatEth(ms.amount)} {NATIVE_SYMBOL} · <span style={{ color: msColor }}>{msStatus}</span></p>
+                          {ms.submissionProof && (
+                            <p className="text-xs mt-1">
+                              <a href={`https://gateway.pinata.cloud/ipfs/${ms.submissionProof}`} target="_blank" rel="noopener noreferrer"
+                                className="underline" style={{ color: colors.primaryFg }}>
+                                View submitted proof
+                              </a>
+                            </p>
+                          )}
+                          {ms.submissionDescription && (
+                            <p className="text-xs mt-1" style={{ color: colors.mutedFg }}>
+                              Notes: {ms.submissionDescription}
+                            </p>
+                          )}
+                        </div>
+                        {ms.status === 1 && isClient && (
+                          <div className="flex flex-col gap-2 items-end">
+                            <button onClick={() => approveMilestone(idx)} disabled={!!txLoading}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
+                              style={{ background: colors.successText, color: "#fff" }}>Approve</button>
+                            <button onClick={() => requestMilestoneRevision(idx)} disabled={!!txLoading}
+                              className="text-xs px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
+                              style={{ border: `1px solid ${colors.dangerText}66`, color: colors.dangerText }}>Request Revision</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
 
               {/* Client-only: approve + revision */}
               {isClient && (
                 <>
-                  <button onClick={completeJob} disabled={!!txLoading}
-                    className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
-                    style={{ background: colors.successText, color: "#fff" }}>
-                    {txLoading === "Completing job…" ? "Completing…" : "✓ Approve & Release Payment"}
-                  </button>
+                  {(!hasMilestones || allMilestonesApproved) && (
+                    <button onClick={completeJob} disabled={!!txLoading}
+                      className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
+                      style={{ background: colors.successText, color: "#fff" }}>
+                      {txLoading === "Completing job…" ? "Completing…" : "✓ Approve & Release Payment"}
+                    </button>
+                  )}
+                  {hasMilestones && !allMilestonesApproved && (
+                    <div className="rounded-lg p-3 text-xs border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.mutedFg }}>
+                      Final release is available after all milestones are approved.
+                    </div>
+                  )}
                   {!revisionRequested ? (
                     <button onClick={requestRevision} disabled={!!txLoading}
                       className="w-full border rounded-lg py-2 text-sm disabled:opacity-60"
@@ -1058,24 +1228,6 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
                 </Link>
               )}
 
-              {/* Cancel dispute (initiator only) */}
-              {activeDisputeId && disputeInitiator &&
-               currentAddress?.toLowerCase() === disputeInitiator.toLowerCase() && (() => {
-                const within12h = disputeCreatedAt != null && blockTimestamp < Number(disputeCreatedAt) + 12 * 3600;
-                const canWithdraw = !disputeResponseSubmitted || within12h;
-                return canWithdraw ? (
-                  <button onClick={withdrawDisputeAction} disabled={!!txLoading}
-                    className="w-full border rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
-                    style={{ borderColor: colors.warningText + "55", color: colors.warningText }}>
-                    {txLoading === "Cancelling dispute…" ? "Cancelling…" : "↩ Cancel Dispute"}
-                  </button>
-                ) : (
-                  <div className="rounded-lg p-3 text-xs border" style={{ background: colors.inputBg, borderColor: colors.cardBorder, color: colors.mutedFg }}>
-                    <Lock size={14} className="inline mr-1" />Cancellation window closed.
-                  </div>
-                );
-              })()}
-
               {/* Submit response (non-initiator) */}
               {activeDisputeId && disputeInitiator &&
                currentAddress?.toLowerCase() !== disputeInitiator.toLowerCase() &&
@@ -1190,6 +1342,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
           )}
 
           {/* ─── Bids section ──────────────────────────────────── */}
+          {liveStatus === 0 && (
           <div>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: colors.pageFg }}>
               <span className="w-1 h-4 rounded-full inline-block" style={{ background: colors.primary }} />
@@ -1264,6 +1417,7 @@ export default function JobDetailModal({ job, signer, currentAddress, onClose, o
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Footer */}

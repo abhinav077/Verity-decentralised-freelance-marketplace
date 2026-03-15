@@ -728,14 +728,8 @@ export default function DisputesPage() {
     if (!signer) return;
     await runTx(`response-${disputeId.toString()}`, async () => {
       const dr = getDisputeResolution(signer);
-      const tx1 = await dr.submitResponse(disputeId, text);
-      await tx1.wait();
-
-      const tx2 = await dr.submitEvidence(disputeId, evidenceHash);
-      await tx2.wait();
-
-      const tx3 = await dr.setProportionDemand(disputeId, myPct);
-      await tx3.wait();
+      const tx = await dr.submitResponseWithEvidenceAndDemand(disputeId, text, evidenceHash, myPct);
+      await tx.wait();
 
       loadEvidenceForDispute(disputeId);
     });

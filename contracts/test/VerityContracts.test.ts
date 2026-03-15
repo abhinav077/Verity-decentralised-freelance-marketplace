@@ -316,22 +316,25 @@ describe("Verity DFM Contracts", function () {
       await jobMarket.connect(client).acceptBid(1, { value: ETH("1") });
 
       // Freelancer submits milestone 0
-      await jobMarket.connect(freelancer).submitMilestone(id, 0);
+      await jobMarket.connect(freelancer).submitMilestone(id, 0, "cid://ms-0");
       // Client approves → releases 0.4 ETH
       const bal = await ethers.provider.getBalance(freelancer.address);
       await jobMarket.connect(client).approveMilestone(id, 0);
       expect(await ethers.provider.getBalance(freelancer.address)).to.be.gt(bal);
     });
 
-    it("auto-completes when all milestones approved", async () => {
+    it("requires explicit client completion after all milestones approved", async () => {
       const id = await createMilestoneJob();
       await jobMarket.connect(freelancer).placeBid(id, ETH("1"), "OK");
       await jobMarket.connect(client).acceptBid(1, { value: ETH("1") });
 
-      await jobMarket.connect(freelancer).submitMilestone(id, 0);
+      await jobMarket.connect(freelancer).submitMilestone(id, 0, "cid://ms-0");
       await jobMarket.connect(client).approveMilestone(id, 0);
-      await jobMarket.connect(freelancer).submitMilestone(id, 1);
+      await jobMarket.connect(freelancer).submitMilestone(id, 1, "cid://ms-1");
       await jobMarket.connect(client).approveMilestone(id, 1);
+
+      // Final completion is explicit after milestone approvals.
+      await jobMarket.connect(client).completeJob(id);
 
       const job = await jobMarket.getJob(id);
       expect(job.status).to.equal(2); // Completed
@@ -612,12 +615,14 @@ describe("Verity DFM Contracts", function () {
       await jobMarket.connect(client).acceptBid(1, { value: ETH("2") });
 
       // Milestone 1
-      await jobMarket.connect(freelancer).submitMilestone(1, 0);
+      await jobMarket.connect(freelancer).submitMilestone(1, 0, "cid://phase-1");
       await jobMarket.connect(client).approveMilestone(1, 0);
 
       // Milestone 2
-      await jobMarket.connect(freelancer).submitMilestone(1, 1);
+      await jobMarket.connect(freelancer).submitMilestone(1, 1, "cid://phase-2");
       await jobMarket.connect(client).approveMilestone(1, 1);
+
+      await jobMarket.connect(client).completeJob(1);
 
       // Verify completed
       const job = await jobMarket.getJob(1);

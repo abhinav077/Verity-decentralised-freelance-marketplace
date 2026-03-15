@@ -57,6 +57,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         uint256 completedAt;
         uint256 acceptedBidId;
         string  deliveryProof;      // IPFS CID / proof link submitted on delivery
+        string  deliveryDescription;
         bool    revisionRequested;  // waiting for sub-contractor response to revision
         bool    tipGiven;           // one-time tip guard
     }
@@ -177,6 +178,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
             completedAt: 0,
             acceptedBidId: 0,
             deliveryProof: "",
+            deliveryDescription: "",
             revisionRequested: false,
             tipGiven: false
         });
@@ -302,6 +304,14 @@ contract SubContracting is AccessControl, ReentrancyGuard {
 
     /// @notice Sub-contractor marks work delivered — starts auto-release timer
     function deliverWork(uint256 scId, string calldata ipfsProof) external {
+        _deliverWork(scId, ipfsProof, "");
+    }
+
+    function deliverWork(uint256 scId, string calldata ipfsProof, string calldata description) external {
+        _deliverWork(scId, ipfsProof, description);
+    }
+
+    function _deliverWork(uint256 scId, string calldata ipfsProof, string memory description) internal {
         SubContract storage sc = subContracts[scId];
         require(msg.sender == sc.subContractor, "Not sub");
         require(sc.status == Status.Active, "Not active");
@@ -309,6 +319,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         sc.status = Status.Delivered;
         sc.deliveredAt = block.timestamp;
         sc.deliveryProof = ipfsProof;
+        sc.deliveryDescription = description;
         sc.revisionRequested = false;
         emit WorkDelivered(scId, msg.sender, block.timestamp + AUTO_RELEASE_PERIOD);
     }
@@ -340,6 +351,7 @@ contract SubContracting is AccessControl, ReentrancyGuard {
         sc.status = Status.Active;
         sc.deliveredAt = 0;
         sc.deliveryProof = "";
+        sc.deliveryDescription = "";
         sc.revisionRequested = false;
         emit RevisionRequestResponded(scId, true);
     }

@@ -64,6 +64,7 @@ function SubContractsInner() {
   // Task board state
   const [showTaskBoard, setShowTaskBoard] = useState<string | null>(null);
   const [deliveryProofDraft, setDeliveryProofDraft] = useState<Record<string, string>>({});
+  const [deliveryDescriptionDraft, setDeliveryDescriptionDraft] = useState<Record<string, string>>({});
   const [tipOpenBySc, setTipOpenBySc] = useState<Record<string, boolean>>({});
   const [tipAmtBySc, setTipAmtBySc] = useState<Record<string, string>>({});
 
@@ -260,9 +261,16 @@ function SubContractsInner() {
   const handleDeliver = (scId: bigint) => run(`deliver-${scId}`, async () => {
     const proof = (deliveryProofDraft[scId.toString()] || "").trim();
     if (!proof) throw new Error("Upload work proof before marking as delivered.");
-    const tx = await getSubContracting(signer!).deliverWork(scId, proof);
+    const notes = (deliveryDescriptionDraft[scId.toString()] || "").trim();
+    const fn = getSubContracting(signer!).getFunction("deliverWork(uint256,string,string)");
+    const tx = await fn(scId, proof, notes);
     await tx.wait();
     setDeliveryProofDraft((prev) => {
+      const next = { ...prev };
+      delete next[scId.toString()];
+      return next;
+    });
+    setDeliveryDescriptionDraft((prev) => {
       const next = { ...prev };
       delete next[scId.toString()];
       return next;
@@ -521,9 +529,35 @@ function SubContractsInner() {
         {/* Actions area */}
         <div className="space-y-2 pt-3" style={{ borderTop: `1px solid ${colors.cardBorder}` }}>
 
+          {isParty && (
+            <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+              <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Collaboration</h4>
+              <Link href={`/chat/sc-${scKey}`}
+                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
+                <MessageCircle size={16} /> Open Chat
+              </Link>
+              {(status === 1 || status === 2) && (
+                <a href={`https://meet.jit.si/verity-sc-${scKey}`} target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                  style={{ background: colors.infoBg, borderColor: colors.infoText + "33", color: colors.infoText }}>
+                  <Video size={16} /> Start Video Call
+                </a>
+              )}
+              {status === 1 && (
+                <button onClick={() => setShowTaskBoard(showTaskBoard === scKey ? null : scKey)}
+                  className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
+                  style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
+                  <ClipboardList size={16} /> Task Board
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ── OPEN: Show bids list (primary) or bid form (others) ── */}
           {isOpen && (
-            <>
+            <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+              <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Bidding</h4>
               {/* Bid list for primary */}
               {isPrimary && activeBids.length > 0 && (
                 <div>
@@ -598,35 +632,30 @@ function SubContractsInner() {
                   </button>
                 )
               )}
-            </>
+            </div>
           )}
 
           {/* ── ACTIVE (status 1): Full lifecycle like normal jobs ── */}
           {status === 1 && isParty && (
             <div className="space-y-2">
-              <Link href={`/chat/sc-${scKey}`}
-                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
-                style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
-                <MessageCircle size={16} /> Open Chat
-              </Link>
-              <a href={`https://meet.jit.si/verity-sc-${scKey}`} target="_blank" rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
-                style={{ background: colors.infoBg, borderColor: colors.infoText + "33", color: colors.infoText }}>
-                <Video size={16} /> Start Video Call
-              </a>
-              <button onClick={() => setShowTaskBoard(showTaskBoard === scKey ? null : scKey)}
-                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
-                style={{ borderColor: colors.cardBorder, color: colors.mutedFg }}>
-                <ClipboardList size={16} /> Task Board
-              </button>
+              <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Delivery</h4>
               {isSub && (
-                <div className="rounded-xl p-4 border space-y-3" style={{ borderColor: colors.cardBorder }}>
+                <div className="rounded-lg p-3 border space-y-3" style={{ borderColor: colors.cardBorder }}>
                   <h4 className="text-sm font-semibold" style={{ color: colors.pageFg }}>Upload Work Before Delivery</h4>
                   <IpfsFileUpload
                     compact
                     label={(deliveryProofDraft[scKey] || "") ? "Replace Uploaded Work" : "Upload Delivered Work"}
                     existingCid={deliveryProofDraft[scKey] || undefined}
                     onUpload={(cid) => setDeliveryProofDraft((prev) => ({ ...prev, [scKey]: cid }))}
+                  />
+                  <textarea
+                    rows={3}
+                    placeholder="Add a short delivery description for the primary freelancer"
+                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                    style={inputStyle}
+                    value={deliveryDescriptionDraft[scKey] || ""}
+                    onChange={(e) => setDeliveryDescriptionDraft((prev) => ({ ...prev, [scKey]: e.target.value }))}
                   />
                   <button onClick={() => handleDeliver(s.id)} disabled={!!busy || !(deliveryProofDraft[scKey] || "").trim()}
                     className="w-full rounded-lg py-2.5 text-sm font-medium disabled:opacity-60 btn-hover"
@@ -635,6 +664,9 @@ function SubContractsInner() {
                   </button>
                 </div>
               )}
+              </div>
+              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Resolution</h4>
               {/* Settlement */}
               {settlement ? (
                 <div className="rounded-xl p-4 border space-y-2" style={{ borderColor: colors.cardBorder }}>
@@ -689,12 +721,15 @@ function SubContractsInner() {
                 style={{ borderColor: colors.warningText + "66", color: colors.warningText }}>
                 <AlertTriangle size={14} className="mr-1" />Raise Dispute
               </Link>
+              </div>
             </div>
           )}
 
           {/* ── DELIVERED (status 2): Full lifecycle ── */}
           {status === 2 && isParty && (
             <div className="space-y-2">
+              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Delivery Proof</h4>
               {s.deliveryProof && (
                 <a href={`https://gateway.pinata.cloud/ipfs/${s.deliveryProof}`} target="_blank" rel="noopener noreferrer"
                   className="w-full flex items-center justify-center border rounded-lg py-2 text-sm"
@@ -702,16 +737,12 @@ function SubContractsInner() {
                   <LinkIcon size={14} className="mr-1" />View Uploaded Work Proof
                 </a>
               )}
-              <Link href={`/chat/sc-${scKey}`}
-                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
-                style={{ background: colors.primaryLight, borderColor: colors.primary + "33", color: colors.primaryFg }}>
-                <MessageCircle size={16} /> Open Chat
-              </Link>
-              <a href={`https://meet.jit.si/verity-sc-${scKey}`} target="_blank" rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 border rounded-lg py-2.5 text-sm font-medium btn-outline-hover"
-                style={{ background: colors.infoBg, borderColor: colors.infoText + "33", color: colors.infoText }}>
-                <Video size={16} /> Start Video Call
-              </a>
+              {s.deliveryDescription && (
+                <p className="text-xs" style={{ color: colors.mutedFg }}>Delivery notes: {s.deliveryDescription}</p>
+              )}
+              </div>
+              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Approval</h4>
               {isPrimary && (
                 <div className="flex gap-2">
                   <button onClick={() => handleApprove(s.id)} disabled={!!busy}
@@ -754,6 +785,9 @@ function SubContractsInner() {
                   {busy === `auto-${s.id}` ? "Releasing…" : <><Clock size={14} className="inline mr-1" />Trigger Auto-Release (14d passed)</>}
                 </button>
               )}
+              </div>
+              <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: colors.cardBorder }}>
+                <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: colors.mutedFg }}>Resolution</h4>
               {/* Settlement */}
               {settlement ? (
                 <div className="rounded-xl p-4 border space-y-2" style={{ borderColor: colors.cardBorder }}>
@@ -807,6 +841,7 @@ function SubContractsInner() {
                 style={{ borderColor: colors.warningText + "66", color: colors.warningText }}>
                 <AlertTriangle size={14} className="mr-1" />Raise Dispute
               </Link>
+              </div>
             </div>
           )}
 
@@ -922,7 +957,7 @@ function SubContractsInner() {
           <div className="flex gap-6" style={{ borderBottom: `2px solid ${colors.cardBorder}` }}>
             {(["open", "mine"] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className="relative pb-2.5 text-sm font-medium transition-colors -mb-[2px]"
+                className="relative pb-2.5 text-sm font-medium transition-colors -mb-0.5"
                 style={tab === t
                   ? { color: colors.primaryFg, borderBottom: `2px solid ${colors.primaryFg}` }
                   : { color: colors.mutedFg, borderBottom: "2px solid transparent" }}>
