@@ -71,7 +71,7 @@ const THEME_ICONS: Record<ThemeName, LucideIcon> = {
 };
 
 export default function Navbar() {
-  const { address, provider, chainId, connect, disconnect, connecting, switchToExpectedChain } = useWallet();
+  const { address, provider, chainId, openWalletModal, disconnect, connecting, switchToExpectedChain } = useWallet();
   const { notifications, totalCount, dismiss, refresh } = useNotifications();
   const { theme, colors, setTheme } = useTheme();
   const dk = colors.colorScheme === "dark";
@@ -532,7 +532,7 @@ export default function Navbar() {
               style={islandStyle}
             >
               <div className="flex h-full items-stretch px-1.5">
-                <button onClick={connect} disabled={connecting}
+                <button onClick={openWalletModal} disabled={connecting}
                   className="flex h-full items-center text-xs sm:text-sm font-extrabold tracking-wide uppercase px-3 sm:px-4 rounded-xl transition-all disabled:opacity-60 whitespace-nowrap"
                   style={{ color: colors.primaryFg }}>
                   <span className="sm:hidden">{connecting ? "Connecting…" : "Connect"}</span>

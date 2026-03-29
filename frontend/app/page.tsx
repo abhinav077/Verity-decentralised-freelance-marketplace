@@ -77,7 +77,7 @@ function AnimatedSection({ children, className, style }: { children: React.React
 }
 
 export default function Home() {
-  const { address, connect, provider } = useWallet();
+  const { address, openWalletModal, provider } = useWallet();
   const { colors, theme } = useTheme();
   const [stats, setStats] = useState<Stats>({ total: 0, open: 0, inProgress: 0, completed: 0 });
   const contractsConfigured = CONTRACT_ADDRESSES.JobMarket !== "";
@@ -253,7 +253,7 @@ export default function Home() {
                   hoverFg={colors.primaryText}
                   borderColor="transparent"
                   className="min-w-[200px] rounded-2xl"
-                  onClick={connect}
+                  onClick={openWalletModal}
                 />
               </div>
             )}
@@ -433,7 +433,7 @@ export default function Home() {
                   hoverFg={colors.primaryText}
                   borderColor="transparent"
                   className="min-w-[200px] rounded-2xl"
-                  onClick={connect}
+                  onClick={openWalletModal}
                 />
               )}
             </div>
